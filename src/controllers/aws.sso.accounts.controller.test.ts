@@ -2,7 +2,6 @@ import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller';
-import * as awsSsoCacheUtil from '../utils/aws.sso.cache.util';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -47,10 +46,14 @@ interface ResponseMetadata {
 	[key: string]: any;
 }
 
-// Mock the dynamic import
-jest.mock('../utils/aws.sso.cache.util.js', () => ({
-	getAccountRolesFromCache: jest.fn().mockResolvedValue([]),
-}));
+// Mock the dynamic import with a simpler approach
+jest.mock('../utils/aws.sso.cache.util.js', () => {
+	return {
+		getAccountRolesFromCache: async () => {
+			return [];
+		},
+	};
+});
 
 describe('AWS SSO Accounts Controller', () => {
 	// Set longer timeout for API calls
