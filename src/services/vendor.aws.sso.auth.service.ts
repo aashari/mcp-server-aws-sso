@@ -187,7 +187,7 @@ export async function startSsoLogin(): Promise<DeviceAuthorizationResponse> {
 	const registerResponse = await post<ClientRegistrationResponse>(
 		registerEndpoint,
 		{
-			clientName: 'aws-cli',
+			clientName: 'mcp-aws-sso',
 			clientType: 'public',
 		},
 	);

@@ -11,6 +11,10 @@ const HOME_DIR = os.homedir();
 const CACHE_DIR = path.join(HOME_DIR, '.mcp-server', 'aws-sso');
 const TOKEN_FILE = path.join(CACHE_DIR, 'token.json');
 
+// Constants for the MCP cache location
+const MCP_DATA_DIR = path.join(HOME_DIR, '.mcp', 'data');
+const MCP_AWS_SSO_CACHE_FILE = path.join(MCP_DATA_DIR, 'aws-sso.json');
+
 /**
  * Ensure the cache directory exists
  */
@@ -82,6 +86,32 @@ interface DeviceAuthorizationInfo {
 	 * The AWS region for SSO
 	 */
 	region: string;
+}
+
+/**
+ * Interface for AWS SSO cache file structure
+ */
+interface AwsSsoCacheFile {
+	ssoToken?: {
+		accessToken: string;
+		expiresAt: number;
+		region: string;
+		startUrl: string;
+	};
+	lastAuth?: number;
+	credentials?: Record<string, unknown>;
+	accountRoles?: Array<{
+		account: {
+			accountId: string;
+			accountName: string;
+			emailAddress: string;
+		};
+		roles: Array<{
+			accountId: string;
+			roleName: string;
+			roleArn: string;
+		}>;
+	}>;
 }
 
 /**
@@ -534,5 +564,64 @@ export async function clearSsoToken(): Promise<void> {
 	} catch (error) {
 		methodLogger.error('Error clearing SSO token', error);
 		throw error;
+	}
+}
+
+/**
+ * Read the MCP AWS SSO cache file
+ * @returns Cache data object or empty object if not found
+ */
+async function readMcpAwsSsoCache(): Promise<AwsSsoCacheFile> {
+	const logger = Logger.forContext(
+		'utils/aws.sso.cache.util.ts',
+		'readMcpAwsSsoCache',
+	);
+	logger.debug('Reading MCP AWS SSO cache file from', {
+		path: MCP_AWS_SSO_CACHE_FILE,
+	});
+
+	try {
+		if (await fileExists(MCP_AWS_SSO_CACHE_FILE)) {
+			const content = await fs.readFile(MCP_AWS_SSO_CACHE_FILE, 'utf8');
+			const data = JSON.parse(content) as AwsSsoCacheFile;
+			logger.debug('Successfully read MCP AWS SSO cache file');
+			return data;
+		} else {
+			logger.debug('MCP AWS SSO cache file not found');
+			return {};
+		}
+	} catch (error) {
+		logger.error('Error reading MCP AWS SSO cache file', error);
+		return {};
+	}
+}
+
+/**
+ * Gets account roles from the cache file
+ * @returns Array of account roles data
+ */
+export async function getAccountRolesFromCache(): Promise<
+	AwsSsoCacheFile['accountRoles']
+> {
+	const logger = Logger.forContext(
+		'utils/aws.sso.cache.util.ts',
+		'getAccountRolesFromCache',
+	);
+	logger.debug('Getting account roles from cache');
+
+	try {
+		const cacheData = await readMcpAwsSsoCache();
+		if (!cacheData.accountRoles) {
+			logger.debug('No account roles found in cache');
+			return [];
+		}
+
+		logger.debug(
+			`Found ${cacheData.accountRoles.length} accounts in cache`,
+		);
+		return cacheData.accountRoles;
+	} catch (error) {
+		logger.error('Error getting account roles from cache', error);
+		return [];
 	}
 }

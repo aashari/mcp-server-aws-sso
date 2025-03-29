@@ -1,7 +1,16 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
-import awsSsoService from '../services/aws.sso.service.js';
+import {
+	getCachedSsoToken,
+	startSsoLogin,
+	pollForSsoToken,
+	getCachedDeviceAuthorizationInfo,
+} from '../services/vendor.aws.sso.auth.service.js';
+import {
+	getAwsCredentials,
+	getCachedCredentials,
+} from '../services/vendor.aws.sso.accounts.service.js';
 import {
 	formatAlreadyLoggedIn,
 	formatLoginSuccess,
@@ -9,6 +18,22 @@ import {
 	formatLoginManual,
 	formatCredentials,
 } from './aws.sso.auth.formatter.js';
+
+/**
+ * AWS SSO Authentication Controller Module
+ *
+ * Provides functionality for authenticating with AWS SSO, initiating the login flow,
+ * and retrieving temporary credentials. Handles browser-based authentication,
+ * token management, and credential retrieval.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext(
+	'controllers/aws.sso.auth.controller.ts',
+);
+
+// Log module initialization
+moduleLogger.debug('AWS SSO authentication controller initialized');
 
 /**
  * Start the AWS SSO login process and automatically poll for the token
@@ -45,7 +70,7 @@ async function startLogin(params?: {
 
 	try {
 		// Check if we already have a valid token
-		const cachedToken = await awsSsoService.getCachedSsoToken();
+		const cachedToken = await getCachedSsoToken();
 		if (cachedToken) {
 			methodLogger.debug('Found valid token in cache');
 
@@ -75,11 +100,10 @@ async function startLogin(params?: {
 
 		// Start the login flow
 		methodLogger.debug('No valid token found, initiating new login flow');
-		const deviceAuth = await awsSsoService.startSsoLogin();
+		const deviceAuth = await startSsoLogin();
 
 		// Get the cached device info to retrieve additional properties
-		const cachedDeviceInfo =
-			await awsSsoService.getCachedDeviceAuthorizationInfo();
+		const cachedDeviceInfo = await getCachedDeviceAuthorizationInfo();
 
 		// Launch browser if enabled
 		let browserLaunched = false;
@@ -191,7 +215,7 @@ async function startLogin(params?: {
 
 		// Now poll for the token - this will continuously poll until success or timeout
 		try {
-			const authResult = await awsSsoService.pollForSsoToken();
+			const authResult = await pollForSsoToken();
 			methodLogger.debug('Authentication successful, token received', {
 				expiresAt: authResult.expiresAt,
 			});
@@ -281,7 +305,7 @@ async function getCredentials(params: {
 
 	try {
 		// Check if we have valid cached credentials
-		let credentials = await awsSsoService.getCachedCredentials(
+		let credentials = await getCachedCredentials(
 			params.accountId,
 			params.roleName,
 		);
@@ -293,11 +317,12 @@ async function getCredentials(params: {
 		} else {
 			// Get fresh credentials
 			methodLogger.debug('Getting fresh credentials');
-			credentials = await awsSsoService.getAwsCredentials(
-				params.accessToken,
-				params.accountId,
-				params.roleName,
-			);
+			credentials = await getAwsCredentials({
+				accountId: params.accountId,
+				roleName: params.roleName,
+				// Vendor implementation doesn't use accessToken parameter directly
+				// It will get the token from the cache
+			});
 		}
 
 		// Convert AWS SDK credentials to the format expected by the formatter
@@ -357,7 +382,7 @@ async function checkSsoAuthStatus(): Promise<{
 	methodLogger.debug('Checking AWS SSO authentication status');
 
 	try {
-		const token = await awsSsoService.getCachedSsoToken();
+		const token = await getCachedSsoToken();
 		if (!token) {
 			methodLogger.debug('No SSO token found');
 			return {

@@ -140,4 +140,30 @@ class ConfigLoader {
 }
 
 // Create and export a singleton instance with the package name from package.json
-export const config = new ConfigLoader('@aashari/boilerplate-mcp-server');
+export const configLoader = new ConfigLoader('@aashari/mcp-server-aws-sso');
+
+// Initialize configuration immediately
+configLoader.load();
+
+/**
+ * Get a configuration value
+ * @param key The configuration key
+ * @param defaultValue The default value if the key is not found
+ * @returns The configuration value or the default value
+ */
+export function get(key: string, defaultValue?: string): string | undefined {
+	return configLoader.get(key, defaultValue);
+}
+
+/**
+ * Get a boolean configuration value
+ * @param key The configuration key
+ * @param defaultValue The default value if the key is not found
+ * @returns The boolean configuration value or the default value
+ */
+export function getBoolean(
+	key: string,
+	defaultValue: boolean = false,
+): boolean {
+	return configLoader.getBoolean(key, defaultValue);
+}

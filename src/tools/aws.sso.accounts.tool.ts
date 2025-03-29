@@ -7,6 +7,20 @@ import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller
 import { z } from 'zod';
 
 /**
+ * AWS SSO Accounts Tool Module
+ *
+ * Provides MCP tools for listing and exploring AWS accounts and roles
+ * available through AWS SSO. These tools enable AI models to discover and
+ * access AWS resources with temporary credentials.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext('tools/aws.sso.accounts.tool.ts');
+
+// Log module initialization
+moduleLogger.debug('AWS SSO accounts tool module initialized');
+
+/**
  * Handles the AWS SSO list accounts tool
  * Lists all available AWS accounts and their roles
  * @param _args Tool arguments (none required)

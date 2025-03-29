@@ -53,7 +53,7 @@ function formatSourcePath(filePath: string, functionName?: string): string {
  *
  * Examples:
  * - DEBUG=true
- * - DEBUG=controllers/*,services/vendor.ip-api.com.service.ts
+ * - DEBUG=controllers/*,services/aws.sso.auth.service.ts
  * - DEBUG=transport,utils/formatter*
  *
  * @param modulePath The module path to check against DEBUG patterns
@@ -127,7 +127,7 @@ class Logger {
 	 * Create a contextualized logger for a specific file or component.
 	 * This is the preferred method for creating loggers.
 	 *
-	 * @param filePath The file path (e.g., 'controllers/ipaddress.controller.ts')
+	 * @param filePath The file path (e.g., 'controllers/aws.sso.auth.controller.ts')
 	 * @param functionName Optional function name for more specific context
 	 * @returns A new Logger instance with the specified context
 	 *
@@ -140,6 +140,15 @@ class Logger {
 	 */
 	static forContext(filePath: string, functionName?: string): Logger {
 		return new Logger(formatSourcePath(filePath, functionName), filePath);
+	}
+
+	/**
+	 * Create a method level logger from a context logger
+	 * @param method Method name
+	 * @returns A new logger with the method context
+	 */
+	forMethod(method: string): Logger {
+		return Logger.forContext(`${this.context}@${method}`);
 	}
 
 	private _formatMessage(message: string): string {

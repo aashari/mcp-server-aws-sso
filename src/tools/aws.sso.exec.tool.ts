@@ -7,39 +7,33 @@ import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
 import { parseCommand } from '../utils/command.util.js';
 import { z } from 'zod';
 
-// Define tool schema directly here instead of importing
-const ExecToolSchema = {
-	accountId: z.string().min(12).describe('AWS account ID (12-digit number)'),
-	roleName: z.string().min(1).describe('AWS role name to assume via SSO'),
-	region: z.string().optional().describe('AWS region to use (optional)'),
-	command: z
-		.string()
-		.min(1)
-		.describe('AWS CLI command to execute (e.g., "aws s3 ls")'),
-};
+/**
+ * AWS SSO Execution Tool Module
+ *
+ * Provides MCP tools for executing AWS CLI commands with temporary credentials
+ * obtained through AWS SSO. These tools enable AI models to interact with AWS
+ * resources using secure, time-limited credentials.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext('tools/aws.sso.exec.tool.ts');
+
+// Log module initialization
+moduleLogger.debug('AWS SSO execution tool module initialized');
 
 /**
- * Execute an AWS CLI command with temporary credentials from SSO
- *
- * This tool gets temporary AWS credentials for the specified account and role
- * via SSO, then executes the AWS CLI command with those credentials. The command
- * output is returned as Markdown, along with execution details like exit code and runtime.
- *
- * @param {ExecToolArgsType} args - Tool arguments including account ID, role name, and command
- * @param {RequestHandlerExtra} _extra - Extra request handler information (unused)
- * @returns {Promise<{ content: Array<{ type: 'text', text: string }> }>} - MCP tool response with formatted command output
+ * Handles the AWS SSO exec tool
+ * Executes AWS CLI commands with credentials from AWS SSO
+ * @param args Tool arguments with account info and command
+ * @param _extra Extra request handler information
+ * @returns MCP response with command execution results
  */
-async function execTool(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
-	const toolLogger = Logger.forContext(
+async function handleExec(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
+	const methodLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
-		'execTool',
+		'handleExec',
 	);
-	toolLogger.debug('AWS SSO exec tool called', {
-		accountId: args.accountId,
-		roleName: args.roleName,
-		command: args.command,
-		region: args.region,
-	});
+	methodLogger.debug('Handling exec request', args);
 
 	try {
 		// Parse the command string properly instead of simple split
@@ -53,7 +47,7 @@ async function execTool(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
 			command: commandParts,
 		});
 
-		// Return the formatted result
+		// Return the response in MCP format
 		return {
 			content: [
 				{
@@ -61,64 +55,85 @@ async function execTool(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
 					text: result.content,
 				},
 			],
+			metadata: result.metadata,
 		};
 	} catch (error) {
-		toolLogger.error('AWS SSO exec tool error', error);
+		methodLogger.error('Exec failed', error);
 		return formatErrorForMcpTool(error);
 	}
 }
 
 /**
- * Register the AWS SSO exec tool with the MCP server
- *
- * @param {McpServer} server - MCP server instance to register the tool with
+ * Register AWS SSO exec tools with the MCP server
+ * @param server MCP server instance
  */
-export function register(server: McpServer) {
+function register(server: McpServer): void {
 	const methodLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO exec tool');
+	methodLogger.debug('Registering AWS SSO exec tools');
 
+	// Define schema for the exec tool
+	const ExecArgs = z.object({
+		accountId: z
+			.string()
+			.min(1)
+			.describe(
+				'AWS account ID to get credentials for (12-digit number)',
+			),
+		roleName: z.string().min(1).describe('IAM role name to assume via SSO'),
+		region: z
+			.string()
+			.optional()
+			.describe(
+				'AWS region to use for the command (overrides default region)',
+			),
+		command: z
+			.string()
+			.min(1)
+			.describe('AWS CLI command to execute (e.g., "aws s3 ls")'),
+	});
+
+	// Register the AWS SSO exec tool
 	server.tool(
 		'exec',
-		`Execute an AWS CLI command with temporary credentials from AWS SSO.
-		
-		PURPOSE: Runs AWS CLI commands securely using credentials obtained from AWS SSO without requiring you to handle or store credentials directly.
-		
-		WHEN TO USE:
-		- When you need to run an AWS CLI command with SSO credentials
-		- For accessing AWS resources without managing long-term credentials
-		- When you want to execute AWS commands from within the AI assistant
-		- After logging in to AWS SSO using the 'login' command
-		
-		WHEN NOT TO USE:
-		- When you don't have AWS SSO set up
-		- When you need to run commands that require interactive input
-		- For running non-AWS commands
-		
-		RETURNS: Formatted Markdown output with:
-		- The command that was executed
-		- The command's exit code
-		- Standard output and error streams
-		- Troubleshooting tips if the command failed
-		
-		EXAMPLES:
-		- List S3 buckets: exec({ accountId: "123456789012", roleName: "ReadOnly", command: "aws s3 ls" })
-		- Describe EC2 instances: exec({ accountId: "123456789012", roleName: "AdminRole", command: "aws ec2 describe-instances", region: "us-west-2" })
-		
-		ERRORS:
-		- Authentication errors if AWS SSO login is needed
-		- Permission errors if the role doesn't have required permissions
-		- AWS CLI errors from the command execution
-		
-		AUTHENTICATION:
-		- Requires a valid AWS SSO session (use 'login' command first)`,
-		ExecToolSchema,
-		execTool,
+		`Execute AWS CLI commands using temporary credentials from AWS SSO.
+
+        PURPOSE: Run AWS CLI commands with credentials automatically obtained from AWS SSO.
+        
+        WHEN TO USE:
+        - After authenticating with AWS SSO via login
+        - When you need to interact with AWS resources via the CLI
+        - When you need temporary credentials for specific accounts and roles
+        
+        WHEN NOT TO USE:
+        - Before authenticating with AWS SSO
+        - For non-AWS commands
+        
+        NOTES:
+        - Credentials are obtained just-in-time for the command execution
+        - Commands are executed with proper AWS environment variables set
+        - The command must start with "aws" to use the AWS CLI
+        - Quotes within commands are handled properly
+        
+        RETURNS: Markdown output with command results, including stdout, stderr, and exit code
+        
+        EXAMPLES:
+        - List S3 buckets: { accountId: "123456789012", roleName: "ReadOnlyAccess", command: "aws s3 ls" }
+        - Describe EC2 instances in a region: { accountId: "123456789012", roleName: "PowerUserAccess", region: "us-west-2", command: "aws ec2 describe-instances" }
+        - Complex command with quotes: { accountId: "123456789012", roleName: "ReadOnlyAccess", command: "aws ec2 describe-instances --filters \\"Name=instance-state-name,Values=running\\"" }
+
+        ERRORS:
+        - Authentication required: You must login first using login
+        - Invalid credentials: The accountId/roleName combination is invalid or you lack permission
+        - Command errors: The AWS CLI command itself may return errors`,
+		ExecArgs.shape,
+		handleExec,
 	);
 
-	methodLogger.debug('AWS SSO exec tool registered');
+	methodLogger.debug('AWS SSO exec tools registered');
 }
 
+// Export the register function
 export default { register };

@@ -7,6 +7,19 @@ import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
 import { z } from 'zod';
 
 /**
+ * AWS SSO Authentication Tool Module
+ *
+ * Provides MCP tools for authenticating with AWS SSO and managing authentication state.
+ * These tools enable AI models to initiate the login flow and verify authentication status.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext('tools/aws.sso.auth.tool.ts');
+
+// Log module initialization
+moduleLogger.debug('AWS SSO authentication tool module initialized');
+
+/**
  * Handles the AWS SSO login tool
  * @param args Tool arguments
  * @param _extra Extra request handler information

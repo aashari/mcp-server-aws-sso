@@ -10,22 +10,19 @@
  */
 export interface ResponsePagination {
 	/**
-	 * Cursor for the next page of results, if available.
-	 * This should be passed to subsequent requests to retrieve the next page.
-	 */
-	nextCursor?: string;
-
-	/**
-	 * Whether more results are available beyond the current page.
-	 * When true, clients should use the nextCursor to retrieve more results.
-	 */
-	hasMore: boolean;
-
-	/**
-	 * The number of items in the current result set.
-	 * This helps clients track how many items they've received.
+	 * Number of items returned in the current response
 	 */
 	count?: number;
+
+	/**
+	 * Indicates if there are more items available
+	 */
+	hasMore?: boolean;
+
+	/**
+	 * Optional cursor for fetching the next page of results
+	 */
+	nextCursor?: string;
 }
 
 /**
@@ -61,19 +58,22 @@ export interface EntityIdentifier {
 }
 
 /**
- * Common response structure for controller operations.
- * All controller methods should return this structure.
+ * Standard controller response format
  */
 export interface ControllerResponse {
 	/**
-	 * Formatted content to be displayed to the user.
-	 * Usually a Markdown-formatted string.
+	 * Content string (usually Markdown) for display to the user
 	 */
 	content: string;
 
 	/**
-	 * Optional pagination information for list operations.
-	 * If present, indicates that more results are available.
+	 * Optional metadata to include in the response
+	 * This can be used to pass additional information to tools
+	 */
+	metadata?: Record<string, unknown>;
+
+	/**
+	 * Optional pagination information
 	 */
 	pagination?: ResponsePagination;
-} 
+}

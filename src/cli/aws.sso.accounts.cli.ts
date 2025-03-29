@@ -4,6 +4,20 @@ import { handleCliError } from '../utils/error.util.js';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
 
 /**
+ * AWS SSO Accounts CLI Module
+ *
+ * Provides CLI commands for listing and exploring AWS accounts and roles
+ * available through AWS SSO. Commands for viewing account details and roles
+ * require valid AWS SSO authentication.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext('cli/aws.sso.accounts.cli.ts');
+
+// Log module initialization
+moduleLogger.debug('AWS SSO accounts CLI module initialized');
+
+/**
  * Register AWS SSO accounts CLI commands
  * @param program Commander program instance
  */

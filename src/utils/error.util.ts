@@ -51,6 +51,15 @@ export function createAuthInvalidError(
 }
 
 /**
+ * Create an authentication timeout error
+ */
+export function createAuthTimeoutError(
+	message: string = 'Authentication timed out',
+): McpError {
+	return new McpError(message, ErrorType.AUTH_INVALID, 408);
+}
+
+/**
  * Create an API error
  */
 export function createApiError(

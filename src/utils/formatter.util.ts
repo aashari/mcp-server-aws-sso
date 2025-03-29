@@ -200,11 +200,24 @@ export function formatNumberedList<T>(
 	items: T[],
 	formatter: (item: T, index: number) => string,
 ): string {
-	if (items.length === 0) {
-		return 'No items.';
+	if (!items.length) {
+		return 'No items available.';
 	}
 
 	return items
 		.map((item, index) => formatter(item, index))
 		.join('\n\n' + formatSeparator() + '\n\n');
-} 
+}
+
+/**
+ * Format a code block with the given content
+ * @param content Code content
+ * @param language Optional language for syntax highlighting
+ * @returns Formatted code block
+ */
+export function formatCodeBlock(
+	content: string,
+	language: string = '',
+): string {
+	return '```' + language + '\n' + content.trim() + '\n```';
+}

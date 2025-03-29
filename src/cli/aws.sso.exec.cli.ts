@@ -5,17 +5,22 @@ import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
 import { parseCommand } from '../utils/command.util.js';
 
 /**
- * CLI module for executing AWS CLI commands with AWS SSO credentials.
+ * AWS SSO Execution CLI Module
  *
- * Provides commands for running AWS CLI commands with temporary credentials
- * obtained from AWS SSO. All commands require valid AWS SSO authentication first.
- * The credentials are obtained transparently and used to execute the command.
+ * Provides CLI commands for executing AWS CLI commands with temporary
+ * credentials obtained through AWS SSO. Commands in this module require
+ * valid AWS SSO authentication.
  */
 
+// Create a module logger
+const moduleLogger = Logger.forContext('cli/aws.sso.exec.cli.ts');
+
+// Log module initialization
+moduleLogger.debug('AWS SSO execution CLI module initialized');
+
 /**
- * Register AWS SSO exec CLI command
- *
- * @param {Command} program - Commander program instance to register commands with
+ * Register AWS SSO exec CLI commands with the program
+ * @param program Commander program instance
  */
 function register(program: Command): void {
 	const methodLogger = Logger.forContext(
@@ -24,11 +29,21 @@ function register(program: Command): void {
 	);
 	methodLogger.debug('Registering AWS SSO exec CLI');
 
+	registerExecCommand(program);
+
+	methodLogger.debug('AWS SSO exec CLI registered');
+}
+
+/**
+ * Register the exec command
+ * @param program Commander program instance
+ */
+function registerExecCommand(program: Command): void {
 	program
 		.command('exec')
 		.description(
 			`Execute AWS CLI commands using credentials from AWS SSO.
-
+			
         PURPOSE: Run AWS CLI commands with temporary credentials obtained from AWS SSO without
         having to manually configure profiles or export environment variables.
 
@@ -50,29 +65,31 @@ function register(program: Command): void {
         
         EXAMPLES:
         $ mcp-aws-sso exec --account-id 123456789012 --role-name AWSAdministratorAccess --command "aws s3 ls"
-        $ mcp-aws-sso exec --account-id 123456789012 --role-name AWSReadOnlyAccess --region us-west-2 --command "aws ec2 describe-instances"`,
+        $ mcp-aws-sso exec --account-id 123456789012 --role-name AWSReadOnlyAccess --region us-west-2 --command "aws ec2 describe-instances"
+			`,
 		)
 		.requiredOption(
-			'-a, --account-id <accountId>',
-			'AWS account ID to get credentials for',
+			'--account-id <id>',
+			'AWS account ID to use for the command execution',
 		)
 		.requiredOption(
-			'-r, --role-name <roleName>',
-			'AWS role name to assume via SSO',
+			'--role-name <role>',
+			'IAM role name to assume for the command execution',
 		)
 		.option(
-			'-g, --region <region>',
-			'AWS region to use for the command (overrides default region)',
+			'--region <region>',
+			'AWS region to use for the command execution',
 		)
 		.requiredOption(
-			'-c, --command <command>',
-			'AWS CLI command to execute (e.g., "aws s3 ls")',
+			'--command <command>',
+			'AWS CLI command to execute with the temporary credentials',
 		)
 		.action(async (options) => {
 			const actionLogger = Logger.forContext(
 				'cli/aws.sso.exec.cli.ts',
 				'exec',
 			);
+
 			actionLogger.debug('Executing AWS command with SSO credentials', {
 				accountId: options.accountId,
 				roleName: options.roleName,
@@ -92,16 +109,13 @@ function register(program: Command): void {
 					command: commandParts,
 				});
 
-				// Output the formatted result
 				console.log(result.content);
 			} catch (error) {
+				actionLogger.error('Exec command failed', error);
 				handleCliError(error);
 			}
 		});
-
-	methodLogger.debug('AWS SSO exec CLI registered');
 }
 
-export default {
-	register,
-};
+// Export the register function
+export default { register };

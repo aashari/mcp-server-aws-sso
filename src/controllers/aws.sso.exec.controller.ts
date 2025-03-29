@@ -10,6 +10,22 @@ import {
 import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 
 /**
+ * AWS SSO Execution Controller Module
+ *
+ * Provides functionality for executing AWS CLI commands with temporary credentials
+ * obtained via AWS SSO. Handles credential retrieval, environment setup, and
+ * command execution with proper output formatting.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext(
+	'controllers/aws.sso.exec.controller.ts',
+);
+
+// Log module initialization
+moduleLogger.debug('AWS SSO execution controller initialized');
+
+/**
  * Execute an AWS CLI command with temporary credentials from SSO
  *
  * Gets temporary AWS credentials for the specified account and role via SSO,
@@ -36,17 +52,17 @@ import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 async function executeAwsCommand(
 	options: ExecuteCommandOptions,
 ): Promise<ControllerResponse> {
-	const controllerLogger = Logger.forContext(
+	const methodLogger = Logger.forContext(
 		'controllers/aws.sso.exec.controller.ts',
 		'executeAwsCommand',
 	);
-	controllerLogger.debug('Executing AWS CLI command', options);
+	methodLogger.debug('Executing AWS CLI command', options);
 
 	try {
 		// Check if user is authenticated
 		const authStatus = await checkSsoAuthStatus();
 		if (!authStatus.isAuthenticated) {
-			controllerLogger.debug('User is not authenticated', {
+			methodLogger.debug('User is not authenticated', {
 				errorMessage: authStatus.errorMessage,
 			});
 
@@ -69,13 +85,13 @@ async function executeAwsCommand(
 
 		// Log region usage
 		if (options.region) {
-			controllerLogger.debug('Using explicitly provided region', {
+			methodLogger.debug('Using explicitly provided region', {
 				region: options.region,
 			});
 		}
 
 		// Execute the command
-		controllerLogger.debug('Executing command with environment', {
+		methodLogger.debug('Executing command with environment', {
 			command: options.command.join(' '),
 			env: {
 				AWS_REGION: options.region,
@@ -90,7 +106,7 @@ async function executeAwsCommand(
 			options.region,
 		);
 
-		controllerLogger.debug('Command execution completed', {
+		methodLogger.debug('Command execution completed', {
 			exitCode: result.exitCode,
 			stdoutLength: result.stdout.length,
 			stderrLength: result.stderr.length,

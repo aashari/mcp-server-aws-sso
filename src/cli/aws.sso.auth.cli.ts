@@ -4,6 +4,20 @@ import { handleCliError } from '../utils/error.util.js';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
 
 /**
+ * AWS SSO Authentication CLI Module
+ *
+ * Provides CLI commands for authenticating with AWS SSO and managing
+ * authentication status. Handles the browser-based login flow and
+ * verifies authentication status.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext('cli/aws.sso.auth.cli.ts');
+
+// Log module initialization
+moduleLogger.debug('AWS SSO authentication CLI module initialized');
+
+/**
  * Register AWS SSO auth CLI commands
  * @param program Commander program instance
  */

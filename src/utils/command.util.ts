@@ -1,6 +1,18 @@
 import { Logger } from './logger.util.js';
 
+/**
+ * Command Parsing Utility Module
+ *
+ * Provides functionality for parsing command strings into argument arrays,
+ * with proper handling of quoted arguments. This ensures commands with
+ * complex arguments are correctly processed.
+ */
+
+// Create a file-level logger for this module
 const logger = Logger.forContext('utils/command.util.ts');
+
+// Log module initialization
+logger.debug('Command utility initialized');
 
 /**
  * Parse a command string into an array of arguments, properly handling quoted strings
@@ -18,47 +30,63 @@ const logger = Logger.forContext('utils/command.util.ts');
  */
 export function parseCommand(commandString: string): string[] {
 	if (!commandString || commandString.trim() === '') {
+		logger.debug('Empty command string provided');
 		return [];
 	}
 
-	logger.debug(`Parsing command string: ${commandString}`);
+	logger.debug(`Parsing command: ${commandString}`);
 
 	const args: string[] = [];
 	let currentArg = '';
 	let inQuotes = false;
 	let quoteChar = '';
 
-	// Process each character in the string
+	// Process each character in the command
 	for (let i = 0; i < commandString.length; i++) {
 		const char = commandString[i];
+		const nextChar =
+			i < commandString.length - 1 ? commandString[i + 1] : '';
 
-		// Handle quotes (both single and double)
+		// Handle escaped quotes within quotes
+		if (
+			char === '\\' &&
+			(nextChar === '"' || nextChar === "'") &&
+			inQuotes &&
+			nextChar === quoteChar
+		) {
+			currentArg += nextChar;
+			i++; // Skip the next character as we've already processed it
+			continue;
+		}
+
+		// Handle quote characters
 		if (char === '"' || char === "'") {
 			if (!inQuotes) {
-				// Start of quoted section
+				// Starting a quoted section
 				inQuotes = true;
 				quoteChar = char;
 			} else if (char === quoteChar) {
-				// End of quoted section
+				// Ending a quoted section with matching quote
 				inQuotes = false;
 				quoteChar = '';
 			} else {
-				// Different quote character inside quotes, treat as normal character
+				// This is a different quote character inside quotes, treat as literal
 				currentArg += char;
 			}
+			continue;
 		}
-		// Handle spaces (outside quotes)
-		else if (char === ' ' && !inQuotes) {
-			// End of argument
+
+		// Handle spaces (only split on spaces outside of quotes)
+		if (char === ' ' && !inQuotes) {
 			if (currentArg) {
 				args.push(currentArg);
 				currentArg = '';
 			}
+			continue;
 		}
-		// Any other character
-		else {
-			currentArg += char;
-		}
+
+		// Add the character to the current argument
+		currentArg += char;
 	}
 
 	// Add the last argument if there is one
@@ -66,11 +94,13 @@ export function parseCommand(commandString: string): string[] {
 		args.push(currentArg);
 	}
 
-	// Warn if we ended with unclosed quotes
+	// Warning if we end with unclosed quotes
 	if (inQuotes) {
-		logger.debug(`Warning: Unclosed ${quoteChar} quotes in command string`);
+		logger.warn(`Unclosed ${quoteChar} quote in command: ${commandString}`);
 	}
 
-	logger.debug(`Parsed command: ${JSON.stringify(args)}`);
+	logger.debug(
+		`Parsed into ${args.length} arguments: ${JSON.stringify(args)}`,
+	);
 	return args;
 }

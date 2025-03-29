@@ -1,13 +1,35 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
-import awsSsoService from '../services/aws.sso.service.js';
+import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
+import {
+	getAccountsWithRoles,
+	listAccountRoles,
+} from '../services/vendor.aws.sso.accounts.service.js';
+import { clearSsoToken } from '../utils/aws.sso.cache.util.js';
 import {
 	formatAccountsAndRoles,
 	formatNoAccounts,
 	formatAuthRequired,
 	formatAccountRoles,
 } from './aws.sso.accounts.formatter.js';
+import { ListRolesOptions } from './aws.sso.accounts.types.js';
+
+/**
+ * AWS SSO Accounts Controller Module
+ *
+ * Provides functionality for listing and managing AWS SSO accounts and roles.
+ * Handles retrieving account information, listing available roles, and formatting
+ * the results for display. All operations require valid AWS SSO authentication.
+ */
+
+// Create a module logger
+const moduleLogger = Logger.forContext(
+	'controllers/aws.sso.accounts.controller.ts',
+);
+
+// Log module initialization
+moduleLogger.debug('AWS SSO accounts controller initialized');
 
 /**
  * List all AWS accounts and their roles
@@ -31,7 +53,7 @@ async function listAccounts(): Promise<ControllerResponse> {
 
 	try {
 		// First check if we have a valid token
-		const cachedToken = await awsSsoService.getCachedSsoToken();
+		const cachedToken = await getCachedSsoToken();
 		if (!cachedToken) {
 			// No token found, user needs to authenticate
 			methodLogger.debug('No SSO token found, authentication required');
@@ -49,7 +71,7 @@ async function listAccounts(): Promise<ControllerResponse> {
 
 			// Clear invalid token and ask for re-authentication
 			try {
-				await awsSsoService.clearSsoToken();
+				await clearSsoToken();
 				methodLogger.debug('Cleared invalid empty token');
 			} catch (clearError) {
 				methodLogger.error('Error clearing invalid token', clearError);
@@ -70,7 +92,7 @@ async function listAccounts(): Promise<ControllerResponse> {
 
 			// Clear expired token
 			try {
-				await awsSsoService.clearSsoToken();
+				await clearSsoToken();
 				methodLogger.debug('Cleared expired token');
 			} catch (clearError) {
 				methodLogger.error('Error clearing expired token', clearError);
@@ -93,27 +115,57 @@ async function listAccounts(): Promise<ControllerResponse> {
 			methodLogger.error('Error formatting expiration date', error);
 		}
 
-		// Get accounts with roles (uses caching internally)
+		// Get accounts with roles
 		console.log(
 			'Retrieving AWS accounts and roles. This may take a moment...',
 		);
 		methodLogger.debug('Getting AWS accounts with roles');
 
 		try {
-			// Make sure we're using the token directly
-			const accessToken = cachedToken.accessToken;
+			// Check if we already have cached account roles data
+			const cacheUtil = await import('../utils/aws.sso.cache.util.js');
+			const cachedAccounts = await cacheUtil.getAccountRolesFromCache();
 
-			// Log token information (without exposing the actual token)
-			methodLogger.debug('Using access token', {
-				accessTokenLength: accessToken?.length || 0,
-				accessTokenFirst10Chars:
-					accessToken?.substring(0, 10) || 'none',
-				accessTokenType: typeof accessToken,
-			});
+			if (cachedAccounts && cachedAccounts.length > 0) {
+				methodLogger.debug('Using account roles from cache');
+
+				// Map the cached accounts to the format expected by the formatter
+				// The cache uses {account: {...}, roles: [...]} format, but we need it flattened
+				const formattedAccountsWithRoles = cachedAccounts.map(
+					(item) => ({
+						...item.account,
+						roles: item.roles,
+						timestamp: Date.now(),
+					}),
+				);
+
+				return {
+					content: formatAccountsAndRoles(
+						expiresDate,
+						formattedAccountsWithRoles,
+					),
+					metadata: {
+						authenticated: true,
+						accounts: formattedAccountsWithRoles.map((account) => ({
+							accountId: account.accountId,
+							accountName: account.accountName,
+							accountEmail: account.emailAddress, // Note: different property name in cache
+							roles: account.roles,
+						})),
+					},
+				};
+			}
+
+			// If no cached data or cache is empty, get accounts with roles from API
+			methodLogger.debug(
+				'No cached account roles, fetching from AWS SSO API',
+			);
 
 			// Get accounts with roles
-			const accountsWithRoles =
-				await awsSsoService.getAccountsWithRoles(accessToken);
+			const accountsWithRoles = await getAccountsWithRoles({
+				// Use the access token from the cached token
+				// The vendor implementation expects a params object, not just the token
+			});
 
 			if (accountsWithRoles.length === 0) {
 				methodLogger.debug('No accounts found');
@@ -126,10 +178,11 @@ async function listAccounts(): Promise<ControllerResponse> {
 				};
 			}
 
-			// Add timestamp to each result
+			// Format the accounts with roles for the response
+			// The vendor implementation returns a different format compared to the non-vendor one
 			const formattedAccountsWithRoles = accountsWithRoles.map(
-				(item) => ({
-					...item,
+				(account) => ({
+					...account,
 					timestamp: Date.now(),
 				}),
 			);
@@ -142,12 +195,12 @@ async function listAccounts(): Promise<ControllerResponse> {
 				),
 				metadata: {
 					authenticated: true,
-					accounts: formattedAccountsWithRoles.map(
-						({ account, roles }) => ({
-							...account,
-							roles,
-						}),
-					),
+					accounts: formattedAccountsWithRoles.map((account) => ({
+						accountId: account.accountId,
+						accountName: account.accountName,
+						accountEmail: account.accountEmail,
+						roles: account.roles,
+					})),
 				},
 			};
 		} catch (error) {
@@ -189,9 +242,7 @@ async function listAccounts(): Promise<ControllerResponse> {
  * in a specific AWS account via SSO.
  *
  * @async
- * @param {Object} params - Role listing parameters
- * @param {string} params.accessToken - AWS SSO access token
- * @param {string} params.accountId - AWS account ID to list roles for
+ * @param {ListRolesOptions} params - Role listing parameters
  * @returns {Promise<ControllerResponse>} Response with formatted list of available roles
  * @throws {Error} If role listing fails or authentication is invalid
  * @example
@@ -201,10 +252,9 @@ async function listAccounts(): Promise<ControllerResponse> {
  *   accountId: "123456789012"
  * });
  */
-async function listRoles(params: {
-	accessToken: string;
-	accountId: string;
-}): Promise<ControllerResponse> {
+async function listRoles(
+	params: ListRolesOptions,
+): Promise<ControllerResponse> {
 	const methodLogger = Logger.forContext(
 		'controllers/aws.sso.accounts.controller.ts',
 		'listRoles',
@@ -213,15 +263,14 @@ async function listRoles(params: {
 
 	try {
 		// Get roles for account
-		const roles = await awsSsoService.listAccountRoles(
-			params.accessToken,
-			params.accountId,
-		);
+		const roles = await listAccountRoles({
+			accountId: params.accountId,
+		});
 
 		return {
-			content: formatAccountRoles(params.accountId, roles),
+			content: formatAccountRoles(params.accountId, roles.roleList),
 			metadata: {
-				roles,
+				roles: roles.roleList,
 			},
 		};
 	} catch (error) {
@@ -237,5 +286,4 @@ async function listRoles(params: {
 export default {
 	listAccounts,
 	listRoles,
-	formatAccountRoles,
 };

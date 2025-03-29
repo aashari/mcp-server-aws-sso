@@ -1,7 +1,7 @@
 import {
-	AwsSsoAccountRole,
 	AwsSsoAccountWithRoles,
-} from '../services/aws.sso.types.js';
+	RoleInfo,
+} from '../services/vendor.aws.sso.types.js';
 
 /**
  * Format accounts and roles information
@@ -22,16 +22,16 @@ export function formatAccountsAndRoles(
 	let content = header + '\n';
 
 	// Simplified account list with roles
-	accountsWithRoles.forEach(({ account, roles }) => {
+	accountsWithRoles.forEach((account) => {
 		// Account information - just ID and name
 		content += `\n### ${account.accountName || 'Unnamed Account'} (${account.accountId})`;
 
 		// List roles in a simple bullet format
-		if (roles.length === 0) {
+		if (account.roles.length === 0) {
 			content += '\nNo roles available';
 		} else {
 			content += '\nAvailable Roles:';
-			roles.forEach((role) => {
+			account.roles.forEach((role) => {
 				content += `\n• ${role.roleName}`;
 			});
 		}
@@ -94,7 +94,7 @@ After successful authentication, you can run \`list_accounts\` to view your acco
  */
 export function formatAccountRoles(
 	accountId: string,
-	roles: AwsSsoAccountRole[],
+	roles: RoleInfo[],
 ): string {
 	let rolesList: string;
 
@@ -105,7 +105,7 @@ export function formatAccountRoles(
 		rolesList = roles
 			.map(
 				(role) =>
-					`- **${role.roleName}**${role.roleArn ? ` (${role.roleArn})` : ''}`,
+					`- **${role.roleName || 'Unnamed Role'}**${role.roleArn ? ` (${role.roleArn})` : ''}`,
 			)
 			.join('\n');
 	}

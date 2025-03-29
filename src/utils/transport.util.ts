@@ -1,5 +1,4 @@
 import { Logger } from './logger.util.js';
-import { config } from './config.util.js';
 import {
 	createApiError,
 	createAuthInvalidError,
@@ -14,118 +13,12 @@ const transportLogger = Logger.forContext('utils/transport.util.ts');
 transportLogger.debug('Transport utility initialized');
 
 /**
- * Interface for IP API credentials.
- * Note: API token is optional for the free tier.
- */
-export interface IpApiCredentials {
-	apiToken?: string;
-}
-
-/**
  * Interface for HTTP request options
  */
 export interface RequestOptions {
 	method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
 	headers?: Record<string, string>;
 	body?: unknown;
-}
-
-/**
- * Retrieves IP API credentials from configuration.
- * Specifically checks for IPAPI_API_TOKEN.
- * @returns IpApiCredentials object containing the API token if found.
- */
-export function getIpApiCredentials(): IpApiCredentials {
-	const methodLogger = Logger.forContext(
-		'utils/transport.util.ts',
-		'getIpApiCredentials',
-	);
-
-	const apiToken = config.get('IPAPI_API_TOKEN');
-
-	if (!apiToken) {
-		methodLogger.debug(
-			'No IP API token found (IPAPI_API_TOKEN). Using free tier.',
-		);
-		return {}; // Return empty object if no token
-	} else {
-		methodLogger.debug('Using IP API token from configuration.');
-		return { apiToken };
-	}
-}
-
-/**
- * Fetches data specifically from the ip-api.com endpoint.
- * Handles URL construction, authentication (if token provided), and query parameters.
- * Relies on the generic fetchApi function for the actual HTTP request.
- *
- * @param path The specific IP address or path component (e.g., "8.8.8.8"). Empty string for current IP.
- * @param options Additional options like HTTP method, headers, body, and ip-api specific params.
- * @param options.useHttps - Use HTTPS (requires paid plan for ip-api.com). Defaults to false.
- * @param options.fields - Specific fields to request from ip-api.com.
- * @param options.lang - Language code for response data.
- * @returns The response data parsed as type T.
- * @throws {McpError} If the request fails, including network errors, API errors, or parsing issues.
- */
-export async function fetchIpApi<T>(
-	path: string,
-	options: RequestOptions & {
-		useHttps?: boolean;
-		fields?: string[];
-		lang?: string;
-	} = {},
-): Promise<T> {
-	const methodLogger = Logger.forContext(
-		'utils/transport.util.ts',
-		'fetchIpApi',
-	);
-
-	// Get credentials (token might be undefined)
-	const credentials = getIpApiCredentials();
-
-	// Determine protocol based on options
-	const protocol = options.useHttps ? 'https' : 'http';
-	const baseUrl = `${protocol}://ip-api.com/json`;
-
-	// Format path for URL
-	const normalizedPath = path ? `/${path}` : '';
-	let url = `${baseUrl}${normalizedPath}`;
-
-	// Build query parameters
-	const queryParams = new URLSearchParams();
-
-	// Add API token if present
-	if (credentials.apiToken) {
-		queryParams.set('key', credentials.apiToken);
-		methodLogger.debug('API token added to query parameters.');
-	}
-
-	// Add fields parameter
-	if (options.fields?.length) {
-		queryParams.set('fields', options.fields.join(','));
-		methodLogger.debug(`Requesting fields: ${options.fields.join(',')}`);
-	}
-
-	// Add language parameter
-	if (options.lang) {
-		queryParams.set('lang', options.lang);
-		methodLogger.debug(`Requesting language: ${options.lang}`);
-	}
-
-	// Append query string if needed
-	const queryString = queryParams.toString();
-	if (queryString) {
-		url += `?${queryString}`;
-	}
-
-	methodLogger.debug(`Constructed URL: ${url}`);
-
-	// Delegate the actual fetch call to the generic fetchApi
-	return fetchApi<T>(url, {
-		method: options.method,
-		headers: options.headers,
-		body: options.body,
-	});
 }
 
 /**
@@ -181,12 +74,10 @@ export async function fetchApi<T>(
 
 			// Classify standard HTTP errors
 			if (response.status === 401) {
-				// Use createAuthInvalidError for consistency, even if ip-api uses keys
 				throw createAuthInvalidError(
 					'Authentication failed. Check API token if required.',
 				);
 			} else if (response.status === 403) {
-				// Use createAuthInvalidError or a more specific permission error if needed
 				throw createAuthInvalidError(
 					'Permission denied for the requested resource.',
 				);
@@ -252,4 +143,20 @@ export async function fetchApi<T>(
 			error,
 		);
 	}
+}
+
+/**
+ * Convenience function to make a POST request using fetchApi
+ * @param url The URL to send the POST request to
+ * @param data The data to include in the request body
+ * @returns The response data parsed as type T
+ */
+export async function post<T>(
+	url: string,
+	data: Record<string, unknown>,
+): Promise<T> {
+	return fetchApi<T>(url, {
+		method: 'POST',
+		body: data,
+	});
 }
