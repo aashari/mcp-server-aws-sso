@@ -6,6 +6,7 @@ import {
 } from '../utils/error.util.js';
 import * as ssoCache from '../utils/aws.sso.cache.util.js';
 import { AwsSsoConfig, AwsSsoAuthResult } from './vendor.aws.sso.types.js';
+import { getSsoOidcEndpoint } from '../utils/transport.util.js';
 
 /**
  * Device authorization information
@@ -53,12 +54,6 @@ export interface AuthCheckResult {
 }
 
 const logger = Logger.forContext('services/vendor.aws.sso.auth.service.ts');
-
-/**
- * Base API paths for AWS SSO APIs
- * @constant {string}
- */
-const SSO_OIDC_API_PATH = 'https://oidc.%region%.amazonaws.com';
 
 /**
  * Make a POST request to a URL with JSON body
@@ -178,10 +173,7 @@ export async function startSsoLogin(): Promise<DeviceAuthorizationResponse> {
 	const { startUrl, region } = await getAwsSsoConfig();
 
 	// Step 1: Register client
-	const registerEndpoint = `${SSO_OIDC_API_PATH.replace(
-		'%region%',
-		region,
-	)}/client/register`;
+	const registerEndpoint = getSsoOidcEndpoint(region, '/client/register');
 	const registerResponse = await post<ClientRegistrationResponse>(
 		registerEndpoint,
 		{
@@ -195,10 +187,7 @@ export async function startSsoLogin(): Promise<DeviceAuthorizationResponse> {
 	});
 
 	// Step 2: Start device authorization
-	const authEndpoint = `${SSO_OIDC_API_PATH.replace(
-		'%region%',
-		region,
-	)}/device_authorization`;
+	const authEndpoint = getSsoOidcEndpoint(region, '/device_authorization');
 	const authResponse = await post<DeviceAuthorizationResponse>(authEndpoint, {
 		clientId: registerResponse.clientId,
 		clientSecret: registerResponse.clientSecret,
@@ -249,163 +238,114 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 		throw error;
 	}
 
-	// Setup polling parameters
-	const tokenEndpoint = `${SSO_OIDC_API_PATH.replace(
-		'%region%',
-		deviceInfo.region,
-	)}/token`;
+	// Extract required info
+	const {
+		clientId,
+		clientSecret,
+		deviceCode,
+		interval = 5, // Default to 5 seconds if not specified
+		expiresIn,
+		region,
+	} = deviceInfo;
 
-	// Setup polling limits
-	const startTime = Math.floor(Date.now() / 1000);
-	const expiresAt = startTime + deviceInfo.expiresIn;
-	const interval = deviceInfo.interval || 1; // Default to 1 second if not specified
-	methodLogger.debug(
-		`Will poll for up to ${deviceInfo.expiresIn} seconds with ${interval} second intervals`,
-	);
+	// Calculate token expiration time
+	const startTime = Date.now();
+	const expirationTime = startTime + expiresIn * 1000;
 
-	// Poll for token until success or timeout
-	while (Math.floor(Date.now() / 1000) < expiresAt) {
+	// Token endpoint
+	const tokenEndpoint = getSsoOidcEndpoint(region, '/token');
+
+	// Polling loop
+	let lastPollTime = 0;
+	while (Date.now() < expirationTime) {
+		// Enforce minimum polling interval
+		const timeSinceLastPoll = Date.now() - lastPollTime;
+		if (timeSinceLastPoll < interval * 1000) {
+			// Wait for remainder of interval
+			const waitTime = interval * 1000 - timeSinceLastPoll;
+			methodLogger.debug(
+				`Waiting ${waitTime}ms before next poll attempt`,
+			);
+			await new Promise((resolve) => setTimeout(resolve, waitTime));
+		}
+
+		lastPollTime = Date.now();
+		methodLogger.debug('Polling token endpoint');
+
 		try {
-			// Try to request a token
+			// Try to get the token
 			const tokenResponse = await post<TokenResponse>(tokenEndpoint, {
-				clientId: deviceInfo.clientId,
-				clientSecret: deviceInfo.clientSecret,
-				deviceCode: deviceInfo.deviceCode,
+				clientId,
+				clientSecret,
+				deviceCode,
 				grantType: 'urn:ietf:params:oauth:grant-type:device_code',
 			});
 
-			methodLogger.debug('SSO token retrieved successfully');
-			methodLogger.debug('Raw token response received', {
-				responseKeys: Object.keys(tokenResponse),
-				responseStringified:
-					JSON.stringify(tokenResponse).substring(0, 100) + '...',
-			});
-
-			// Handle potential variations in response format
+			// Process token response - handle both camelCase and snake_case responses
+			// AWS seems to return a mix of these formats across different services
 			const accessToken =
-				tokenResponse.access_token || tokenResponse.accessToken || '';
+				tokenResponse.accessToken || tokenResponse.access_token;
+			const refreshToken =
+				tokenResponse.refreshToken || tokenResponse.refresh_token;
 			const tokenType =
-				tokenResponse.token_type || tokenResponse.tokenType || 'Bearer';
+				tokenResponse.tokenType || tokenResponse.token_type;
 			const expiresIn =
-				tokenResponse.expires_in || tokenResponse.expiresIn || 3600;
+				tokenResponse.expiresIn || tokenResponse.expires_in;
 
-			// Debug log
-			methodLogger.debug('Extracted token information', {
-				hasAccessToken: !!accessToken,
-				accessTokenLength: accessToken?.length || 0,
-				tokenType,
-				expiresIn,
-			});
-
-			// Verify we actually got an access token
-			if (!accessToken || accessToken.trim() === '') {
-				methodLogger.error(
-					'No access token in response: ' +
-						JSON.stringify(tokenResponse).substring(0, 300),
-				);
-				throw new Error('No access token returned from AWS SSO');
+			if (!accessToken) {
+				throw new Error('No access token in response');
 			}
 
-			// Calculate token expiration time (convert to seconds if not already)
-			const now = Math.floor(Date.now() / 1000); // Current time in seconds
-			const expiresAt = now + expiresIn;
+			// Create token expiration time
+			const expiresAt =
+				Math.floor(Date.now() / 1000) + (expiresIn as number);
 
-			try {
-				const expirationDate = new Date(expiresAt * 1000);
-				methodLogger.debug('Token expiration calculated', {
-					now,
-					expiresIn,
-					expiresAt,
-					expirationDate: expirationDate.toISOString(),
-					accessTokenLength: accessToken.length,
-					accessTokenStart: accessToken.substring(0, 5),
-				});
-			} catch (error) {
-				// If we can't format the date, just log the numeric values
-				methodLogger.debug('Token expiration calculated (raw values)', {
-					now,
-					expiresIn,
-					expiresAt,
-					accessTokenLength: accessToken.length,
-					error:
-						error instanceof Error ? error.message : String(error),
-				});
-			}
-
-			// Once we successfully get a token, clear the device auth info
-			// This is important to prevent reusing old device codes
-			try {
-				await ssoCache.clearDeviceAuthorizationInfo();
-			} catch (error) {
-				methodLogger.error('Failed to clear device auth info', error);
-				// Continue anyway
-			}
-
-			// Create the auth result object with the specific format needed by AWS SDK
-			const authResult: AwsSsoAuthResult = {
-				accessToken: accessToken,
-				expiresAt: expiresAt,
-				region: deviceInfo.region,
+			// Create standardized token object
+			const ssoToken: AwsSsoAuthResult = {
+				accessToken: accessToken as string,
+				expiresAt,
+				region,
 			};
 
-			// Log auth result (without full token)
-			methodLogger.debug('Auth result details:', {
-				accessTokenLength: authResult.accessToken.length,
-				accessTokenStart: authResult.accessToken.substring(0, 5),
-				expiresAt: authResult.expiresAt,
-				region: authResult.region,
-			});
-
-			// Cache the token, ensuring we include all required fields
+			// Cache the token
 			await ssoCache.saveSsoToken({
-				accessToken: accessToken,
-				expiresAt: expiresAt,
-				region: deviceInfo.region,
-				tokenType: tokenType,
-				retrievedAt: now,
-				expiresIn: expiresIn,
-				refreshToken:
-					tokenResponse.refresh_token ||
-					tokenResponse.refreshToken ||
-					'',
+				accessToken: accessToken as string,
+				expiresAt,
+				region,
+				tokenType: tokenType as string,
+				retrievedAt: Math.floor(Date.now() / 1000),
+				expiresIn: expiresIn as number,
+				refreshToken: (refreshToken as string) || '',
 			});
 
-			return authResult;
-		} catch (error) {
-			// If it's a 'still waiting' error, that's expected - retry after interval
+			methodLogger.debug('Successfully obtained SSO token');
+			return ssoToken;
+		} catch (error: unknown) {
+			// Check for "authorization pending" error
+			// This is normal and expected until the user completes the flow
 			if (
-				error &&
-				typeof error === 'object' &&
-				'message' in error &&
-				typeof error.message === 'string' &&
-				(error.message.includes('authorization_pending') ||
-					error.message.includes('slow_down'))
+				error instanceof Error &&
+				error.message &&
+				error.message.includes('authorization_pending')
 			) {
 				methodLogger.debug(
-					'Authorization pending, waiting to retry...',
-				);
-				// Wait for the polling interval before trying again
-				await new Promise((resolve) =>
-					setTimeout(resolve, interval * 1000),
+					'Authorization still pending, will retry after interval',
 				);
 				continue;
 			}
 
-			// Any other error is unexpected and should be thrown
-			methodLogger.error('Error polling for SSO token', error);
-			throw createAuthTimeoutError(
-				`AWS SSO authentication failed: ${
-					error instanceof Error ? error.message : 'Unknown error'
-				}`,
-			);
+			// For any other error, log and throw
+			methodLogger.error('Error polling for token', error);
+			throw error;
 		}
 	}
 
-	// If we get here, it means we've timed out waiting for the authorization
-	methodLogger.error('Timed out waiting for AWS SSO authorization');
-	throw createAuthTimeoutError(
-		'AWS SSO authentication timed out. Please try again.',
+	// If we reach here, the auth flow timed out
+	const timeoutError = createAuthTimeoutError(
+		'SSO authentication flow timed out. Please try again.',
 	);
+	methodLogger.error('Authentication flow timed out', timeoutError);
+	throw timeoutError;
 }
 
 /**

@@ -2,10 +2,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
 import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
-import { ExecToolArgsType } from './aws.sso.exec.types.js';
+import { ExecToolArgs, ExecToolArgsType } from './aws.sso.types.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
 import { parseCommand } from '../utils/command.util.js';
-import { z } from 'zod';
 
 /**
  * AWS SSO Execution Tool Module
@@ -74,27 +73,6 @@ function register(server: McpServer): void {
 	);
 	methodLogger.debug('Registering AWS SSO exec tools');
 
-	// Define schema for the exec tool
-	const ExecArgs = z.object({
-		accountId: z
-			.string()
-			.min(1)
-			.describe(
-				'AWS account ID to get credentials for (12-digit number)',
-			),
-		roleName: z.string().min(1).describe('IAM role name to assume via SSO'),
-		region: z
-			.string()
-			.optional()
-			.describe(
-				'AWS region to use for the command (overrides default region)',
-			),
-		command: z
-			.string()
-			.min(1)
-			.describe('AWS CLI command to execute (e.g., "aws s3 ls")'),
-	});
-
 	// Register the AWS SSO exec tool
 	server.tool(
 		'exec',
@@ -128,7 +106,7 @@ function register(server: McpServer): void {
         - Authentication required: You must login first using login
         - Invalid credentials: The accountId/roleName combination is invalid or you lack permission
         - Command errors: The AWS CLI command itself may return errors`,
-		ExecArgs.shape,
+		ExecToolArgs.shape,
 		handleExec,
 	);
 
