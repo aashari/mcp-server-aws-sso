@@ -22,7 +22,7 @@ import awsSsoExecTools from './tools/aws.sso.exec.tool.js';
 const indexLogger = Logger.forContext('index.ts');
 
 // Define version constant for easier management and consistent versioning
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 let serverInstance: McpServer | null = null;
 let transportInstance: SSEServerTransport | StdioServerTransport | null = null;

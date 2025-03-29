@@ -1,3 +1,23 @@
+# [1.1.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.0.0...v1.1.0) (2025-03-29)
+
+
+### Bug Fixes
+
+* **accounts:** remove console.log in favor of logger ([d07328d](https://github.com/aashari/mcp-server-aws-sso/commit/d07328d9aa29365cd58a16458b2e3b9d6fc1178a))
+* **auth:** replace console.log with proper logger calls ([ec057de](https://github.com/aashari/mcp-server-aws-sso/commit/ec057def0641f5df2e380486bb0298351f2cf2fb))
+* **config:** standardize configuration export pattern to match Atlassian projects ([2b61224](https://github.com/aashari/mcp-server-aws-sso/commit/2b6122470ef84c94bbee1e79ba11fc7f7ea10f19))
+* **error:** align handleCliError signature with Atlassian projects ([701ad11](https://github.com/aashari/mcp-server-aws-sso/commit/701ad114ad45b8fb87d51071ed764db18cab75dc))
+* **test:** mock dynamic import in accounts controller test ([937982d](https://github.com/aashari/mcp-server-aws-sso/commit/937982dffcef3275e885c16e2105d3b7c35f7b89))
+* **tests:** fix type errors in AWS SSO service and controller tests ([5fc4de3](https://github.com/aashari/mcp-server-aws-sso/commit/5fc4de35cb4ea113fd288bba733d450f766a9a12))
+* **test:** skip getAwsSsoConfig test when AWS_SSO_START_URL is not set ([05229e3](https://github.com/aashari/mcp-server-aws-sso/commit/05229e354fce638cfe865216bec240611335e5d7))
+* **tests:** update mock implementation for aws.sso.cache.util.js in tests ([31bce3d](https://github.com/aashari/mcp-server-aws-sso/commit/31bce3d027659c8d93d25e79c5fd71ffda8abdfa))
+* **utils:** remove duplicate CLI test utility file ([053fc6c](https://github.com/aashari/mcp-server-aws-sso/commit/053fc6c14e43f2e29a32cfe43adc8b5eed8a7b4a))
+
+
+### Features
+
+* **tests:** add live data tests for AWS SSO services and controllers ([512e85c](https://github.com/aashari/mcp-server-aws-sso/commit/512e85c1c5e0e07f1cd816eee441b6a9ca8062d0))
+
 # 1.0.0 (2025-03-29)
 
 

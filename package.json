@@ -1,6 +1,6 @@
 {
 	"name": "@aashari/mcp-server-aws-sso",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "A TypeScript-based Model Context Protocol (MCP) server for interacting with AWS services using SSO authentication. Features tools for managing AWS resources with seamless single sign-on support, CLI integration, MCP Inspector, and extensible architecture for connecting Claude/Anthropic AI systems to AWS.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
