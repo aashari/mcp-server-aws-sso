@@ -116,9 +116,6 @@ async function listAccounts(): Promise<ControllerResponse> {
 		}
 
 		// Get accounts with roles
-		console.log(
-			'Retrieving AWS accounts and roles. This may take a moment...',
-		);
 		methodLogger.debug('Getting AWS accounts with roles');
 
 		try {
