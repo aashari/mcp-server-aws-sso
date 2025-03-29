@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Logger } from './utils/logger.util.js';
-import { configLoader } from './utils/config.util.js';
+import { config } from './utils/config.util.js';
 import { createUnexpectedError } from './utils/error.util.js';
 import { runCli } from './cli/index.js';
 
@@ -37,10 +37,10 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	const serverLogger = Logger.forContext('index.ts', 'startServer');
 
 	// Load configuration
-	configLoader.load();
+	config.load();
 
 	// Enable debug logging if DEBUG is set to true
-	if (configLoader.getBoolean('DEBUG')) {
+	if (config.getBoolean('DEBUG')) {
 		serverLogger.debug('Debug mode enabled');
 	}
 
@@ -49,7 +49,7 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	serverLogger.info(
 		`AWS_SSO_START_URL value exists: ${Boolean(process.env.AWS_SSO_START_URL)}`,
 	);
-	serverLogger.info(`Config DEBUG value: ${configLoader.get('DEBUG')}`);
+	serverLogger.info(`Config DEBUG value: ${config.get('DEBUG')}`);
 
 	serverInstance = new McpServer({
 		name: '@aashari/mcp-server-aws-sso',
@@ -91,14 +91,14 @@ async function main() {
 	const mainLogger = Logger.forContext('index.ts', 'main');
 
 	// Load configuration
-	configLoader.load();
+	config.load();
 
 	// Log the DEBUG value to verify configuration loading
 	mainLogger.info(`DEBUG value: ${process.env.DEBUG}`);
 	mainLogger.info(
 		`AWS_SSO_START_URL value exists: ${Boolean(process.env.AWS_SSO_START_URL)}`,
 	);
-	mainLogger.info(`Config DEBUG value: ${configLoader.get('DEBUG')}`);
+	mainLogger.info(`Config DEBUG value: ${config.get('DEBUG')}`);
 
 	// Check if arguments are provided (CLI mode)
 	if (process.argv.length > 2) {
@@ -123,5 +123,5 @@ if (require.main === module) {
 }
 
 // Export key utilities for library users
-export { configLoader };
+export { config };
 export { Logger };

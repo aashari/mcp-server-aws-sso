@@ -1,5 +1,5 @@
 import { Logger } from '../utils/logger.util.js';
-import { configLoader } from '../utils/config.util.js';
+import { config } from '../utils/config.util.js';
 import {
 	createAuthMissingError,
 	createAuthTimeoutError,
@@ -132,12 +132,10 @@ export async function getAwsSsoConfig(): Promise<AwsSsoConfig> {
 	const methodLogger = logger.forMethod('getAwsSsoConfig');
 	methodLogger.debug('Getting AWS SSO configuration');
 
-	const startUrl = configLoader.get('AWS_SSO_START_URL');
+	const startUrl = config.get('AWS_SSO_START_URL');
 	// Check AWS_SSO_REGION first, then fallback to AWS_REGION, then default to us-east-1
 	const region =
-		configLoader.get('AWS_SSO_REGION') ||
-		configLoader.get('AWS_REGION') ||
-		'us-east-1';
+		config.get('AWS_SSO_REGION') || config.get('AWS_REGION') || 'us-east-1';
 
 	if (!startUrl) {
 		const error = createAuthMissingError(

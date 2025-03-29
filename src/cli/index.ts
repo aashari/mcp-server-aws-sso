@@ -3,7 +3,7 @@ import { Logger } from '../utils/logger.util.js';
 import awsSsoAuthCli from './aws.sso.auth.cli.js';
 import awsSsoAccountsCli from './aws.sso.accounts.cli.js';
 import awsSsoExecCli from './aws.sso.exec.cli.js';
-import { configLoader } from '../utils/config.util.js';
+import { config } from '../utils/config.util.js';
 
 /**
  * CLI module for AWS SSO integration.
@@ -23,7 +23,7 @@ export async function runCli(args: string[]): Promise<void> {
 	logger.debug('Running CLI with args', { argsCount: args.length });
 
 	// Load and parse configuration
-	configLoader.load();
+	config.load();
 
 	// Set up the program
 	const program = new Command();
