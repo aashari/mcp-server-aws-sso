@@ -170,12 +170,12 @@ async function startLogin(params?: {
 		}
 
 		// Display the login instructions
-		console.log(initialContent);
+		methodLogger.info(initialContent);
 
 		// If autoPoll is disabled, just return instructions
 		if (!autoPoll) {
-			console.log('\nComplete the authentication in your browser.');
-			console.log(
+			methodLogger.info('Complete the authentication in your browser.');
+			methodLogger.info(
 				"You can then use 'list-accounts' to verify authentication and view available accounts.",
 			);
 
@@ -209,8 +209,8 @@ async function startLogin(params?: {
 			'Automatic polling enabled, waiting for authentication',
 		);
 
-		console.log(
-			'\nWaiting for you to complete authentication in your browser...',
+		methodLogger.info(
+			'Waiting for you to complete authentication in your browser...',
 		);
 
 		// Now poll for the token - this will continuously poll until success or timeout
@@ -235,7 +235,7 @@ async function startLogin(params?: {
 				// Keep default value
 			}
 
-			console.log('\nAuthentication successful!');
+			methodLogger.info('Authentication successful!');
 
 			// Return success without trying to list accounts
 			return {
