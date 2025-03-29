@@ -1,34 +1,55 @@
 import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
+import awsSsoAuthCli from './aws.sso.auth.cli.js';
+import awsSsoAccountsCli from './aws.sso.accounts.cli.js';
+import awsSsoExecCli from './aws.sso.exec.cli.js';
+import { configLoader } from '../utils/config.util.js';
 
-import ipAddressCli from './ipaddress.cli.js';
+/**
+ * CLI module for AWS SSO integration.
+ * Provides commands for authentication and command execution with AWS SSO.
+ */
 
-// Get the version from package.json
-const VERSION = '1.1.3'; // This should match the version in src/index.ts
-const NAME = '@aashari/boilerplate-mcp-server';
-const DESCRIPTION =
-	'A boilerplate Model Context Protocol (MCP) server implementation using TypeScript';
+// Create a logger instance for this module
+const logger = Logger.forContext('cli/index.ts');
 
-export async function runCli(args: string[]) {
-	const methodLogger = Logger.forContext('cli/index.ts', 'runCli');
-	methodLogger.debug('Processing CLI arguments', args);
+/**
+ * Run the CLI with provided arguments
+ *
+ * @param args Command line arguments
+ * @returns A promise that resolves when the CLI command completes
+ */
+export async function runCli(args: string[]): Promise<void> {
+	logger.debug('Running CLI with args', { argsCount: args.length });
 
+	// Load and parse configuration
+	configLoader.load();
+
+	// Set up the program
 	const program = new Command();
 
-	program.name(NAME).description(DESCRIPTION).version(VERSION);
+	program
+		.name('mcp-aws-sso')
+		.description('MCP Server CLI for AWS SSO')
+		.version('1.0.0'); // Same as the server version
 
 	// Register CLI commands
-	ipAddressCli.register(program);
+	logger.debug('Registering CLI commands');
 
-	// Handle unknown commands
-	program.on('command:*', (operands) => {
-		methodLogger.error(`Unknown command: ${operands[0]}`);
-		console.log('');
-		program.help();
-		process.exit(1);
-	});
+	// Register AWS SSO auth CLI commands
+	awsSsoAuthCli.register(program);
+	logger.debug('AWS SSO authentication CLI commands registered');
 
-	// Parse arguments; default to help if no command provided
-	await program.parseAsync(args.length ? args : ['--help'], { from: 'user' });
-	methodLogger.debug('CLI command execution completed');
+	// Register AWS SSO accounts CLI commands
+	awsSsoAccountsCli.register(program);
+	logger.debug('AWS SSO accounts CLI commands registered');
+
+	// Register AWS SSO exec CLI commands
+	awsSsoExecCli.register(program);
+	logger.debug('AWS SSO exec CLI commands registered');
+
+	// Execute the CLI
+	await program.parseAsync(args);
 }
+
+export default { runCli };

@@ -3,42 +3,56 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { Logger } from './utils/logger.util.js';
-import { config } from './utils/config.util.js';
+import { configLoader } from './utils/config.util.js';
 import { createUnexpectedError } from './utils/error.util.js';
 import { runCli } from './cli/index.js';
 
-import ipAddressTools from './tools/ipaddress.tool.js';
-import ipLookupResources from './resources/ipaddress.resource.js';
+import awsSsoAuthTools from './tools/aws.sso.auth.tool.js';
+import awsSsoAccountsTools from './tools/aws.sso.accounts.tool.js';
+import awsSsoExecTools from './tools/aws.sso.exec.tool.js';
+
+/**
+ * MCP Server for AWS SSO
+ *
+ * Provides tools for authentication with AWS SSO and executing AWS CLI commands
+ * with temporary credentials from SSO.
+ */
 
 // Create file-level logger
 const indexLogger = Logger.forContext('index.ts');
 
 // Define version constant for easier management and consistent versioning
-const VERSION = '1.1.3';
+const VERSION = '1.0.0';
 
 let serverInstance: McpServer | null = null;
 let transportInstance: SSEServerTransport | StdioServerTransport | null = null;
 
+/**
+ * Start the MCP server with the specified transport mode
+ *
+ * @param mode The transport mode to use (stdio or sse)
+ * @returns Promise that resolves when the server is started
+ */
 export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
-	const methodLogger = Logger.forContext('index.ts', 'startServer');
+	const serverLogger = Logger.forContext('index.ts', 'startServer');
 
 	// Load configuration
-	config.load();
+	configLoader.load();
 
 	// Enable debug logging if DEBUG is set to true
-	if (config.getBoolean('DEBUG')) {
-		methodLogger.debug('Debug mode enabled');
+	if (configLoader.getBoolean('DEBUG')) {
+		serverLogger.debug('Debug mode enabled');
 	}
 
 	// Log the DEBUG value to verify configuration loading
-	methodLogger.info(`DEBUG value: ${process.env.DEBUG}`);
-	methodLogger.info(
-		`IPAPI_API_TOKEN value exists: ${Boolean(process.env.IPAPI_API_TOKEN)}`,
+	serverLogger.info(`DEBUG value: ${process.env.DEBUG}`);
+	serverLogger.info(
+		`AWS_SSO_START_URL value exists: ${Boolean(process.env.AWS_SSO_START_URL)}`,
 	);
-	methodLogger.info(`Config DEBUG value: ${config.get('DEBUG')}`);
+	serverLogger.info(`Config DEBUG value: ${configLoader.get('DEBUG')}`);
 
 	serverInstance = new McpServer({
-		name: '@aashari/boilerplate-mcp-server',
+		name: '@aashari/mcp-server-aws-sso',
 		version: VERSION,
 	});
 
@@ -48,49 +62,55 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 		throw createUnexpectedError('SSE mode is not supported yet');
 	}
 
-	methodLogger.info(
+	serverLogger.info(
 		`Starting server with ${mode.toUpperCase()} transport...`,
 	);
 
-	// register tools
-	ipAddressTools.register(serverInstance);
-	methodLogger.debug('Registered IP address tools');
+	// register authentication tools
+	awsSsoAuthTools.register(serverInstance);
+	serverLogger.debug('Registered AWS SSO authentication tools');
 
-	// register resources
-	ipLookupResources.register(serverInstance);
-	methodLogger.debug('Registered IP lookup resources');
+	// register accounts tools
+	awsSsoAccountsTools.register(serverInstance);
+	serverLogger.debug('Registered AWS SSO accounts tools');
+
+	// register exec tools
+	awsSsoExecTools.register(serverInstance);
+	serverLogger.debug('Registered AWS SSO exec tools');
 
 	return serverInstance.connect(transportInstance).catch((err) => {
-		methodLogger.error(`Failed to start server`, err);
+		serverLogger.error(`Failed to start server`, err);
 		process.exit(1);
 	});
 }
 
-// Main entry point - this will run when executed directly
+/**
+ * Main entry point - this will run when executed directly
+ */
 async function main() {
-	const methodLogger = Logger.forContext('index.ts', 'main');
+	const mainLogger = Logger.forContext('index.ts', 'main');
 
 	// Load configuration
-	config.load();
+	configLoader.load();
 
 	// Log the DEBUG value to verify configuration loading
-	methodLogger.info(`DEBUG value: ${process.env.DEBUG}`);
-	methodLogger.info(
-		`IPAPI_API_TOKEN value exists: ${Boolean(process.env.IPAPI_API_TOKEN)}`,
+	mainLogger.info(`DEBUG value: ${process.env.DEBUG}`);
+	mainLogger.info(
+		`AWS_SSO_START_URL value exists: ${Boolean(process.env.AWS_SSO_START_URL)}`,
 	);
-	methodLogger.info(`Config DEBUG value: ${config.get('DEBUG')}`);
+	mainLogger.info(`Config DEBUG value: ${configLoader.get('DEBUG')}`);
 
 	// Check if arguments are provided (CLI mode)
 	if (process.argv.length > 2) {
 		// CLI mode: Pass arguments to CLI runner
-		methodLogger.info('Starting in CLI mode');
-		await runCli(process.argv.slice(2));
-		methodLogger.info('CLI execution completed');
+		mainLogger.info('Starting in CLI mode');
+		await runCli(process.argv);
+		mainLogger.info('CLI execution completed');
 	} else {
 		// MCP Server mode: Start server with default STDIO
-		methodLogger.info('Starting in server mode');
+		mainLogger.info('Starting in server mode');
 		await startServer();
-		methodLogger.info('Server is now running');
+		mainLogger.info('Server is now running');
 	}
 }
 
@@ -103,5 +123,5 @@ if (require.main === module) {
 }
 
 // Export key utilities for library users
-export { config };
+export { configLoader };
 export { Logger };
