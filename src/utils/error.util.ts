@@ -163,14 +163,40 @@ export function formatErrorForMcpResource(
 
 /**
  * Handle error in CLI context
+ * @param error The error to handle
+ * @param source Optional source information for better error messages
  */
-export function handleCliError(error: unknown): never {
+export function handleCliError(error: unknown, source?: string): never {
 	const methodLogger = Logger.forContext(
 		'utils/error.util.ts',
 		'handleCliError',
 	);
 	const mcpError = ensureMcpError(error);
-	methodLogger.error(`${mcpError.type} error`, mcpError);
+
+	// Log detailed information at different levels based on error type
+	if (mcpError.statusCode && mcpError.statusCode >= 500) {
+		methodLogger.error(`${mcpError.type} error occurred`, {
+			message: mcpError.message,
+			statusCode: mcpError.statusCode,
+			source,
+			stack: mcpError.stack,
+		});
+	} else {
+		methodLogger.warn(`${mcpError.type} error occurred`, {
+			message: mcpError.message,
+			statusCode: mcpError.statusCode,
+			source,
+		});
+	}
+
+	// Log additional debug information if DEBUG is enabled
+	methodLogger.debug('Error details', {
+		type: mcpError.type,
+		statusCode: mcpError.statusCode,
+		originalError: mcpError.originalError,
+		stack: mcpError.stack,
+	});
+
 	console.error(`Error: ${mcpError.message}`);
 	process.exit(1);
 }
