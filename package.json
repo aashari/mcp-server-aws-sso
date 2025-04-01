@@ -1,7 +1,7 @@
 {
 	"name": "@aashari/mcp-server-aws-sso",
 	"version": "1.1.0",
-	"description": "A TypeScript-based Model Context Protocol (MCP) server for interacting with AWS services using SSO authentication. Features tools for managing AWS resources with seamless single sign-on support, CLI integration, MCP Inspector, and extensible architecture for connecting Claude/Anthropic AI systems to AWS.",
+	"description": "Node.js/TypeScript MCP server for AWS Single Sign-On (SSO). Enables AI systems (LLMs) with tools to initiate SSO login (device auth flow), list accounts/roles, and securely execute AWS CLI commands using temporary credentials. Streamlines AI interaction with AWS resources.",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"_moduleNotes": "Although source code uses ESM syntax, the build output target is CommonJS to align with Node.js compatibility and patterns seen in related MCP servers. tsconfig.json's 'module': 'NodeNext' handles the input syntax, while tsc outputs CJS.",
