@@ -169,7 +169,7 @@ class Logger {
 	 * @returns A new logger with the method context
 	 */
 	forMethod(method: string): Logger {
-		return Logger.forContext(`${this.modulePath}`, method);
+		return Logger.forContext(this.modulePath, method);
 	}
 
 	private _formatMessage(message: string): string {
@@ -269,4 +269,5 @@ class Logger {
 	}
 }
 
+// Only export the Logger class to enforce contextual logging via Logger.forContext
 export { Logger };
