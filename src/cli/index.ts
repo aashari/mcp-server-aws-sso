@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
+import { VERSION, CLI_NAME } from '../utils/constants.util.js';
 import awsSsoAuthCli from './aws.sso.auth.cli.js';
 import awsSsoAccountsCli from './aws.sso.accounts.cli.js';
 import awsSsoExecCli from './aws.sso.exec.cli.js';
@@ -31,9 +32,9 @@ export async function runCli(args: string[]): Promise<void> {
 	const program = new Command();
 
 	program
-		.name('mcp-aws-sso')
+		.name(CLI_NAME)
 		.description('MCP Server CLI for AWS SSO')
-		.version('1.0.0'); // Same as the server version
+		.version(VERSION); // Same as the server version
 
 	// Register CLI commands
 	cliLogger.debug('Registering CLI commands...');
@@ -54,7 +55,17 @@ export async function runCli(args: string[]): Promise<void> {
 
 	// Execute the CLI
 	cliLogger.debug('Parsing CLI arguments');
-	await program.parseAsync(args);
+
+	// Handle unknown commands
+	program.on('command:*', (operands) => {
+		cliLogger.error(`Unknown command: ${operands[0]}`);
+		console.log('');
+		program.help();
+		process.exit(1);
+	});
+
+	// Parse arguments; default to help if no command provided
+	await program.parseAsync(args.length ? args : ['--help'], { from: 'user' });
 	cliLogger.debug('CLI command execution completed');
 }
 

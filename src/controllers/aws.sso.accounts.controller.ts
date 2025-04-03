@@ -175,6 +175,15 @@ async function listAccounts(): Promise<ControllerResponse> {
 				};
 			}
 
+			// Save accounts with roles to MCP cache
+			try {
+				await cacheUtil.saveAccountRolesToCache(accountsWithRoles);
+				listLogger.debug('Saved accounts with roles to MCP cache');
+			} catch (cacheError) {
+				listLogger.error('Error saving to MCP cache', cacheError);
+				// Continue even if caching fails
+			}
+
 			// Format the accounts with roles for the response
 			// The vendor implementation returns a different format compared to the non-vendor one
 			const formattedAccountsWithRoles = accountsWithRoles.map(

@@ -45,28 +45,15 @@ const versionFiles = [
 			match.replace(currentVersion, newVersion),
 	},
 	{
-		path: path.join(rootDir, 'src', 'cli', 'index.ts'),
-		pattern: /const VERSION = ['"]([^'"]*)['"]/,
-		replacement: (match, currentVersion) =>
-			match.replace(currentVersion, newVersion),
-	},
-	{
-		path: path.join(rootDir, 'src', 'index.ts'),
-		pattern: /const VERSION = ['"]([^'"]*)['"]/,
+		path: path.join(rootDir, 'src', 'utils', 'constants.util.ts'),
+		pattern: /export const VERSION = ['"]([^'"]*)['"]/,
 		replacement: (match, currentVersion) =>
 			match.replace(currentVersion, newVersion),
 	},
 	// Also update the compiled JavaScript files if they exist
 	{
-		path: path.join(rootDir, 'dist', 'cli', 'index.js'),
-		pattern: /const VERSION = ['"]([^'"]*)['"]/,
-		replacement: (match, currentVersion) =>
-			match.replace(currentVersion, newVersion),
-		optional: true, // Mark this file as optional
-	},
-	{
-		path: path.join(rootDir, 'dist', 'index.js'),
-		pattern: /const VERSION = ['"]([^'"]*)['"]/,
+		path: path.join(rootDir, 'dist', 'utils', 'constants.util.js'),
+		pattern: /exports.VERSION = ['"]([^'"]*)['"]/,
 		replacement: (match, currentVersion) =>
 			match.replace(currentVersion, newVersion),
 		optional: true, // Mark this file as optional

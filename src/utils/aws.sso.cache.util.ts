@@ -3,17 +3,18 @@ import * as fsSync from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { Logger } from './logger.util.js';
+import { CLI_NAME } from './constants.util.js';
 import { AwsCredentials, SsoToken } from '../services/vendor.aws.sso.types.js';
 import { AwsSsoAccount, AwsSsoAccountRole } from '../services/aws.sso.types.js';
 
 // Define the cache directory for MCP server
 const HOME_DIR = os.homedir();
-const CACHE_DIR = path.join(HOME_DIR, '.mcp-server', 'aws-sso');
+const CACHE_DIR = path.join(HOME_DIR, '.mcp-server', CLI_NAME);
 const TOKEN_FILE = path.join(CACHE_DIR, 'token.json');
 
 // Constants for the MCP cache location
 const MCP_DATA_DIR = path.join(HOME_DIR, '.mcp', 'data');
-const MCP_AWS_SSO_CACHE_FILE = path.join(MCP_DATA_DIR, 'aws-sso.json');
+const MCP_AWS_SSO_CACHE_FILE = path.join(MCP_DATA_DIR, `${CLI_NAME}.json`);
 
 /**
  * Ensure the cache directory exists
@@ -32,6 +33,7 @@ async function ensureCacheDir(): Promise<void> {
 				`Cache directory ${CACHE_DIR} does not exist, creating...`,
 			);
 			fsSync.mkdirSync(CACHE_DIR, { recursive: true });
+			methodLogger.debug(`Cache directory created: ${CACHE_DIR}`);
 		}
 	} catch (error) {
 		methodLogger.error('Error ensuring cache directory exists', error);
@@ -581,15 +583,19 @@ async function readMcpAwsSsoCache(): Promise<AwsSsoCacheFile> {
 	});
 
 	try {
+		// Check if the cache file exists
 		if (await fileExists(MCP_AWS_SSO_CACHE_FILE)) {
 			const content = await fs.readFile(MCP_AWS_SSO_CACHE_FILE, 'utf8');
 			const data = JSON.parse(content) as AwsSsoCacheFile;
 			logger.debug('Successfully read MCP AWS SSO cache file');
 			return data;
-		} else {
-			logger.debug('MCP AWS SSO cache file not found');
-			return {};
 		}
+
+		// If file doesn't exist, return empty object
+		logger.debug(
+			'MCP AWS SSO cache file not found, returning empty object',
+		);
+		return {};
 	} catch (error) {
 		logger.error('Error reading MCP AWS SSO cache file', error);
 		return {};
@@ -623,5 +629,91 @@ export async function getAccountRolesFromCache(): Promise<
 	} catch (error) {
 		logger.error('Error getting account roles from cache', error);
 		return [];
+	}
+}
+
+/**
+ * Save data to the MCP AWS SSO cache file
+ * @param data The data to save
+ */
+export async function saveMcpAwsSsoCache(data: AwsSsoCacheFile): Promise<void> {
+	const logger = Logger.forContext(
+		'utils/aws.sso.cache.util.ts',
+		'saveMcpAwsSsoCache',
+	);
+	logger.debug('Saving to MCP AWS SSO cache file');
+
+	try {
+		// Make sure the MCP data directory exists
+		if (!fsSync.existsSync(MCP_DATA_DIR)) {
+			logger.debug(`Creating MCP data directory: ${MCP_DATA_DIR}`);
+			fsSync.mkdirSync(MCP_DATA_DIR, { recursive: true });
+		}
+
+		// Write to the cache file
+		await fs.writeFile(
+			MCP_AWS_SSO_CACHE_FILE,
+			JSON.stringify(data, null, 2),
+			'utf8',
+		);
+		logger.debug('Successfully saved MCP AWS SSO cache file');
+	} catch (error) {
+		logger.error('Error saving MCP AWS SSO cache file', error);
+		throw error;
+	}
+}
+
+/**
+ * Save account roles to the MCP cache file
+ * @param accountsWithRoles Array of accounts with roles
+ */
+export async function saveAccountRolesToCache(
+	accountsWithRoles: Array<{
+		accountId: string;
+		accountName: string;
+		emailAddress?: string;
+		roles: Array<{
+			accountId: string;
+			roleName: string;
+			roleArn: string;
+		}>;
+	}>,
+): Promise<void> {
+	const logger = Logger.forContext(
+		'utils/aws.sso.cache.util.ts',
+		'saveAccountRolesToCache',
+	);
+	logger.debug(
+		`Saving ${accountsWithRoles.length} accounts with roles to MCP cache`,
+	);
+
+	try {
+		// Get existing cache data
+		const existingData = await readMcpAwsSsoCache();
+
+		// Format the data correctly
+		const accountRolesData = accountsWithRoles.map((account) => ({
+			account: {
+				accountId: account.accountId,
+				accountName: account.accountName,
+				emailAddress: account.emailAddress || '',
+			},
+			roles: account.roles,
+		}));
+
+		// Update the cache data
+		const updatedData: AwsSsoCacheFile = {
+			...existingData,
+			accountRoles: accountRolesData,
+			// Update the timestamp
+			lastAuth: Date.now(),
+		};
+
+		// Save the updated data
+		await saveMcpAwsSsoCache(updatedData);
+		logger.debug('Successfully saved account roles to MCP cache');
+	} catch (error) {
+		logger.error('Error saving account roles to MCP cache', error);
+		// Don't throw the error to avoid breaking the flow
 	}
 }

@@ -3,7 +3,6 @@
  */
 import { Logger } from '../utils/logger.util.js';
 import { createAuthMissingError, createApiError } from '../utils/error.util.js';
-import { fetchApi } from '../utils/transport.util.js';
 import {
 	getCachedCredentials,
 	saveCachedCredentials,
@@ -16,15 +15,15 @@ import {
 	ListAccountsResponse,
 	ListAccountRolesParams,
 	ListAccountRolesResponse,
+	AwsSsoAccount,
 } from './vendor.aws.sso.types.js';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service.js';
-import { SSOClient, GetRoleCredentialsCommand } from '@aws-sdk/client-sso';
-
-/**
- * Base API path for AWS SSO API
- * @constant {string}
- */
-const SSO_API_PATH = 'https://portal.sso.%region%.amazonaws.com';
+import {
+	SSOClient,
+	GetRoleCredentialsCommand,
+	ListAccountRolesCommand,
+	ListAccountsCommand,
+} from '@aws-sdk/client-sso';
 
 const logger = Logger.forContext('services/vendor.aws.sso.accounts.service.ts');
 
@@ -52,38 +51,56 @@ async function listSsoAccounts(
 		throw createAuthMissingError('No SSO token found. Please login first.');
 	}
 
-	// Build query parameters
-	const queryParams = new URLSearchParams();
-	if (params.maxResults) {
-		queryParams.set('max-results', params.maxResults.toString());
+	try {
+		// Use AWS SDK to list accounts instead of direct API call
+		const region = token.region || 'us-east-1';
+
+		// Create SSO client with proper region
+		const ssoClient = new SSOClient({
+			region: region,
+			maxAttempts: 3,
+		});
+
+		// Configure command with proper parameters
+		const command = new ListAccountsCommand({
+			accessToken: token.accessToken,
+			maxResults: params.maxResults,
+			nextToken: params.nextToken,
+		});
+
+		// Execute command to get accounts
+		methodLogger.debug('Requesting accounts list using AWS SDK');
+		const response = await ssoClient.send(command);
+
+		// Convert response to expected format with type handling
+		const accountList: AwsSsoAccount[] = (response.accountList || []).map(
+			(account) => ({
+				accountId: account.accountId || '',
+				accountName: account.accountName || '',
+				accountEmail: account.emailAddress,
+			}),
+		);
+
+		const result: ListAccountsResponse = {
+			accountList,
+			nextToken: response.nextToken,
+		};
+
+		methodLogger.debug(
+			`Retrieved ${result.accountList.length} accounts${
+				result.nextToken ? ' with pagination token' : ''
+			}`,
+		);
+
+		return result;
+	} catch (error) {
+		methodLogger.error('Failed to list accounts', error);
+		throw createApiError(
+			`Failed to list AWS accounts: ${error instanceof Error ? error.message : String(error)}`,
+			undefined,
+			error,
+		);
 	}
-	if (params.nextToken) {
-		queryParams.set('next-token', params.nextToken);
-	}
-
-	// Build URL with region
-	const queryString = queryParams.toString()
-		? `?${queryParams.toString()}`
-		: '';
-	const region = token.region || 'us-east-1'; // Default to us-east-1 if region is undefined
-	const baseUrl = SSO_API_PATH.replace('%region%', region);
-	const url = `${baseUrl}/assignment/accounts${queryString}`;
-
-	// Send request
-	methodLogger.debug(`Sending request to: ${url}`);
-	const response = await fetchApi<ListAccountsResponse>(url, {
-		headers: {
-			Authorization: `Bearer ${token.accessToken}`,
-		},
-	});
-
-	methodLogger.debug(
-		`Retrieved ${response.accountList.length} accounts${
-			response.nextToken ? ' with pagination token' : ''
-		}`,
-	);
-
-	return response;
 }
 
 /**
@@ -116,38 +133,49 @@ async function listAccountRoles(
 		throw createAuthMissingError('No SSO token found. Please login first.');
 	}
 
-	// Build query parameters
-	const queryParams = new URLSearchParams();
-	if (params.maxResults) {
-		queryParams.set('max-results', params.maxResults.toString());
+	try {
+		// Use AWS SDK to list roles instead of direct API call
+		const region = token.region || 'us-east-1';
+
+		// Create SSO client with proper region
+		const ssoClient = new SSOClient({
+			region: region,
+			maxAttempts: 3,
+		});
+
+		// Configure command with proper parameters
+		const command = new ListAccountRolesCommand({
+			accessToken: token.accessToken,
+			accountId: params.accountId,
+			maxResults: params.maxResults,
+			nextToken: params.nextToken,
+		});
+
+		// Execute command to get roles
+		methodLogger.debug('Requesting roles list using AWS SDK');
+		const response = await ssoClient.send(command);
+
+		// Convert response to expected format
+		const result: ListAccountRolesResponse = {
+			roleList: response.roleList || [],
+			nextToken: response.nextToken,
+		};
+
+		methodLogger.debug(
+			`Retrieved ${result.roleList.length} roles for account ${params.accountId}${
+				result.nextToken ? ' with pagination token' : ''
+			}`,
+		);
+
+		return result;
+	} catch (error) {
+		methodLogger.error('Failed to list roles', error);
+		throw createApiError(
+			`Failed to list roles for account ${params.accountId}: ${error instanceof Error ? error.message : String(error)}`,
+			undefined,
+			error,
+		);
 	}
-	if (params.nextToken) {
-		queryParams.set('next-token', params.nextToken);
-	}
-
-	// Build URL with region
-	const queryString = queryParams.toString()
-		? `?${queryParams.toString()}`
-		: '';
-	const region = token.region || 'us-east-1'; // Default to us-east-1 if region is undefined
-	const baseUrl = SSO_API_PATH.replace('%region%', region);
-	const url = `${baseUrl}/assignment/accounts/${params.accountId}/roles${queryString}`;
-
-	// Send request
-	methodLogger.debug(`Sending request to: ${url}`);
-	const response = await fetchApi<ListAccountRolesResponse>(url, {
-		headers: {
-			Authorization: `Bearer ${token.accessToken}`,
-		},
-	});
-
-	methodLogger.debug(
-		`Retrieved ${response.roleList.length} roles for account ${params.accountId}${
-			response.nextToken ? ' with pagination token' : ''
-		}`,
-	);
-
-	return response;
 }
 
 /**
