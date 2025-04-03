@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.1.3...v1.2.0) (2025-04-03)
+
+
+### Features
+
+* **logging:** add file logging with session ID to ~/.mcp/data/ ([8203e8b](https://github.com/aashari/mcp-server-aws-sso/commit/8203e8b54f9c7c2ad521d155090b2443f9507314))
+
 ## [1.1.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.1.2...v1.1.3) (2025-04-03)
 
 
