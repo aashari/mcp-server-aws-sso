@@ -26,6 +26,25 @@ function safeStringify(obj: unknown, maxLength = 1000): string {
 }
 
 /**
+ * Extract essential values from larger objects for logging
+ * @param obj The object to extract values from
+ * @param keys Keys to extract (if available)
+ * @returns Object containing only the specified keys
+ */
+function extractEssentialValues(
+	obj: Record<string, unknown>,
+	keys: string[],
+): Record<string, unknown> {
+	const result: Record<string, unknown> = {};
+	keys.forEach((key) => {
+		if (Object.prototype.hasOwnProperty.call(obj, key)) {
+			result[key] = obj[key];
+		}
+	});
+	return result;
+}
+
+/**
  * Format source path consistently using the standardized format:
  * [module/file.ts@function] or [module/file.ts]
  *
@@ -109,7 +128,9 @@ function isDebugEnabledForModule(modulePath: string): boolean {
  *
  * 3. Avoid using raw string prefixes in log messages. Instead, use contextualized loggers.
  *
- * 4. Set DEBUG environment variable to control which modules show debug logs:
+ * 4. For debugging objects, use the debugResponse method to log only essential properties.
+ *
+ * 5. Set DEBUG environment variable to control which modules show debug logs:
  *    - DEBUG=true (enable all debug logs)
  *    - DEBUG=controllers/*,services/* (enable for specific module groups)
  *    - DEBUG=transport,utils/formatter* (enable specific modules, supports wildcards)
@@ -148,7 +169,7 @@ class Logger {
 	 * @returns A new logger with the method context
 	 */
 	forMethod(method: string): Logger {
-		return Logger.forContext(`${this.context}@${method}`);
+		return Logger.forContext(`${this.modulePath}`, method);
 	}
 
 	private _formatMessage(message: string): string {
@@ -230,6 +251,21 @@ class Logger {
 
 	debug(message: string, ...args: unknown[]) {
 		this._log('debug', message, ...args);
+	}
+
+	/**
+	 * Log essential information about an API response
+	 * @param message Log message
+	 * @param response API response object
+	 * @param essentialKeys Keys to extract from the response
+	 */
+	debugResponse(
+		message: string,
+		response: Record<string, unknown>,
+		essentialKeys: string[],
+	) {
+		const essentialInfo = extractEssentialValues(response, essentialKeys);
+		this.debug(message, essentialInfo);
 	}
 }
 
