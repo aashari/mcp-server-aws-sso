@@ -1,3 +1,8 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
+
 /**
  * Format a timestamp for logging
  * @returns Formatted timestamp [HH:MM:SS]
@@ -111,6 +116,62 @@ function isDebugEnabledForModule(modulePath: string): boolean {
 	});
 }
 
+// Generate a unique session ID for this process
+const SESSION_ID = crypto.randomUUID();
+
+// Get the package name from environment variables or default to 'mcp-server'
+const getPkgName = (): string => {
+	try {
+		// Try to get it from package.json first if available
+		const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+		if (fs.existsSync(packageJsonPath)) {
+			const packageJson = JSON.parse(
+				fs.readFileSync(packageJsonPath, 'utf8'),
+			);
+			if (packageJson.name) {
+				// Extract the last part of the name if it's scoped
+				const match = packageJson.name.match(/(@[\w-]+\/)?(.+)/);
+				return match ? match[2] : packageJson.name;
+			}
+		}
+	} catch {
+		// Silently fail and use default
+	}
+
+	// Fallback to environment variable or default
+	return process.env.PACKAGE_NAME || 'mcp-server';
+};
+
+// MCP logs directory setup
+const HOME_DIR = os.homedir();
+const MCP_DATA_DIR = path.join(HOME_DIR, '.mcp', 'data');
+const CLI_NAME = getPkgName();
+
+// Ensure the MCP data directory exists
+if (!fs.existsSync(MCP_DATA_DIR)) {
+	fs.mkdirSync(MCP_DATA_DIR, { recursive: true });
+}
+
+// Create the log file path with session ID
+const LOG_FILENAME = `${CLI_NAME}.${SESSION_ID}.log`;
+const LOG_FILEPATH = path.join(MCP_DATA_DIR, LOG_FILENAME);
+
+// Write initial log header
+fs.writeFileSync(
+	LOG_FILEPATH,
+	`# ${CLI_NAME} Log Session\n` +
+		`Session ID: ${SESSION_ID}\n` +
+		`Started: ${new Date().toISOString()}\n` +
+		`Process ID: ${process.pid}\n` +
+		`Working Directory: ${process.cwd()}\n` +
+		`Command: ${process.argv.join(' ')}\n\n` +
+		`## Log Entries\n\n`,
+	'utf8',
+);
+
+// Logger singleton to track initialization
+let isLoggerInitialized = false;
+
 /**
  * Logger class for consistent logging across the application.
  *
@@ -138,10 +199,21 @@ function isDebugEnabledForModule(modulePath: string): boolean {
 class Logger {
 	private context?: string;
 	private modulePath: string;
+	private static sessionId = SESSION_ID;
+	private static logFilePath = LOG_FILEPATH;
 
 	constructor(context?: string, modulePath: string = '') {
 		this.context = context;
 		this.modulePath = modulePath;
+
+		// Log initialization message only once
+		if (!isLoggerInitialized) {
+			this.info(
+				`Logger initialized with session ID: ${Logger.sessionId}`,
+			);
+			this.info(`Logs will be saved to: ${Logger.logFilePath}`);
+			isLoggerInitialized = true;
+		}
 	}
 
 	/**
@@ -230,6 +302,14 @@ class Logger {
 			}
 		}
 
+		// Write to log file
+		try {
+			fs.appendFileSync(Logger.logFilePath, `${logMessage}\n`, 'utf8');
+		} catch (err) {
+			// If we can't write to the log file, log the error to console
+			console.error(`Failed to write to log file: ${err}`);
+		}
+
 		if (process.env.NODE_ENV === 'test') {
 			console[level](logMessage);
 		} else {
@@ -266,6 +346,22 @@ class Logger {
 	) {
 		const essentialInfo = extractEssentialValues(response, essentialKeys);
 		this.debug(message, essentialInfo);
+	}
+
+	/**
+	 * Get the current session ID
+	 * @returns The UUID for the current logging session
+	 */
+	static getSessionId(): string {
+		return Logger.sessionId;
+	}
+
+	/**
+	 * Get the current log file path
+	 * @returns The path to the current log file
+	 */
+	static getLogFilePath(): string {
+		return Logger.logFilePath;
 	}
 }
 
