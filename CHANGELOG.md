@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.1...v1.2.2) (2025-04-03)
+
+
+### Bug Fixes
+
+* trigger new release ([ce8cbeb](https://github.com/aashari/mcp-server-aws-sso/commit/ce8cbebaa3eedebaf52ea2e4c49294627935a611))
+
 ## [1.2.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.0...v1.2.1) (2025-04-03)
 
 
