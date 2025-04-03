@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.1.1...v1.1.2) (2025-04-03)
+
+
+### Bug Fixes
+
+* **logger:** ensure consistent logger implementation across all projects ([ba796e5](https://github.com/aashari/mcp-server-aws-sso/commit/ba796e591604cb1bbf4726130a3bfb8b604fcf97))
+
 ## [1.1.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.1.0...v1.1.1) (2025-04-03)
 
 
