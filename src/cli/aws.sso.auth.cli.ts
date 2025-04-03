@@ -12,25 +12,25 @@ import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext('cli/aws.sso.auth.cli.ts');
+const cliLogger = Logger.forContext('cli/aws.sso.auth.cli.ts');
 
 // Log module initialization
-moduleLogger.debug('AWS SSO authentication CLI module initialized');
+cliLogger.debug('AWS SSO authentication CLI module initialized');
 
 /**
  * Register AWS SSO auth CLI commands
  * @param program Commander program instance
  */
 function register(program: Command): void {
-	const methodLogger = Logger.forContext(
+	const registerLogger = Logger.forContext(
 		'cli/aws.sso.auth.cli.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO auth CLI commands');
+	registerLogger.debug('Registering AWS SSO auth CLI commands');
 
 	registerLoginCommand(program);
 
-	methodLogger.debug('AWS SSO auth CLI commands registered');
+	registerLogger.debug('AWS SSO auth CLI commands registered');
 }
 
 /**
@@ -71,11 +71,11 @@ function registerLoginCommand(program: Command): void {
 			'Disable automatic browser launch, only show manual instructions',
 		)
 		.action(async (options) => {
-			const actionLogger = Logger.forContext(
+			const loginLogger = Logger.forContext(
 				'cli/aws.sso.auth.cli.ts',
 				'login',
 			);
-			actionLogger.debug('Starting AWS SSO login', {
+			loginLogger.debug('Starting AWS SSO login', {
 				launchBrowser: options.browser,
 			});
 
@@ -85,7 +85,7 @@ function registerLoginCommand(program: Command): void {
 				});
 				console.log(result.content);
 			} catch (error) {
-				actionLogger.error('Login command failed', error);
+				loginLogger.error('Login command failed', error);
 				handleCliError(error);
 			}
 		});

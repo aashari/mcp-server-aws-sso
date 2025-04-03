@@ -13,25 +13,25 @@ import { parseCommand } from '../utils/command.util.js';
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext('cli/aws.sso.exec.cli.ts');
+const cliLogger = Logger.forContext('cli/aws.sso.exec.cli.ts');
 
 // Log module initialization
-moduleLogger.debug('AWS SSO execution CLI module initialized');
+cliLogger.debug('AWS SSO execution CLI module initialized');
 
 /**
  * Register AWS SSO exec CLI commands with the program
  * @param program Commander program instance
  */
 function register(program: Command): void {
-	const methodLogger = Logger.forContext(
+	const registerLogger = Logger.forContext(
 		'cli/aws.sso.exec.cli.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO exec CLI');
+	registerLogger.debug('Registering AWS SSO exec CLI');
 
 	registerExecCommand(program);
 
-	methodLogger.debug('AWS SSO exec CLI registered');
+	registerLogger.debug('AWS SSO exec CLI registered');
 }
 
 /**
@@ -85,12 +85,12 @@ function registerExecCommand(program: Command): void {
 			'AWS CLI command to execute with the temporary credentials',
 		)
 		.action(async (options) => {
-			const actionLogger = Logger.forContext(
+			const execLogger = Logger.forContext(
 				'cli/aws.sso.exec.cli.ts',
 				'exec',
 			);
 
-			actionLogger.debug('Executing AWS command with SSO credentials', {
+			execLogger.debug('Executing AWS command with SSO credentials', {
 				accountId: options.accountId,
 				roleName: options.roleName,
 				region: options.region,
@@ -111,7 +111,7 @@ function registerExecCommand(program: Command): void {
 
 				console.log(result.content);
 			} catch (error) {
-				actionLogger.error('Exec command failed', error);
+				execLogger.error('Exec command failed', error);
 				handleCliError(error);
 			}
 		});

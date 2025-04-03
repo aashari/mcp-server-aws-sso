@@ -12,25 +12,25 @@ import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext('cli/aws.sso.accounts.cli.ts');
+const cliLogger = Logger.forContext('cli/aws.sso.accounts.cli.ts');
 
 // Log module initialization
-moduleLogger.debug('AWS SSO accounts CLI module initialized');
+cliLogger.debug('AWS SSO accounts CLI module initialized');
 
 /**
  * Register AWS SSO accounts CLI commands
  * @param program Commander program instance
  */
 function register(program: Command): void {
-	const methodLogger = Logger.forContext(
+	const registerLogger = Logger.forContext(
 		'cli/aws.sso.accounts.cli.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO accounts CLI commands');
+	registerLogger.debug('Registering AWS SSO accounts CLI commands');
 
 	registerListAccountsCommand(program);
 
-	methodLogger.debug('AWS SSO accounts CLI commands registered');
+	registerLogger.debug('AWS SSO accounts CLI commands registered');
 }
 
 /**
@@ -68,16 +68,16 @@ function registerListAccountsCommand(program: Command): void {
 			`,
 		)
 		.action(async () => {
-			const actionLogger = Logger.forContext(
+			const listLogger = Logger.forContext(
 				'cli/aws.sso.accounts.cli.ts',
 				'list-accounts',
 			);
 			try {
-				actionLogger.debug('Listing all AWS accounts and roles');
+				listLogger.debug('Listing all AWS accounts and roles');
 				const result = await awsSsoAccountsController.listAccounts();
 				console.log(result.content);
 			} catch (error) {
-				actionLogger.error('List-accounts command failed', error);
+				listLogger.error('List-accounts command failed', error);
 				handleCliError(error);
 			}
 		});

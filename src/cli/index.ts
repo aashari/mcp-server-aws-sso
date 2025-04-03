@@ -6,12 +6,12 @@ import awsSsoExecCli from './aws.sso.exec.cli.js';
 import { config } from '../utils/config.util.js';
 
 /**
- * CLI module for AWS SSO integration.
- * Provides commands for authentication and command execution with AWS SSO.
+ * CLI entry point for the AWS SSO MCP Server
+ * Handles command registration, parsing, and execution
  */
 
 // Create a logger instance for this module
-const logger = Logger.forContext('cli/index.ts');
+const cliLogger = Logger.forContext('cli/index.ts');
 
 /**
  * Run the CLI with provided arguments
@@ -20,7 +20,9 @@ const logger = Logger.forContext('cli/index.ts');
  * @returns A promise that resolves when the CLI command completes
  */
 export async function runCli(args: string[]): Promise<void> {
-	logger.debug('Running CLI with args', { argsCount: args.length });
+	cliLogger.debug('Initializing CLI with arguments', {
+		argsCount: args.length,
+	});
 
 	// Load and parse configuration
 	config.load();
@@ -34,22 +36,26 @@ export async function runCli(args: string[]): Promise<void> {
 		.version('1.0.0'); // Same as the server version
 
 	// Register CLI commands
-	logger.debug('Registering CLI commands');
+	cliLogger.debug('Registering CLI commands...');
 
 	// Register AWS SSO auth CLI commands
 	awsSsoAuthCli.register(program);
-	logger.debug('AWS SSO authentication CLI commands registered');
+	cliLogger.debug('Registered AWS SSO authentication CLI commands');
 
 	// Register AWS SSO accounts CLI commands
 	awsSsoAccountsCli.register(program);
-	logger.debug('AWS SSO accounts CLI commands registered');
+	cliLogger.debug('Registered AWS SSO accounts CLI commands');
 
 	// Register AWS SSO exec CLI commands
 	awsSsoExecCli.register(program);
-	logger.debug('AWS SSO exec CLI commands registered');
+	cliLogger.debug('Registered AWS SSO exec CLI commands');
+
+	cliLogger.debug('CLI commands registered successfully');
 
 	// Execute the CLI
+	cliLogger.debug('Parsing CLI arguments');
 	await program.parseAsync(args);
+	cliLogger.debug('CLI command execution completed');
 }
 
 export default { runCli };

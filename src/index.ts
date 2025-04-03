@@ -21,6 +21,9 @@ import awsSsoExecTools from './tools/aws.sso.exec.tool.js';
 // Create file-level logger
 const indexLogger = Logger.forContext('index.ts');
 
+// Log initialization at debug level
+indexLogger.debug('AWS SSO MCP server module loaded');
+
 // Define version constant for easier management and consistent versioning
 const VERSION = '1.1.0';
 
@@ -37,7 +40,9 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	const serverLogger = Logger.forContext('index.ts', 'startServer');
 
 	// Load configuration
+	serverLogger.info('Starting MCP server initialization...');
 	config.load();
+	serverLogger.info('Configuration loaded successfully');
 
 	// Enable debug logging if DEBUG is set to true
 	if (config.getBoolean('DEBUG')) {
@@ -45,26 +50,27 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	}
 
 	// Log the DEBUG value to verify configuration loading
-	serverLogger.info(`DEBUG value: ${process.env.DEBUG}`);
-	serverLogger.info(
+	serverLogger.debug(`DEBUG environment variable: ${process.env.DEBUG}`);
+	serverLogger.debug(
 		`AWS_SSO_START_URL value exists: ${Boolean(process.env.AWS_SSO_START_URL)}`,
 	);
-	serverLogger.info(`Config DEBUG value: ${config.get('DEBUG')}`);
+	serverLogger.debug(`Config DEBUG value: ${config.get('DEBUG')}`);
 
+	serverLogger.info(`Initializing AWS SSO MCP server v${VERSION}`);
 	serverInstance = new McpServer({
 		name: '@aashari/mcp-server-aws-sso',
 		version: VERSION,
 	});
 
 	if (mode === 'stdio') {
+		serverLogger.info('Using STDIO transport for MCP communication');
 		transportInstance = new StdioServerTransport();
 	} else {
 		throw createUnexpectedError('SSE mode is not supported yet');
 	}
 
-	serverLogger.info(
-		`Starting server with ${mode.toUpperCase()} transport...`,
-	);
+	// Register tools
+	serverLogger.info('Registering MCP tools...');
 
 	// register authentication tools
 	awsSsoAuthTools.register(serverInstance);
@@ -78,14 +84,24 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	awsSsoExecTools.register(serverInstance);
 	serverLogger.debug('Registered AWS SSO exec tools');
 
-	return serverInstance.connect(transportInstance).catch((err) => {
+	serverLogger.info('All tools registered successfully');
+
+	try {
+		serverLogger.info(`Connecting to ${mode.toUpperCase()} transport...`);
+		await serverInstance.connect(transportInstance);
+		serverLogger.info(
+			'MCP server started successfully and ready to process requests',
+		);
+		return serverInstance;
+	} catch (err) {
 		serverLogger.error(`Failed to start server`, err);
 		process.exit(1);
-	});
+	}
 }
 
 /**
  * Main entry point - this will run when executed directly
+ * Determines whether to run in CLI or server mode based on command-line arguments
  */
 async function main() {
 	const mainLogger = Logger.forContext('index.ts', 'main');
@@ -94,17 +110,17 @@ async function main() {
 	config.load();
 
 	// Log the DEBUG value to verify configuration loading
-	mainLogger.info(`DEBUG value: ${process.env.DEBUG}`);
-	mainLogger.info(
+	mainLogger.debug(`DEBUG environment variable: ${process.env.DEBUG}`);
+	mainLogger.debug(
 		`AWS_SSO_START_URL value exists: ${Boolean(process.env.AWS_SSO_START_URL)}`,
 	);
-	mainLogger.info(`Config DEBUG value: ${config.get('DEBUG')}`);
+	mainLogger.debug(`Config DEBUG value: ${config.get('DEBUG')}`);
 
 	// Check if arguments are provided (CLI mode)
 	if (process.argv.length > 2) {
 		// CLI mode: Pass arguments to CLI runner
 		mainLogger.info('Starting in CLI mode');
-		await runCli(process.argv);
+		await runCli(process.argv.slice(2));
 		mainLogger.info('CLI execution completed');
 	} else {
 		// MCP Server mode: Start server with default STDIO
