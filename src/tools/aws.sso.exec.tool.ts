@@ -15,10 +15,10 @@ import { parseCommand } from '../utils/command.util.js';
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext('tools/aws.sso.exec.tool.ts');
+const toolLogger = Logger.forContext('tools/aws.sso.exec.tool.ts');
 
 // Log module initialization
-moduleLogger.debug('AWS SSO execution tool module initialized');
+toolLogger.debug('AWS SSO execution tool module initialized');
 
 /**
  * Handles the AWS SSO exec tool
@@ -28,11 +28,11 @@ moduleLogger.debug('AWS SSO execution tool module initialized');
  * @returns MCP response with command execution results
  */
 async function handleExec(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
-	const methodLogger = Logger.forContext(
+	const execCommandLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
 		'handleExec',
 	);
-	methodLogger.debug('Handling exec request', args);
+	execCommandLogger.debug('Handling exec request', args);
 
 	try {
 		// Parse the command string properly instead of simple split
@@ -57,7 +57,7 @@ async function handleExec(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
 			metadata: result.metadata,
 		};
 	} catch (error) {
-		methodLogger.error('Exec failed', error);
+		execCommandLogger.error('Exec failed', error);
 		return formatErrorForMcpTool(error);
 	}
 }
@@ -67,11 +67,11 @@ async function handleExec(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
  * @param server MCP server instance
  */
 function register(server: McpServer): void {
-	const methodLogger = Logger.forContext(
+	const registerLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO exec tools');
+	registerLogger.debug('Registering AWS SSO exec tools');
 
 	// Register the AWS SSO exec tool
 	server.tool(
@@ -110,7 +110,7 @@ function register(server: McpServer): void {
 		handleExec,
 	);
 
-	methodLogger.debug('AWS SSO exec tools registered');
+	registerLogger.debug('AWS SSO exec tools registered');
 }
 
 // Export the register function

@@ -15,10 +15,10 @@ import { z } from 'zod';
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext('tools/aws.sso.accounts.tool.ts');
+const toolLogger = Logger.forContext('tools/aws.sso.accounts.tool.ts');
 
 // Log module initialization
-moduleLogger.debug('AWS SSO accounts tool module initialized');
+toolLogger.debug('AWS SSO accounts tool module initialized');
 
 /**
  * Handles the AWS SSO list accounts tool
@@ -31,11 +31,11 @@ async function handleListAccounts(
 	_args: ListAccountsToolArgsType,
 	_extra: RequestHandlerExtra,
 ) {
-	const methodLogger = Logger.forContext(
+	const listAccountsLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'handleListAccounts',
 	);
-	methodLogger.debug('Handling list accounts request');
+	listAccountsLogger.debug('Handling list accounts request');
 
 	try {
 		const response = await awsSsoAccountsController.listAccounts();
@@ -50,7 +50,7 @@ async function handleListAccounts(
 			metadata: response.metadata,
 		};
 	} catch (error) {
-		methodLogger.error('List accounts failed', error);
+		listAccountsLogger.error('List accounts failed', error);
 		return formatErrorForMcpTool(error);
 	}
 }
@@ -60,11 +60,11 @@ async function handleListAccounts(
  * @param server MCP server instance
  */
 function register(server: McpServer): void {
-	const methodLogger = Logger.forContext(
+	const registerLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO accounts tools');
+	registerLogger.debug('Registering AWS SSO accounts tools');
 
 	// Define schema for the list_accounts tool
 	const ListAccountsArgs = z.object({
@@ -103,7 +103,7 @@ function register(server: McpServer): void {
 		handleListAccounts,
 	);
 
-	methodLogger.debug('AWS SSO accounts tools registered');
+	registerLogger.debug('AWS SSO accounts tools registered');
 }
 
 // Export the register function

@@ -14,10 +14,10 @@ import { z } from 'zod';
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext('tools/aws.sso.auth.tool.ts');
+const toolLogger = Logger.forContext('tools/aws.sso.auth.tool.ts');
 
 // Log module initialization
-moduleLogger.debug('AWS SSO authentication tool module initialized');
+toolLogger.debug('AWS SSO authentication tool module initialized');
 
 /**
  * Handles the AWS SSO login tool
@@ -29,11 +29,11 @@ async function handleLogin(
 	args: LoginToolArgsType,
 	_extra: RequestHandlerExtra,
 ) {
-	const methodLogger = Logger.forContext(
+	const loginLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'handleLogin',
 	);
-	methodLogger.debug('Handling login request', args);
+	loginLogger.debug('Handling login request', args);
 
 	try {
 		// Call controller to start login
@@ -53,7 +53,7 @@ async function handleLogin(
 			metadata: response.metadata,
 		};
 	} catch (error) {
-		methodLogger.error('Login failed', error);
+		loginLogger.error('Login failed', error);
 		return formatErrorForMcpTool(error);
 	}
 }
@@ -63,11 +63,11 @@ async function handleLogin(
  * @param server MCP server instance
  */
 function register(server: McpServer): void {
-	const methodLogger = Logger.forContext(
+	const registerLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'register',
 	);
-	methodLogger.debug('Registering AWS SSO auth tools');
+	registerLogger.debug('Registering AWS SSO auth tools');
 
 	// Define schema for the login tool
 	const LoginArgs = z.object({
@@ -116,7 +116,7 @@ function register(server: McpServer): void {
 		handleLogin,
 	);
 
-	methodLogger.debug('AWS SSO auth tools registered');
+	registerLogger.debug('AWS SSO auth tools registered');
 }
 
 // Export the register function

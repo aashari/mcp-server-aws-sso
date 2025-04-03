@@ -18,12 +18,12 @@ import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext(
+const controllerLogger = Logger.forContext(
 	'controllers/aws.sso.exec.controller.ts',
 );
 
 // Log module initialization
-moduleLogger.debug('AWS SSO execution controller initialized');
+controllerLogger.debug('AWS SSO execution controller initialized');
 
 /**
  * Execute an AWS CLI command with temporary credentials from SSO
@@ -52,17 +52,17 @@ moduleLogger.debug('AWS SSO execution controller initialized');
 async function executeAwsCommand(
 	options: ExecuteCommandOptions,
 ): Promise<ControllerResponse> {
-	const methodLogger = Logger.forContext(
+	const execCommandLogger = Logger.forContext(
 		'controllers/aws.sso.exec.controller.ts',
 		'executeAwsCommand',
 	);
-	methodLogger.debug('Executing AWS CLI command', options);
+	execCommandLogger.debug('Executing AWS CLI command', options);
 
 	try {
 		// Check if user is authenticated
 		const authStatus = await checkSsoAuthStatus();
 		if (!authStatus.isAuthenticated) {
-			methodLogger.debug('User is not authenticated', {
+			execCommandLogger.debug('User is not authenticated', {
 				errorMessage: authStatus.errorMessage,
 			});
 
@@ -85,13 +85,13 @@ async function executeAwsCommand(
 
 		// Log region usage
 		if (options.region) {
-			methodLogger.debug('Using explicitly provided region', {
+			execCommandLogger.debug('Using explicitly provided region', {
 				region: options.region,
 			});
 		}
 
 		// Execute the command
-		methodLogger.debug('Executing command with environment', {
+		execCommandLogger.debug('Executing command with environment', {
 			command: options.command.join(' '),
 			env: {
 				AWS_REGION: options.region,
@@ -106,7 +106,7 @@ async function executeAwsCommand(
 			options.region,
 		);
 
-		methodLogger.debug('Command execution completed', {
+		execCommandLogger.debug('Command execution completed', {
 			exitCode: result.exitCode,
 			stdoutLength: result.stdout.length,
 			stderrLength: result.stderr.length,

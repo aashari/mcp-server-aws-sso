@@ -9,10 +9,10 @@ import { Logger } from './logger.util.js';
  */
 
 // Create a file-level logger for this module
-const logger = Logger.forContext('utils/command.util.ts');
+const utilLogger = Logger.forContext('utils/command.util.ts');
 
 // Log module initialization
-logger.debug('Command utility initialized');
+utilLogger.debug('Command utility initialized');
 
 /**
  * Parse a command string into an array of arguments, properly handling quoted strings
@@ -30,11 +30,11 @@ logger.debug('Command utility initialized');
  */
 export function parseCommand(commandString: string): string[] {
 	if (!commandString || commandString.trim() === '') {
-		logger.debug('Empty command string provided');
+		utilLogger.debug('Empty command string provided');
 		return [];
 	}
 
-	logger.debug(`Parsing command: ${commandString}`);
+	utilLogger.debug(`Parsing command: ${commandString}`);
 
 	const args: string[] = [];
 	let currentArg = '';
@@ -96,10 +96,12 @@ export function parseCommand(commandString: string): string[] {
 
 	// Warning if we end with unclosed quotes
 	if (inQuotes) {
-		logger.warn(`Unclosed ${quoteChar} quote in command: ${commandString}`);
+		utilLogger.warn(
+			`Unclosed ${quoteChar} quote in command: ${commandString}`,
+		);
 	}
 
-	logger.debug(
+	utilLogger.debug(
 		`Parsed into ${args.length} arguments: ${JSON.stringify(args)}`,
 	);
 	return args;

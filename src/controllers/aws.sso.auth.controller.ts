@@ -28,12 +28,12 @@ import {
  */
 
 // Create a module logger
-const moduleLogger = Logger.forContext(
+const controllerLogger = Logger.forContext(
 	'controllers/aws.sso.auth.controller.ts',
 );
 
 // Log module initialization
-moduleLogger.debug('AWS SSO authentication controller initialized');
+controllerLogger.debug('AWS SSO authentication controller initialized');
 
 /**
  * Start the AWS SSO login process and automatically poll for the token
@@ -58,11 +58,11 @@ async function startLogin(params?: {
 	autoPoll?: boolean;
 	launchBrowser?: boolean;
 }): Promise<ControllerResponse> {
-	const methodLogger = Logger.forContext(
+	const loginLogger = Logger.forContext(
 		'controllers/aws.sso.auth.controller.ts',
 		'startLogin',
 	);
-	methodLogger.debug('Starting AWS SSO login process');
+	loginLogger.debug('Starting AWS SSO login process');
 
 	// Always poll for token unless explicitly disabled
 	const autoPoll = params?.autoPoll !== false;
@@ -72,7 +72,7 @@ async function startLogin(params?: {
 		// Check if we already have a valid token
 		const cachedToken = await getCachedSsoToken();
 		if (cachedToken) {
-			methodLogger.debug('Found valid token in cache');
+			loginLogger.debug('Found valid token in cache');
 
 			// Format expiration date for display
 			let expiresDate = 'Unknown';
@@ -84,7 +84,7 @@ async function startLogin(params?: {
 					expiresDate = expirationDate.toLocaleString();
 				}
 			} catch (error) {
-				methodLogger.error('Error formatting expiration date', error);
+				loginLogger.error('Error formatting expiration date', error);
 			}
 
 			// Don't try to list accounts, which might fail - just show that we're already logged in
@@ -99,7 +99,7 @@ async function startLogin(params?: {
 		}
 
 		// Start the login flow
-		methodLogger.debug('No valid token found, initiating new login flow');
+		loginLogger.debug('No valid token found, initiating new login flow');
 		const deviceAuth = await startSsoLogin();
 
 		// Get the cached device info to retrieve additional properties
@@ -114,12 +114,12 @@ async function startLogin(params?: {
 				const verificationUrl = deviceAuth.verificationUriComplete;
 
 				if (!verificationUrl) {
-					methodLogger.debug(
+					loginLogger.debug(
 						'No verificationUriComplete provided, browser launch might not work properly',
 					);
 				}
 
-				methodLogger.debug('Attempting to launch browser', {
+				loginLogger.debug('Attempting to launch browser', {
 					verificationUri:
 						verificationUrl || deviceAuth.verificationUri,
 					userCode: deviceAuth.userCode,
@@ -133,17 +133,17 @@ async function startLogin(params?: {
 				// Important: Use the complete URI that includes the user code if available
 				await open(verificationUrl || deviceAuth.verificationUri);
 				browserLaunched = true;
-				methodLogger.debug(
+				loginLogger.debug(
 					'Browser launched successfully with URL:',
 					verificationUrl || deviceAuth.verificationUri,
 				);
 			} catch (browserError) {
-				methodLogger.error('Failed to launch browser', browserError);
+				loginLogger.error('Failed to launch browser', browserError);
 				// Browser launch failed, but continue with manual instructions
 				browserLaunched = false;
 			}
 		} else {
-			methodLogger.debug('Browser launch disabled');
+			loginLogger.debug('Browser launch disabled');
 		}
 
 		// Build initial response based on whether browser was launched
@@ -170,12 +170,12 @@ async function startLogin(params?: {
 		}
 
 		// Display the login instructions
-		methodLogger.info(initialContent);
+		loginLogger.info(initialContent);
 
 		// If autoPoll is disabled, just return instructions
 		if (!autoPoll) {
-			methodLogger.info('Complete the authentication in your browser.');
-			methodLogger.info(
+			loginLogger.info('Complete the authentication in your browser.');
+			loginLogger.info(
 				"You can then use 'list-accounts' to verify authentication and view available accounts.",
 			);
 
@@ -205,18 +205,18 @@ async function startLogin(params?: {
 		}
 
 		// With automatic polling enabled, wait for authentication to complete
-		methodLogger.debug(
+		loginLogger.debug(
 			'Automatic polling enabled, waiting for authentication',
 		);
 
-		methodLogger.info(
+		loginLogger.info(
 			'Waiting for you to complete authentication in your browser...',
 		);
 
 		// Now poll for the token - this will continuously poll until success or timeout
 		try {
 			const authResult = await pollForSsoToken();
-			methodLogger.debug('Authentication successful, token received', {
+			loginLogger.debug('Authentication successful, token received', {
 				expiresAt: authResult.expiresAt,
 			});
 
@@ -231,11 +231,11 @@ async function startLogin(params?: {
 					expiresDate = expirationDate.toLocaleString();
 				}
 			} catch (error) {
-				methodLogger.error('Error formatting expiration date', error);
+				loginLogger.error('Error formatting expiration date', error);
 				// Keep default value
 			}
 
-			methodLogger.info('Authentication successful!');
+			loginLogger.info('Authentication successful!');
 
 			// Return success without trying to list accounts
 			return {
@@ -246,7 +246,7 @@ async function startLogin(params?: {
 				},
 			};
 		} catch (error) {
-			methodLogger.error('Error during authentication polling', error);
+			loginLogger.error('Error during authentication polling', error);
 
 			// Return error indicating polling failed
 			return {
@@ -295,11 +295,11 @@ async function getCredentials(params: {
 	accountId: string;
 	roleName: string;
 }): Promise<ControllerResponse> {
-	const methodLogger = Logger.forContext(
+	const credentialsLogger = Logger.forContext(
 		'controllers/aws.sso.auth.controller.ts',
 		'getCredentials',
 	);
-	methodLogger.debug(
+	credentialsLogger.debug(
 		`Getting credentials for role ${params.roleName} in account ${params.accountId}`,
 	);
 
@@ -312,11 +312,11 @@ async function getCredentials(params: {
 		let fromCache = false;
 
 		if (credentials) {
-			methodLogger.debug('Using cached credentials');
+			credentialsLogger.debug('Using cached credentials');
 			fromCache = true;
 		} else {
 			// Get fresh credentials
-			methodLogger.debug('Getting fresh credentials');
+			credentialsLogger.debug('Getting fresh credentials');
 			credentials = await getAwsCredentials({
 				accountId: params.accountId,
 				roleName: params.roleName,
@@ -375,16 +375,16 @@ async function checkSsoAuthStatus(): Promise<{
 	isAuthenticated: boolean;
 	errorMessage?: string;
 }> {
-	const methodLogger = Logger.forContext(
+	const statusLogger = Logger.forContext(
 		'controllers/aws.sso.auth.controller.ts',
 		'checkSsoAuthStatus',
 	);
-	methodLogger.debug('Checking AWS SSO authentication status');
+	statusLogger.debug('Checking AWS SSO authentication status');
 
 	try {
 		const token = await getCachedSsoToken();
 		if (!token) {
-			methodLogger.debug('No SSO token found');
+			statusLogger.debug('No SSO token found');
 			return {
 				isAuthenticated: false,
 				errorMessage:
@@ -395,7 +395,7 @@ async function checkSsoAuthStatus(): Promise<{
 		// Check if token is expired
 		const now = Math.floor(Date.now() / 1000); // Current time in seconds
 		if (token.expiresAt <= now) {
-			methodLogger.debug('SSO token is expired');
+			statusLogger.debug('SSO token is expired');
 			return {
 				isAuthenticated: false,
 				errorMessage:
@@ -403,10 +403,10 @@ async function checkSsoAuthStatus(): Promise<{
 			};
 		}
 
-		methodLogger.debug('User is authenticated with valid token');
+		statusLogger.debug('User is authenticated with valid token');
 		return { isAuthenticated: true };
 	} catch (error) {
-		methodLogger.error('Error checking authentication status', error);
+		statusLogger.error('Error checking authentication status', error);
 		return {
 			isAuthenticated: false,
 			errorMessage: `Error checking authentication: ${error instanceof Error ? error.message : 'Unknown error'}`,
