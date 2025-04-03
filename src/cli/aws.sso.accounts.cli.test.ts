@@ -32,7 +32,7 @@ describe('AWS SSO Accounts CLI Commands', () => {
 				return;
 			}
 
-			const { stdout, exitCode } = await CliTestUtil.runCommand([
+			const { exitCode } = await CliTestUtil.runCommand([
 				'list-accounts',
 			]);
 

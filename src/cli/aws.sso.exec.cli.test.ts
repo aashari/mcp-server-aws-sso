@@ -13,9 +13,9 @@ describe('AWS SSO Exec CLI Commands', () => {
 		}
 	});
 
-	/**
-	 * Helper function to skip tests if AWS SSO credentials are not available
-	 */
+	// Note: skipIfNoCredentials function is defined but not currently used
+	// Keeping the commented implementation for future use if needed
+	/*
 	const skipIfNoCredentials = async () => {
 		try {
 			await getAwsSsoConfig();
@@ -24,6 +24,7 @@ describe('AWS SSO Exec CLI Commands', () => {
 			return true;
 		}
 	};
+	*/
 
 	describe('exec command', () => {
 		it('should provide helpful error when no command is provided', async () => {
