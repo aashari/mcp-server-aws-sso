@@ -30,43 +30,46 @@ describe('AWS SSO Exec CLI Commands', () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand(['exec']);
 
 			expect(exitCode).not.toBe(0);
-			expect(stderr).toMatch(
-				/command is required|missing required|specify a command/i,
-			);
+			expect(stderr).toMatch(/required option.*--account-id/i);
 		}, 15000);
 
 		it('should handle missing account option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
 				'exec',
-				'--role',
+				'--role-name',
 				'AWSReadOnlyAccess',
-				'--',
-				'aws',
-				's3',
-				'ls',
+				'--command',
+				'aws s3 ls',
 			]);
 
 			expect(exitCode).not.toBe(0);
-			expect(stderr).toMatch(
-				/account.*required|missing required|specify.*account/i,
-			);
+			expect(stderr).toMatch(/required option.*--account-id/i);
 		}, 15000);
 
 		it('should handle missing role option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
 				'exec',
-				'--account',
+				'--account-id',
 				'123456789012',
-				'--',
-				'aws',
-				's3',
-				'ls',
+				'--command',
+				'aws s3 ls',
 			]);
 
 			expect(exitCode).not.toBe(0);
-			expect(stderr).toMatch(
-				/role.*required|missing required|specify.*role/i,
-			);
+			expect(stderr).toMatch(/required option.*--role-name/i);
+		}, 15000);
+
+		it('should handle missing command option', async () => {
+			const { stderr, exitCode } = await CliTestUtil.runCommand([
+				'exec',
+				'--account-id',
+				'123456789012',
+				'--role-name',
+				'AWSReadOnlyAccess',
+			]);
+
+			expect(exitCode).not.toBe(0);
+			expect(stderr).toMatch(/required option.*--command/i);
 		}, 15000);
 
 		it('should handle help flag correctly', async () => {
