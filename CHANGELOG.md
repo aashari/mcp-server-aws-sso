@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.0...v1.2.1) (2025-04-03)
+
+
+### Bug Fixes
+
+* **test:** resolve TypeScript linting errors in test files ([bfe63f6](https://github.com/aashari/mcp-server-aws-sso/commit/bfe63f68d85a293e5af0d8d3276b8d65e38ee537))
+
 # [1.2.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.1.3...v1.2.0) (2025-04-03)
 
 
