@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.1.0...v1.1.1) (2025-04-03)
+
+
+### Bug Fixes
+
+* **aws-sso:** update AWS SSO integration to use SDK for listing accounts and roles ([d9ae338](https://github.com/aashari/mcp-server-aws-sso/commit/d9ae338c42075d1e869e27aa1065d963e135e323))
+
 # [1.1.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.0.0...v1.1.0) (2025-03-29)
 
 
