@@ -64,11 +64,16 @@ function registerLoginCommand(program: Command): void {
         EXAMPLES:
         $ mcp-aws-sso login             # Login with browser launch
         $ mcp-aws-sso login --no-browser # Login without browser launch
+        $ mcp-aws-sso login --no-auto-poll # Login without automatic polling
 			`,
 		)
 		.option(
 			'--no-browser',
 			'Disable automatic browser launch, only show manual instructions',
+		)
+		.option(
+			'--no-auto-poll',
+			'Disable automatic polling for token completion (used mainly for testing)',
 		)
 		.action(async (options) => {
 			const loginLogger = Logger.forContext(
@@ -77,11 +82,13 @@ function registerLoginCommand(program: Command): void {
 			);
 			loginLogger.debug('Starting AWS SSO login', {
 				launchBrowser: options.browser,
+				autoPoll: options.autoPoll,
 			});
 
 			try {
 				const result = await awsSsoAuthController.startLogin({
 					launchBrowser: options.browser,
+					autoPoll: options.autoPoll,
 				});
 				console.log(result.content);
 			} catch (error) {

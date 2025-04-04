@@ -33,10 +33,11 @@ describe('AWS SSO Auth CLI Commands', () => {
 			}
 
 			// Since this is just a test, we'll run with the --no-browser flag
-			// and don't need to mock process.stdin
+			// and disable auto-polling to prevent timeouts
 			const { stdout, exitCode } = await CliTestUtil.runCommand([
 				'login',
 				'--no-browser',
+				'--no-auto-poll', // Disable auto-polling to prevent test timeout
 			]);
 
 			// During tests, the actual exit code may vary depending on the environment
@@ -45,7 +46,11 @@ describe('AWS SSO Auth CLI Commands', () => {
 			// We might not always get Markdown output in test environments,
 			// so only validate that some output was produced
 			expect(stdout.length).toBeGreaterThan(0);
-		}, 60000);
+			// Verify that the output contains instructions for manual authentication
+			expect(stdout).toMatch(
+				/verification|user code|browser|authenticate/i,
+			);
+		}, 15000); // Reduce timeout since we're not polling anymore
 
 		it('should handle help flag correctly', async () => {
 			const { stdout, exitCode } = await CliTestUtil.runCommand([
