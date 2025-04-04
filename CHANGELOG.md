@@ -1,3 +1,12 @@
+## [1.2.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.2...v1.2.3) (2025-04-04)
+
+
+### Bug Fixes
+
+* standardize README.md format across MCP servers ([4f83f2e](https://github.com/aashari/mcp-server-aws-sso/commit/4f83f2e8381bdb59425abed524a3b8ea92322bc1))
+* standardize tool registration function names to registerTools ([0b640a1](https://github.com/aashari/mcp-server-aws-sso/commit/0b640a1d5ed4910ce4be4a77326495365cf05834))
+* **tests:** add --no-auto-poll flag to prevent login test timeouts ([d763943](https://github.com/aashari/mcp-server-aws-sso/commit/d763943aefa9e25ccb05648b8df2da6f5f74fab5))
+
 ## [1.2.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.1...v1.2.2) (2025-04-03)
 
 
