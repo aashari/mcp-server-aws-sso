@@ -71,15 +71,15 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	serverLogger.info('Registering MCP tools...');
 
 	// register authentication tools
-	awsSsoAuthTools.register(serverInstance);
+	awsSsoAuthTools.registerTools(serverInstance);
 	serverLogger.debug('Registered AWS SSO authentication tools');
 
 	// register accounts tools
-	awsSsoAccountsTools.register(serverInstance);
+	awsSsoAccountsTools.registerTools(serverInstance);
 	serverLogger.debug('Registered AWS SSO accounts tools');
 
 	// register exec tools
-	awsSsoExecTools.register(serverInstance);
+	awsSsoExecTools.registerTools(serverInstance);
 	serverLogger.debug('Registered AWS SSO exec tools');
 
 	serverLogger.info('All tools registered successfully');

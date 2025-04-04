@@ -62,10 +62,10 @@ async function handleLogin(
  * Register AWS SSO auth tools with the MCP server
  * @param server MCP server instance
  */
-function register(server: McpServer): void {
+function registerTools(server: McpServer): void {
 	const registerLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
-		'register',
+		'registerTools',
 	);
 	registerLogger.debug('Registering AWS SSO auth tools');
 
@@ -120,4 +120,4 @@ function register(server: McpServer): void {
 }
 
 // Export the register function
-export default { register };
+export default { registerTools };

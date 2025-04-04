@@ -66,10 +66,10 @@ async function handleExec(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
  * Register AWS SSO exec tools with the MCP server
  * @param server MCP server instance
  */
-function register(server: McpServer): void {
+function registerTools(server: McpServer): void {
 	const registerLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
-		'register',
+		'registerTools',
 	);
 	registerLogger.debug('Registering AWS SSO exec tools');
 
@@ -114,4 +114,4 @@ function register(server: McpServer): void {
 }
 
 // Export the register function
-export default { register };
+export default { registerTools };
