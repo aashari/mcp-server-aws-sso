@@ -89,7 +89,7 @@
 	"dependencies": {
 		"@aws-sdk/client-sso": "^3.777.0",
 		"@aws-sdk/client-sso-oidc": "^3.777.0",
-		"@modelcontextprotocol/sdk": "^1.8.0",
+		"@modelcontextprotocol/sdk": "^1.9.0",
 		"commander": "^13.1.0",
 		"dotenv": "^16.4.7",
 		"open": "^10.1.0",
