@@ -1,7 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { LoginToolArgsType } from './aws.sso.types.js';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
 import { z } from 'zod';
@@ -22,13 +21,9 @@ toolLogger.debug('AWS SSO authentication tool module initialized');
 /**
  * Handles the AWS SSO login tool
  * @param args Tool arguments
- * @param _extra Extra request handler information
  * @returns MCP response with login information
  */
-async function handleLogin(
-	args: LoginToolArgsType,
-	_extra: RequestHandlerExtra,
-) {
+async function handleLogin(args: LoginToolArgsType) {
 	const loginLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'handleLogin',

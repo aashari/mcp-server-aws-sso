@@ -1,7 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { ExecToolArgs, ExecToolArgsType } from './aws.sso.types.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
 import { parseCommand } from '../utils/command.util.js';
@@ -24,10 +23,9 @@ toolLogger.debug('AWS SSO execution tool module initialized');
  * Handles the AWS SSO exec tool
  * Executes AWS CLI commands with credentials from AWS SSO
  * @param args Tool arguments with account info and command
- * @param _extra Extra request handler information
  * @returns MCP response with command execution results
  */
-async function handleExec(args: ExecToolArgsType, _extra: RequestHandlerExtra) {
+async function handleExec(args: ExecToolArgsType) {
 	const execCommandLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
 		'handleExec',
