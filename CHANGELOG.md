@@ -1,3 +1,15 @@
+# [1.3.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.6...v1.3.0) (2025-04-25)
+
+
+### Bug Fixes
+
+* unify tool names and descriptions for consistency ([0047793](https://github.com/aashari/mcp-server-aws-sso/commit/00477938a3134c567b4b74b6f59e00f816abdce5))
+
+
+### Features
+
+* prefix AWS SSO tool names with 'aws_sso_' for uniqueness ([b55619d](https://github.com/aashari/mcp-server-aws-sso/commit/b55619dfedd8afbbf899ffa6ad526563242561a0))
+
 ## [1.2.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.5...v1.2.6) (2025-04-22)
 
 
