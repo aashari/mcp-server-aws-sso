@@ -74,37 +74,7 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO exec tool
 	server.tool(
 		'aws_sso_exec_command',
-		`Execute an AWS CLI command using temporary credentials obtained via SSO.
-
-        PURPOSE: Run AWS CLI commands with credentials automatically obtained from AWS SSO.
-        
-        WHEN TO USE:
-        - After authenticating with AWS SSO via login
-        - When you need to interact with AWS resources via the CLI
-        - When you need temporary credentials for specific accounts and roles
-        
-        WHEN NOT TO USE:
-        - When you are not logged in (use 'aws_sso_login' first)
-        - When you don't know which account/role to use (use 'aws_sso_list_accounts' first)
-        - For operations that don't require AWS CLI
-        
-        NOTES:
-        - Credentials are obtained just-in-time for the command execution
-        - Commands are executed with proper AWS environment variables set
-        - The command must start with "aws" to use the AWS CLI
-        - Quotes within commands are handled properly
-        
-        RETURNS: Markdown output with command results, including stdout, stderr, and exit code
-        
-        EXAMPLES:
-        - List S3 buckets: { accountId: "123456789012", roleName: "ReadOnlyAccess", command: "aws s3 ls" }
-        - Describe EC2 instances in a region: { accountId: "123456789012", roleName: "PowerUserAccess", region: "us-west-2", command: "aws ec2 describe-instances" }
-        - Complex command with quotes: { accountId: "123456789012", roleName: "ReadOnlyAccess", command: "aws ec2 describe-instances --filters \\"Name=instance-state-name,Values=running\\"" }
-
-        ERRORS:
-        - Authentication required: You must login first using login
-        - Invalid credentials: The accountId/roleName combination is invalid or you lack permission
-        - Command errors: The AWS CLI command itself may return errors`,
+		`Executes an AWS CLI command using temporary credentials obtained via AWS SSO for a specific account (\`accountId\`) and role (\`roleName\`).\n- Provide the full command string (starting with 'aws') in the \`command\` parameter. Quotes within the command are handled.\n- Optionally specify the AWS \`region\`.\nUse to interact with AWS resources programmatically via the CLI.\n**Note:** Requires prior successful authentication using \`aws_sso_login\` and requires AWS CLI to be installed on the host system where the server is running.\nReturns formatted stdout, stderr, and exit code of the executed command.`,
 		ExecToolArgs.shape,
 		handleExec,
 	);

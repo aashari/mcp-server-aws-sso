@@ -78,35 +78,10 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO login tool
 	server.tool(
 		'aws_sso_login',
-		`Authenticate with AWS SSO via browser.
-
-        PURPOSE: Initiates AWS SSO device authorization flow, launching a browser for login, 
-        and automatically polls for token completion.
-
-        WHEN TO USE:
-        - Before accessing any AWS resources
-        - When your authentication token has expired
-        - As the first step in any AWS SSO workflow
-
-        WHEN NOT TO USE:
-        - When you're already authenticated (unless you explicitly want to reauthenticate)
-        
-        NOTES:
-        - Browser launch can be disabled with launchBrowser: false
-        - Authentication flow is PKCE-based with a verification code displayed
-        - Temporary credentials are acquired via SSO, not long-term access keys
-
-        RETURNS: Markdown output with either login instructions or authentication success confirmation
-        (including available AWS accounts if successfully authenticated).
-
-        EXAMPLES:
-        - Basic usage: {}
-        - Without browser launch: { launchBrowser: false }
-
-        ERRORS:
-        - Browser launch failure: If unable to open browser automatically
-        - Authentication timeout: If user doesn't complete authentication in time
-        - AWS SSO service errors: If unable to connect to AWS SSO service`,
+		`Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction.
+- Automatically polls for token completion after user approves in browser.
+- Use this as the first step before using other AWS SSO tools like \`aws_sso_list_accounts\` or \`aws_sso_exec_command\`.
+Returns Markdown with login instructions (URL and code) or confirmation of success, including available accounts.`,
 		LoginArgs.shape,
 		handleLogin,
 	);

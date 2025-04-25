@@ -69,32 +69,7 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_sso_list_accounts',
-		`List AWS accounts and roles accessible via SSO.
-
-        PURPOSE: Provides a comprehensive view of all AWS accounts you have access to via SSO,
-        along with the roles available in each account.
-
-        WHEN TO USE:
-        - After authenticating with AWS SSO
-        - When you need to see all available accounts and roles in one view
-        - To get an overview of your AWS SSO access permissions
-
-        WHEN NOT TO USE:
-        - When you're not logged in (use 'aws_sso_login' first)
-        - When you need to execute AWS CLI commands (use 'exec')
-        
-        NOTES:
-        - Results are cached to avoid rate limits with the AWS SSO API
-        - This tool automatically retrieves all roles for all accounts in a single call
-
-        RETURNS: Markdown output with a detailed list of all accounts and the roles available in each account.
-
-        EXAMPLES:
-        - List all accounts and roles: {}
-
-        ERRORS:
-        - Authentication required: You must login first using login
-        - Rate limiting: If you have a large number of accounts, the AWS API may return rate limit errors`,
+		`Lists all AWS accounts and associated roles accessible to the authenticated user via AWS SSO.\n- Use this after login (\`aws_sso_login\`) to discover available accounts and roles for use with \`aws_sso_exec_command\`.\n- Results are cached for efficiency.\nReturns a Markdown list of accounts with their available roles.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
 		ListAccountsArgs.shape,
 		handleListAccounts,
 	);

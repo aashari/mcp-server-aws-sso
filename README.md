@@ -106,7 +106,7 @@ This configuration launches the server automatically at runtime.
 
 This section covers the MCP tools available when using this server with an AI assistant. Note that MCP tools use `snake_case` for tool names and `camelCase` for parameters.
 
-## `login`
+## `aws_sso_login`
 
 Authenticate with AWS SSO via browser.
 
@@ -124,7 +124,7 @@ _or:_
 
 ---
 
-## `list_accounts`
+## `aws_sso_list_accounts`
 
 List all AWS accounts and roles available via SSO.
 
@@ -136,7 +136,7 @@ List all AWS accounts and roles available via SSO.
 
 ---
 
-## `exec`
+## `aws_sso_exec_command`
 
 Execute AWS CLI commands using temporary credentials from AWS SSO.
 
@@ -165,7 +165,7 @@ _or:_
 
 # Command-Line Interface (CLI)
 
-The CLI uses kebab-case for commands (e.g., `login`) and options (e.g., `--account-id`).
+The CLI uses kebab-case for commands (e.g., `aws-sso-login`) and options (e.g., `--account-id`).
 
 ## Quick Use with `npx`
 
@@ -175,13 +175,13 @@ export AWS_SSO_START_URL=https://your-sso-portal.awsapps.com/start
 export AWS_REGION=us-east-1
 
 # Login to AWS SSO
-npx -y @aashari/mcp-server-aws-sso login
+npx -y @aashari/mcp-server-aws-sso aws-sso-login
 
 # List available accounts and roles
-npx -y @aashari/mcp-server-aws-sso list-accounts
+npx -y @aashari/mcp-server-aws-sso aws-sso-list-accounts
 
 # Execute AWS CLI command with SSO credentials
-npx -y @aashari/mcp-server-aws-sso exec \
+npx -y @aashari/mcp-server-aws-sso aws-sso-exec-command \
   --account-id 123456789012 \
   --role-name ReadOnly \
   --command "aws s3 ls"
@@ -196,7 +196,7 @@ npm install -g @aashari/mcp-server-aws-sso
 Then run directly:
 
 ```bash
-mcp-aws-sso login
+mcp-aws-sso aws-sso-login
 ```
 
 ## Discover More CLI Options
@@ -210,9 +210,9 @@ mcp-aws-sso --help
 Or get detailed help for a specific command:
 
 ```bash
-mcp-aws-sso login --help
-mcp-aws-sso exec --help
-mcp-aws-sso list-accounts --help
+mcp-aws-sso aws-sso-login --help
+mcp-aws-sso aws-sso-exec-command --help
+mcp-aws-sso aws-sso-list-accounts --help
 ```
 
 ---
