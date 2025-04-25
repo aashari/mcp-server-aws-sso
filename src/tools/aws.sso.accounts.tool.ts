@@ -68,8 +68,8 @@ function registerTools(server: McpServer): void {
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
-		'list_accounts',
-		`List all AWS accounts and roles available via SSO.
+		'aws_sso_list_accounts',
+		`List AWS accounts and roles accessible via SSO.
 
         PURPOSE: Provides a comprehensive view of all AWS accounts you have access to via SSO,
         along with the roles available in each account.
@@ -80,7 +80,8 @@ function registerTools(server: McpServer): void {
         - To get an overview of your AWS SSO access permissions
 
         WHEN NOT TO USE:
-        - Before authenticating with AWS SSO
+        - When you're not logged in (use 'aws_sso_login' first)
+        - When you need to execute AWS CLI commands (use 'exec')
         
         NOTES:
         - Results are cached to avoid rate limits with the AWS SSO API

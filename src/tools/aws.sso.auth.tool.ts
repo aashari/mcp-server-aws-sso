@@ -77,7 +77,7 @@ function registerTools(server: McpServer): void {
 
 	// Register the AWS SSO login tool
 	server.tool(
-		'login',
+		'aws_sso_login',
 		`Authenticate with AWS SSO via browser.
 
         PURPOSE: Initiates AWS SSO device authorization flow, launching a browser for login, 

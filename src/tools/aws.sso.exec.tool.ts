@@ -73,8 +73,8 @@ function registerTools(server: McpServer): void {
 
 	// Register the AWS SSO exec tool
 	server.tool(
-		'exec',
-		`Execute AWS CLI commands using temporary credentials from AWS SSO.
+		'aws_sso_exec_command',
+		`Execute an AWS CLI command using temporary credentials obtained via SSO.
 
         PURPOSE: Run AWS CLI commands with credentials automatically obtained from AWS SSO.
         
@@ -84,8 +84,9 @@ function registerTools(server: McpServer): void {
         - When you need temporary credentials for specific accounts and roles
         
         WHEN NOT TO USE:
-        - Before authenticating with AWS SSO
-        - For non-AWS commands
+        - When you are not logged in (use 'aws_sso_login' first)
+        - When you don't know which account/role to use (use 'aws_sso_list_accounts' first)
+        - For operations that don't require AWS CLI
         
         NOTES:
         - Credentials are obtained just-in-time for the command execution
