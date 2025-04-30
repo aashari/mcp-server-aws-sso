@@ -90,17 +90,45 @@ class ConfigLoader {
 			const configContent = fs.readFileSync(globalConfigPath, 'utf8');
 			const config = JSON.parse(configContent);
 
-			if (
-				!config[this.packageName] ||
-				!config[this.packageName].environments
-			) {
+			// Determine the potential keys for the current package
+			const shortKey = 'aws-sso'; // Project-specific short key
+			const fullPackageName = this.packageName; // e.g., '@aashari/mcp-server-aws-sso'
+			const unscopedPackageName =
+				fullPackageName.split('/')[1] || fullPackageName; // e.g., 'mcp-server-aws-sso'
+
+			const potentialKeys = [
+				shortKey,
+				fullPackageName,
+				unscopedPackageName,
+			];
+			let foundConfigSection: {
+				environments?: Record<string, unknown>;
+			} | null = null;
+			let usedKey: string | null = null;
+
+			for (const key of potentialKeys) {
+				if (
+					config[key] &&
+					typeof config[key] === 'object' &&
+					config[key].environments
+				) {
+					foundConfigSection = config[key];
+					usedKey = key;
+					methodLogger.debug(`Found configuration using key: ${key}`);
+					break; // Stop once found
+				}
+			}
+
+			if (!foundConfigSection || !foundConfigSection.environments) {
 				methodLogger.debug(
-					`No configuration found for ${this.packageName}`,
+					`No configuration found for ${
+						this.packageName
+					} using keys: ${potentialKeys.join(', ')}`,
 				);
 				return;
 			}
 
-			const environments = config[this.packageName].environments;
+			const environments = foundConfigSection.environments;
 			for (const [key, value] of Object.entries(environments)) {
 				// Only set if not already defined in process.env
 				if (process.env[key] === undefined) {
@@ -108,7 +136,9 @@ class ConfigLoader {
 				}
 			}
 
-			methodLogger.debug('Loaded configuration from global config file');
+			methodLogger.debug(
+				`Loaded configuration from global config file using key: ${usedKey}`,
+			);
 		} catch (error) {
 			methodLogger.error('Error loading global config file', error);
 		}

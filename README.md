@@ -55,7 +55,7 @@ Create or edit `~/.mcp/configs.json`:
 
 ```json
 {
-	"@aashari/mcp-server-aws-sso": {
+	"aws-sso": {
 		"environments": {
 			"DEBUG": "true",
 			"AWS_REGION": "us-east-1",
@@ -67,6 +67,8 @@ Create or edit `~/.mcp/configs.json`:
 
 - `AWS_REGION`: Your primary AWS region (e.g., `us-east-1`)
 - `AWS_SSO_START_URL`: Your AWS SSO portal URL
+
+**Note:** For backward compatibility, the server will also recognize configurations under the full package name (`@aashari/mcp-server-aws-sso`) or the unscoped package name (`mcp-server-aws-sso`) if the `aws-sso` key is not found. However, using the short `aws-sso` key is recommended for new configurations.
 
 ### Method B: Environment Variables
 
@@ -90,7 +92,7 @@ Configure your MCP-compatible client to launch this server.
 ```json
 {
 	"mcpServers": {
-		"aashari/mcp-server-aws-sso": {
+		"aws-sso": {
 			"command": "npx",
 			"args": ["-y", "@aashari/mcp-server-aws-sso"]
 		}
