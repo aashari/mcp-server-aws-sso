@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.3.0...v1.4.0) (2025-04-30)
+
+
+### Bug Fixes
+
+* Standardize and shorten MCP tool names ([5aeba56](https://github.com/aashari/mcp-server-aws-sso/commit/5aeba56b9e1efee3a345ec36aa610537d44b2f49))
+
+
+### Features
+
+* Support multiple keys for global config lookup ([186651b](https://github.com/aashari/mcp-server-aws-sso/commit/186651b7cb80603e0d93e184c013bb7f1703b975))
+
 # [1.3.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.2.6...v1.3.0) (2025-04-25)
 
 
