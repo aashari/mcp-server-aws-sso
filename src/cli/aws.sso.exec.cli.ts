@@ -40,54 +40,21 @@ function register(program: Command): void {
  */
 function registerExecCommand(program: Command): void {
 	program
-		.command('exec')
+		.command('exec-cmd')
 		.description(
-			`Execute AWS CLI commands using credentials from AWS SSO.
-			
-        PURPOSE: Run AWS CLI commands with temporary credentials obtained from AWS SSO without
-        having to manually configure profiles or export environment variables.
-
-        WHEN TO USE:
-        - When you need to quickly run AWS CLI commands with SSO credentials
-        - When you need to work with multiple AWS accounts and roles
-        - When you want to execute commands without modifying your AWS profile configuration
-        - After authenticating with AWS SSO using the 'login' command
-        
-        PREREQUISITES:
-        - Valid AWS SSO authentication (run 'login' command first)
-        - AWS CLI (aws) must be installed on your system
-        
-        AUTHENTICATION:
-        - Credentials are obtained automatically and temporarily for the command execution
-        - No profile configuration required
-        
-        OUTPUT: Command output is displayed with stdout, stderr, and exit code information.
-        
-        EXAMPLES:
-        $ mcp-aws-sso exec --account-id 123456789012 --role-name AWSAdministratorAccess --command "aws s3 ls"
-        $ mcp-aws-sso exec --account-id 123456789012 --role-name AWSReadOnlyAccess --region us-west-2 --command "aws ec2 describe-instances"
-			`,
+			'Execute AWS CLI commands using temporary credentials from AWS SSO for a specific account/role.',
 		)
-		.requiredOption(
-			'--account-id <id>',
-			'AWS account ID to use for the command execution',
-		)
-		.requiredOption(
-			'--role-name <role>',
-			'IAM role name to assume for the command execution',
-		)
-		.option(
-			'--region <region>',
-			'AWS region to use for the command execution',
-		)
+		.requiredOption('--account-id <id>', 'AWS account ID (12-digit number)')
+		.requiredOption('--role-name <role>', 'AWS role name to assume via SSO')
+		.option('--region <region>', 'AWS region to use (optional)')
 		.requiredOption(
 			'--command <command>',
-			'AWS CLI command to execute with the temporary credentials',
+			'AWS CLI command to execute (e.g., "aws s3 ls")',
 		)
 		.action(async (options) => {
 			const execLogger = Logger.forContext(
 				'cli/aws.sso.exec.cli.ts',
-				'exec',
+				'exec-cmd',
 			);
 
 			execLogger.debug('Executing AWS command with SSO credentials', {

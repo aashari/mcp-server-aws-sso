@@ -26,9 +26,11 @@ describe('AWS SSO Exec CLI Commands', () => {
 	};
 	*/
 
-	describe('exec command', () => {
+	describe('exec-cmd command', () => {
 		it('should provide helpful error when no command is provided', async () => {
-			const { stderr, exitCode } = await CliTestUtil.runCommand(['exec']);
+			const { stderr, exitCode } = await CliTestUtil.runCommand([
+				'exec-cmd',
+			]);
 
 			expect(exitCode).not.toBe(0);
 			expect(stderr).toMatch(/required option.*--account-id/i);
@@ -36,7 +38,7 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle missing account option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec',
+				'exec-cmd',
 				'--role-name',
 				'AWSReadOnlyAccess',
 				'--command',
@@ -49,7 +51,7 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle missing role option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec',
+				'exec-cmd',
 				'--account-id',
 				'123456789012',
 				'--command',
@@ -62,7 +64,7 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle missing command option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec',
+				'exec-cmd',
 				'--account-id',
 				'123456789012',
 				'--role-name',
@@ -75,20 +77,20 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle help flag correctly', async () => {
 			const { stdout, exitCode } = await CliTestUtil.runCommand([
-				'exec',
+				'exec-cmd',
 				'--help',
 			]);
 
 			expect(exitCode).toBe(0);
 			expect(stdout).toMatch(/Usage|Options|Description/i);
-			expect(stdout).toContain('exec');
+			expect(stdout).toContain('exec-cmd');
 			expect(stdout).toContain('--account');
 			expect(stdout).toContain('--role');
 		}, 15000);
 
 		it('should handle unknown flags gracefully', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec',
+				'exec-cmd',
 				'--unknown-flag',
 				'--',
 				'aws',

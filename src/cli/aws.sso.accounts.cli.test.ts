@@ -25,16 +25,14 @@ describe('AWS SSO Accounts CLI Commands', () => {
 		}
 	};
 
-	describe('list-accounts command', () => {
+	describe('ls-accounts command', () => {
 		it('should list accounts and return success exit code', async () => {
 			if (await skipIfNoCredentials()) {
-				console.warn('Skipping list-accounts test - no credentials');
+				console.warn('Skipping ls-accounts test - no credentials');
 				return;
 			}
 
-			const { exitCode } = await CliTestUtil.runCommand([
-				'list-accounts',
-			]);
+			const { exitCode } = await CliTestUtil.runCommand(['ls-accounts']);
 
 			// Since we're using --silent flag during testing and we may not have valid credentials,
 			// we shouldn't expect a specific exit code or validate markdown output
@@ -44,19 +42,19 @@ describe('AWS SSO Accounts CLI Commands', () => {
 
 		it('should handle help flag correctly', async () => {
 			const { stdout, exitCode } = await CliTestUtil.runCommand([
-				'list-accounts',
+				'ls-accounts',
 				'--help',
 			]);
 
 			expect(exitCode).toBe(0);
 			// Help output should contain information about the command
 			expect(stdout).toMatch(/Usage|Options|Description/i);
-			expect(stdout).toContain('list-accounts');
+			expect(stdout).toContain('ls-accounts');
 		}, 15000);
 
 		it('should handle unknown flags gracefully', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'list-accounts',
+				'ls-accounts',
 				'--unknown-flag',
 			]);
 

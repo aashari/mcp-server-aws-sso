@@ -41,35 +41,11 @@ function registerLoginCommand(program: Command): void {
 	program
 		.command('login')
 		.description(
-			`Authenticate with AWS SSO via browser.
-			
-        PURPOSE: Initiates AWS SSO device authorization flow, launching a browser for login, 
-        and automatically polls for token completion.
-			
-        WHEN TO USE:
-        - Before accessing any AWS resources
-        - When your authentication token has expired
-        - As the first step in any AWS SSO workflow
-        
-        AUTHENTICATION FLOW:
-        - Starts the AWS SSO device authorization flow
-        - Launches your browser with the verification URL
-        - Displays a verification code to enter
-        - Automatically polls until authentication completes
-        - Verifies token validity
-        
-        OUTPUT: Markdown-formatted instructions for authentication,
-        followed by confirmation once the flow is complete.
-        
-        EXAMPLES:
-        $ mcp-aws-sso login             # Login with browser launch
-        $ mcp-aws-sso login --no-browser # Login without browser launch
-        $ mcp-aws-sso login --no-auto-poll # Login without automatic polling
-			`,
+			'Authenticate with AWS SSO via browser, automatically polling for completion.',
 		)
 		.option(
 			'--no-browser',
-			'Disable automatic browser launch, only show manual instructions',
+			'Disable automatic browser launch; only show manual instructions.',
 		)
 		.option(
 			'--no-auto-poll',

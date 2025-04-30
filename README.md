@@ -167,7 +167,7 @@ _or:_
 
 # Command-Line Interface (CLI)
 
-The CLI uses kebab-case for commands (e.g., `aws-sso-login`) and options (e.g., `--account-id`).
+The CLI uses kebab-case for commands (e.g., `login`) and options (e.g., `--account-id`).
 
 ## Quick Use with `npx`
 
@@ -177,13 +177,13 @@ export AWS_SSO_START_URL=https://your-sso-portal.awsapps.com/start
 export AWS_REGION=us-east-1
 
 # Login to AWS SSO
-npx -y @aashari/mcp-server-aws-sso aws-sso-login
+npx -y @aashari/mcp-server-aws-sso login
 
 # List available accounts and roles
-npx -y @aashari/mcp-server-aws-sso aws-sso-list-accounts
+npx -y @aashari/mcp-server-aws-sso ls-accounts
 
 # Execute AWS CLI command with SSO credentials
-npx -y @aashari/mcp-server-aws-sso aws-sso-exec-command \
+npx -y @aashari/mcp-server-aws-sso exec-cmd \
   --account-id 123456789012 \
   --role-name ReadOnly \
   --command "aws s3 ls"
@@ -198,7 +198,9 @@ npm install -g @aashari/mcp-server-aws-sso
 Then run directly:
 
 ```bash
-mcp-aws-sso aws-sso-login
+mcp-aws-sso login
+mcp-aws-sso ls-accounts
+mcp-aws-sso exec-cmd --account-id 123456789012 --role-name ReadOnly --command "aws s3 ls"
 ```
 
 ## Discover More CLI Options
@@ -212,9 +214,9 @@ mcp-aws-sso --help
 Or get detailed help for a specific command:
 
 ```bash
-mcp-aws-sso aws-sso-login --help
-mcp-aws-sso aws-sso-exec-command --help
-mcp-aws-sso aws-sso-list-accounts --help
+mcp-aws-sso login --help
+mcp-aws-sso ls-accounts --help
+mcp-aws-sso exec-cmd --help
 ```
 
 ---
