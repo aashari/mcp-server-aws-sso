@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.1...v1.4.2) (2025-04-30)
+
+
+### Bug Fixes
+
+* **cli:** Align command names and descriptions with tool definitions ([927056e](https://github.com/aashari/mcp-server-aws-sso/commit/927056e1237bf3cc2f39c2ecc1639319c701dcdc))
+
 ## [1.4.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.0...v1.4.1) (2025-04-30)
 
 
