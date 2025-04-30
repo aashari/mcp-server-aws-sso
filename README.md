@@ -124,7 +124,7 @@ _or:_
 
 ---
 
-## `aws_sso_list_accounts`
+## `aws_ls_accounts`
 
 List all AWS accounts and roles available via SSO.
 
@@ -136,7 +136,7 @@ List all AWS accounts and roles available via SSO.
 
 ---
 
-## `aws_sso_exec_command`
+## `aws_exec_cmd`
 
 Execute AWS CLI commands using temporary credentials from AWS SSO.
 

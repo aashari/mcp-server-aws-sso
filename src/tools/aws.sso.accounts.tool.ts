@@ -68,7 +68,7 @@ function registerTools(server: McpServer): void {
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
-		'aws_sso_list_accounts',
+		'aws_ls_accounts',
 		`Lists all AWS accounts and associated roles accessible to the authenticated user via AWS SSO.\n- Use this after login (\`aws_sso_login\`) to discover available accounts and roles for use with \`aws_sso_exec_command\`.\n- Results are cached for efficiency.\nReturns a Markdown list of accounts with their available roles.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
 		ListAccountsArgs.shape,
 		handleListAccounts,
