@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.3...v1.4.4) (2025-05-01)
+
+
+### Bug Fixes
+
+* align AWS SSO commands, flags, and tests ([36ebd95](https://github.com/aashari/mcp-server-aws-sso/commit/36ebd95a666364e04513c8b6e5b5b04238caf5ad))
+
 ## [1.4.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.2...v1.4.3) (2025-05-01)
 
 
