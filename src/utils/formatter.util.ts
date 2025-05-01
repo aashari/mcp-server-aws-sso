@@ -28,47 +28,6 @@ export function formatDate(dateString?: string | Date): string {
 }
 
 /**
- * Format a relative time (e.g., "2 days ago")
- * @param dateString - ISO date string or Date object
- * @returns Relative time string
- */
-export function formatRelativeTime(dateString?: string | Date): string {
-	if (!dateString) {
-		return 'Not available';
-	}
-
-	try {
-		const date =
-			typeof dateString === 'string' ? new Date(dateString) : dateString;
-
-		const now = new Date();
-		const diffMs = now.getTime() - date.getTime();
-		const diffSec = Math.floor(diffMs / 1000);
-		const diffMin = Math.floor(diffSec / 60);
-		const diffHour = Math.floor(diffMin / 60);
-		const diffDay = Math.floor(diffHour / 24);
-		const diffMonth = Math.floor(diffDay / 30);
-		const diffYear = Math.floor(diffMonth / 12);
-
-		if (diffYear > 0) {
-			return `${diffYear} year${diffYear === 1 ? '' : 's'} ago`;
-		} else if (diffMonth > 0) {
-			return `${diffMonth} month${diffMonth === 1 ? '' : 's'} ago`;
-		} else if (diffDay > 0) {
-			return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`;
-		} else if (diffHour > 0) {
-			return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
-		} else if (diffMin > 0) {
-			return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
-		} else {
-			return `${diffSec} second${diffSec === 1 ? '' : 's'} ago`;
-		}
-	} catch {
-		return 'Invalid date';
-	}
-}
-
-/**
  * Format a URL as a markdown link
  * @param url - URL to format
  * @param title - Link title
@@ -81,25 +40,6 @@ export function formatUrl(url?: string, title?: string): string {
 
 	const linkTitle = title || url;
 	return `[${linkTitle}](${url})`;
-}
-
-/**
- * Format pagination information in a standardized way
- * @param totalItems - Number of items in the current result set
- * @param hasMore - Whether there are more results available
- * @param nextCursor - Cursor for the next page of results
- * @returns Formatted pagination information
- */
-export function formatPagination(
-	totalItems: number,
-	hasMore: boolean,
-	nextCursor?: string,
-): string {
-	if (!hasMore) {
-		return `*Showing ${totalItems} item${totalItems === 1 ? '' : 's'}.*`;
-	}
-
-	return `*Showing ${totalItems} item${totalItems === 1 ? '' : 's'}. More results are available.*\n\nTo see more results, use --cursor "${nextCursor}"`;
 }
 
 /**
@@ -188,25 +128,6 @@ function formatValue(value: unknown): string {
  */
 export function formatSeparator(): string {
 	return '---';
-}
-
-/**
- * Format a numbered list of items
- * @param items - Array of items to format
- * @param formatter - Function to format each item
- * @returns Formatted numbered list
- */
-export function formatNumberedList<T>(
-	items: T[],
-	formatter: (item: T, index: number) => string,
-): string {
-	if (!items.length) {
-		return 'No items available.';
-	}
-
-	return items
-		.map((item, index) => formatter(item, index))
-		.join('\n\n' + formatSeparator() + '\n\n');
 }
 
 /**
