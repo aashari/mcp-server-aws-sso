@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.2...v1.4.3) (2025-05-01)
+
+
+### Bug Fixes
+
+* align login CLI option description with schema ([800385a](https://github.com/aashari/mcp-server-aws-sso/commit/800385aa739c41840d780e927f00ea14b5922fd7))
+
 ## [1.4.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.1...v1.4.2) (2025-04-30)
 
 
