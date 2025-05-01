@@ -1,7 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-import { ExecToolArgs, ExecToolArgsType } from './aws.sso.types.js';
+import {
+	ExecCommandToolArgs,
+	ExecCommandToolArgsType,
+} from './aws.sso.types.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
 import { parseCommand } from '../utils/command.util.js';
 
@@ -25,12 +28,12 @@ toolLogger.debug('AWS SSO execution tool module initialized');
  * @param args Tool arguments with account info and command
  * @returns MCP response with command execution results
  */
-async function handleExec(args: ExecToolArgsType) {
+async function handleExecCommand(args: ExecCommandToolArgsType) {
 	const execCommandLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
-		'handleExec',
+		'handleExecCommand',
 	);
-	execCommandLogger.debug('Handling exec request', args);
+	execCommandLogger.debug('Handling exec command request', args);
 
 	try {
 		// Parse the command string properly instead of simple split
@@ -71,12 +74,12 @@ function registerTools(server: McpServer): void {
 	);
 	registerLogger.debug('Registering AWS SSO exec tools');
 
-	// Register the AWS SSO exec tool
+	// Register the AWS SSO exec command tool
 	server.tool(
-		'aws_exec_cmd',
+		'aws_exec_command',
 		`Executes an AWS CLI command using temporary credentials obtained via AWS SSO for a specific account (\`accountId\`) and role (\`roleName\`).\n- Provide the full command string (starting with 'aws') in the \`command\` parameter. Quotes within the command are handled.\n- Optionally specify the AWS \`region\`.\nUse to interact with AWS resources programmatically via the CLI.\n**Note:** Requires prior successful authentication using \`aws_sso_login\` and requires AWS CLI to be installed on the host system where the server is running.\nReturns formatted stdout, stderr, and exit code of the executed command.`,
-		ExecToolArgs.shape,
-		handleExec,
+		ExecCommandToolArgs.shape,
+		handleExecCommand,
 	);
 
 	registerLogger.debug('AWS SSO exec tools registered');

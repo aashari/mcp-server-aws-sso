@@ -40,9 +40,9 @@ function register(program: Command): void {
  */
 function registerExecCommand(program: Command): void {
 	program
-		.command('exec-cmd')
+		.command('exec-command')
 		.description(
-			'Execute AWS CLI commands using temporary credentials from AWS SSO for a specific account/role.',
+			'Execute an AWS CLI command using temporary credentials from AWS SSO for a specific account/role.',
 		)
 		.requiredOption('--account-id <id>', 'AWS account ID (12-digit number)')
 		.requiredOption('--role-name <role>', 'AWS role name to assume via SSO')
@@ -54,7 +54,7 @@ function registerExecCommand(program: Command): void {
 		.action(async (options) => {
 			const execLogger = Logger.forContext(
 				'cli/aws.sso.exec.cli.ts',
-				'exec-cmd',
+				'exec-command',
 			);
 
 			execLogger.debug('Executing AWS command with SSO credentials', {

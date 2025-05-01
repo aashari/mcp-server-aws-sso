@@ -31,10 +31,10 @@ async function handleLogin(args: LoginToolArgsType) {
 	loginLogger.debug('Handling login request', args);
 
 	try {
-		// Call controller to start login
+		// Call controller to start login, passing launchBrowser argument
 		const response = await awsSsoAuthController.startLogin({
-			autoPoll: true, // Always automatically poll for token in API mode
-			launchBrowser: args.launchBrowser,
+			autoPoll: true, // Always poll in API mode
+			launchBrowser: args.launchBrowser, // Pass the arg from the tool call
 		});
 
 		// Return the response in the MCP format

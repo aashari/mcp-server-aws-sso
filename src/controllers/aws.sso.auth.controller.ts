@@ -64,9 +64,9 @@ async function startLogin(params?: {
 	);
 	loginLogger.debug('Starting AWS SSO login process');
 
-	// Always poll for token unless explicitly disabled
-	const autoPoll = params?.autoPoll !== false;
-	const launchBrowser = params?.launchBrowser !== false;
+	// Directly use the provided boolean values, defaulting to true if undefined
+	const autoPoll = params?.autoPoll ?? true;
+	const launchBrowser = params?.launchBrowser ?? true;
 
 	try {
 		// Check if we already have a valid token

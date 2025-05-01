@@ -33,7 +33,7 @@ export type ListAccountsToolArgsType = z.infer<typeof ListAccountsArgs>;
 /**
  * Schema for the Execute Command tool arguments
  */
-export const ExecToolArgs = z.object({
+export const ExecCommandToolArgs = z.object({
 	/**
 	 * AWS account ID (12-digit number)
 	 */
@@ -61,4 +61,4 @@ export const ExecToolArgs = z.object({
 /**
  * Type definition from the Zod schema
  */
-export type ExecToolArgsType = z.infer<typeof ExecToolArgs>;
+export type ExecCommandToolArgsType = z.infer<typeof ExecCommandToolArgs>;

@@ -1,7 +1,7 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
-import { executeCommand } from '../services/vendor.aws.sso.exec.service.js';
+import { executeCommand as executeAwsCliCommandService } from '../services/vendor.aws.sso.exec.service.js';
 import { ExecuteCommandOptions } from './aws.sso.exec.types.js';
 import {
 	formatAuthRequired,
@@ -42,19 +42,19 @@ controllerLogger.debug('AWS SSO execution controller initialized');
  * @throws {Error} If authentication fails, command execution fails, or parameters are invalid
  * @example
  * // Execute an S3 list command
- * const result = await executeAwsCommand({
+ * const result = await executeCommand({
  *   accountId: "123456789012",
  *   roleName: "AdminAccess",
  *   region: "us-east-1",
  *   command: ["aws", "s3", "ls"]
  * });
  */
-async function executeAwsCommand(
+async function executeCommand(
 	options: ExecuteCommandOptions,
 ): Promise<ControllerResponse> {
 	const execCommandLogger = Logger.forContext(
 		'controllers/aws.sso.exec.controller.ts',
-		'executeAwsCommand',
+		'executeCommand',
 	);
 	execCommandLogger.debug('Executing AWS CLI command', options);
 
@@ -99,7 +99,7 @@ async function executeAwsCommand(
 			},
 		});
 
-		const result = await executeCommand(
+		const result = await executeAwsCliCommandService(
 			options.accountId,
 			options.roleName,
 			options.command,
@@ -132,7 +132,7 @@ async function executeAwsCommand(
 		return handleControllerError(error, {
 			entityType: 'AWS Command',
 			operation: 'executing',
-			source: 'controllers/aws.sso.exec.controller.ts@executeAwsCommand',
+			source: 'controllers/aws.sso.exec.controller.ts@executeCommand',
 			additionalInfo: {
 				accountId: options.accountId,
 				roleName: options.roleName,
@@ -143,5 +143,5 @@ async function executeAwsCommand(
 }
 
 export default {
-	executeCommand: executeAwsCommand,
+	executeCommand,
 };

@@ -26,10 +26,10 @@ describe('AWS SSO Exec CLI Commands', () => {
 	};
 	*/
 
-	describe('exec-cmd command', () => {
+	describe('exec-command command', () => {
 		it('should provide helpful error when no command is provided', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec-cmd',
+				'exec-command',
 			]);
 
 			expect(exitCode).not.toBe(0);
@@ -38,9 +38,9 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle missing account option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec-cmd',
+				'exec-command',
 				'--role-name',
-				'AWSReadOnlyAccess',
+				'SomeRole',
 				'--command',
 				'aws s3 ls',
 			]);
@@ -51,7 +51,7 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle missing role option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec-cmd',
+				'exec-command',
 				'--account-id',
 				'123456789012',
 				'--command',
@@ -64,11 +64,11 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle missing command option', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec-cmd',
+				'exec-command',
 				'--account-id',
 				'123456789012',
 				'--role-name',
-				'AWSReadOnlyAccess',
+				'SomeRole',
 			]);
 
 			expect(exitCode).not.toBe(0);
@@ -77,25 +77,29 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 		it('should handle help flag correctly', async () => {
 			const { stdout, exitCode } = await CliTestUtil.runCommand([
-				'exec-cmd',
+				'exec-command',
 				'--help',
 			]);
 
 			expect(exitCode).toBe(0);
 			expect(stdout).toMatch(/Usage|Options|Description/i);
-			expect(stdout).toContain('exec-cmd');
+			expect(stdout).toContain('exec-command');
 			expect(stdout).toContain('--account');
 			expect(stdout).toContain('--role');
+			expect(stdout).toContain('--region');
+			expect(stdout).toContain('--command');
 		}, 15000);
 
 		it('should handle unknown flags gracefully', async () => {
 			const { stderr, exitCode } = await CliTestUtil.runCommand([
-				'exec-cmd',
+				'exec-command',
+				'--account-id',
+				'123456789012',
+				'--role-name',
+				'SomeRole',
+				'--command',
+				'aws s3 ls',
 				'--unknown-flag',
-				'--',
-				'aws',
-				's3',
-				'ls',
 			]);
 
 			expect(exitCode).not.toBe(0);

@@ -44,12 +44,14 @@ function registerLoginCommand(program: Command): void {
 			'Authenticate with AWS SSO via browser, automatically polling for completion.',
 		)
 		.option(
-			'--no-browser',
-			'Disable automatic browser launch for authentication (default: browser is launched).',
+			'--launch-browser',
+			'Automatically launch browser for authentication (default: true). Set to false to disable.',
+			true,
 		)
 		.option(
-			'--no-auto-poll',
-			'Disable automatic polling for token completion (used mainly for testing)',
+			'--auto-poll',
+			'Automatically poll for token completion (default: true). Set to false to disable (e.g., for testing).',
+			true,
 		)
 		.action(async (options) => {
 			const loginLogger = Logger.forContext(
@@ -57,13 +59,13 @@ function registerLoginCommand(program: Command): void {
 				'login',
 			);
 			loginLogger.debug('Starting AWS SSO login', {
-				launchBrowser: options.browser,
+				launchBrowser: options.launchBrowser,
 				autoPoll: options.autoPoll,
 			});
 
 			try {
 				const result = await awsSsoAuthController.startLogin({
-					launchBrowser: options.browser,
+					launchBrowser: options.launchBrowser,
 					autoPoll: options.autoPoll,
 				});
 				console.log(result.content);
