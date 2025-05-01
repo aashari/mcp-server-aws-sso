@@ -1,3 +1,15 @@
+## [1.4.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.4...v1.4.5) (2025-05-01)
+
+
+### Bug Fixes
+
+* remove unused formatter functions for cleaner codebase ([5529196](https://github.com/aashari/mcp-server-aws-sso/commit/5529196097cb28bfb0c0690939281ecc8c645d24))
+
+
+### Performance Improvements
+
+* improve aws_sso_login tool description for better AI consumption ([1de7235](https://github.com/aashari/mcp-server-aws-sso/commit/1de7235d04de67828b9dbeeab28f271b962ac9e0))
+
 ## [1.4.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.3...v1.4.4) (2025-05-01)
 
 
