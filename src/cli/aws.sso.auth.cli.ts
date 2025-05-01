@@ -45,7 +45,7 @@ function registerLoginCommand(program: Command): void {
 		)
 		.option(
 			'--no-browser',
-			'Disable automatic browser launch; only show manual instructions.',
+			'Disable automatic browser launch for authentication (default: browser is launched).',
 		)
 		.option(
 			'--no-auto-poll',
