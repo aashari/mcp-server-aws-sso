@@ -42,7 +42,7 @@ function registerListAccountsCommand(program: Command): void {
 	program
 		.command('ls-accounts')
 		.description(
-			'List AWS accounts and roles from local cache. Use login to refresh cache.',
+			'List AWS accounts and associated roles accessible via AWS SSO. Requires prior authentication via the `login` command.',
 		)
 		.option(
 			'--limit <number>',
