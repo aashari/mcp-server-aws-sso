@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.6...v1.5.0) (2025-05-02)
+
+
+### Bug Fixes
+
+* revert account cache, implement per-page filter for ls-accounts ([5afc3f6](https://github.com/aashari/mcp-server-aws-sso/commit/5afc3f6779a75f14dc2c20077a605d4576379902))
+
+
+### Features
+
+* implement standardized pagination for AWS SSO account listings ([1730178](https://github.com/aashari/mcp-server-aws-sso/commit/17301787d118698b5a55d86cf278ab22bfca12ee))
+
 ## [1.4.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.5...v1.4.6) (2025-05-02)
 
 
