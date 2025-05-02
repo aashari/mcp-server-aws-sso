@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.5.1...v1.6.0) (2025-05-02)
+
+
+### Bug Fixes
+
+* correct aws_sso ls-accounts CLI description (remove cache mention) ([04c30eb](https://github.com/aashari/mcp-server-aws-sso/commit/04c30eb5f6be1d4af678a942b6b39375a10b37da))
+
+
+### Features
+
+* add autoPoll argument to aws_sso_login tool ([c33dccc](https://github.com/aashari/mcp-server-aws-sso/commit/c33dccc08d70af18ed1f61f15aff0610fa412c12))
+
 ## [1.5.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.5.0...v1.5.1) (2025-05-02)
 
 
