@@ -49,7 +49,6 @@ async function handleListAccounts(args: ListAccountsToolArgsType) {
 			],
 			metadata: {
 				...(response.metadata || {}),
-				pagination: response.pagination,
 			},
 		};
 	} catch (error) {

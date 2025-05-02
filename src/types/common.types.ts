@@ -23,6 +23,11 @@ export interface ResponsePagination {
 	 * Optional cursor for fetching the next page of results
 	 */
 	nextCursor?: string;
+
+	/**
+	 * Optional total number of items available
+	 */
+	total?: number;
 }
 
 /**
