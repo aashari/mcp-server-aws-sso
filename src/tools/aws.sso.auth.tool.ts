@@ -33,7 +33,7 @@ async function handleLogin(args: LoginToolArgsType) {
 	try {
 		// Call controller to start login, passing launchBrowser argument
 		const response = await awsSsoAuthController.startLogin({
-			autoPoll: true, // Always poll in API mode
+			autoPoll: args.autoPoll, // Use the argument from the tool call
 			launchBrowser: args.launchBrowser, // Pass the arg from the tool call
 		});
 
@@ -73,12 +73,19 @@ function registerTools(server: McpServer): void {
 			.describe(
 				'Whether to automatically launch a browser for authentication (default: true)',
 			),
+		autoPoll: z
+			.boolean()
+			.optional()
+			.default(true) // Match CLI default
+			.describe(
+				'Automatically poll for token completion after user browser interaction (default: true). Setting to false is primarily for testing/debugging.',
+			),
 	});
 
 	// Register the AWS SSO login tool
 	server.tool(
 		'aws_sso_login',
-		`Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction. Can optionally control browser launch with \`launchBrowser\`. Automatically polls for token completion after user approval and returns Markdown with login instructions (URL and code) or success confirmation with available accounts. Must be used before any other AWS SSO tools like \`aws_sso_list_accounts\` or \`aws_sso_exec_command\`.`,
+		`Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction. Can optionally control browser launch with \`launchBrowser\` and automatic polling with \`autoPoll\`. Returns Markdown with login instructions (URL and code) or success confirmation with available accounts. Must be used before any other AWS SSO tools like \`aws_sso_list_accounts\` or \`aws_sso_exec_command\`.`,
 		LoginArgs.shape,
 		handleLogin,
 	);

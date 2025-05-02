@@ -16,7 +16,10 @@ export const LoginArgs = z.object({
 /**
  * Type for the login tool arguments
  */
-export type LoginToolArgsType = z.infer<typeof LoginArgs>;
+export type LoginToolArgsType = {
+	launchBrowser?: boolean;
+	autoPoll?: boolean;
+};
 
 /**
  * Schema for the list accounts tool
