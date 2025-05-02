@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.5.0...v1.5.1) (2025-05-02)
+
+
+### Bug Fixes
+
+* align ls_accounts tool args and description with CLI ([94d726c](https://github.com/aashari/mcp-server-aws-sso/commit/94d726cf37353a76f568e7ab7d47b05104921127))
+
 # [1.5.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.6...v1.5.0) (2025-05-02)
 
 
