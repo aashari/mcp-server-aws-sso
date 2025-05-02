@@ -22,7 +22,21 @@ export type LoginToolArgsType = z.infer<typeof LoginArgs>;
  * Schema for the list accounts tool
  */
 export const ListAccountsArgs = z.object({
-	// No parameters - always list all accounts with all roles
+	/**
+	 * Optional limit for number of results
+	 */
+	limit: z
+		.number()
+		.optional()
+		.describe('Maximum number of accounts to return'),
+
+	/**
+	 * Optional pagination token
+	 */
+	cursor: z
+		.string()
+		.optional()
+		.describe('Pagination token for subsequent pages'),
 });
 
 /**

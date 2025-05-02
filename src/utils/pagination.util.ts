@@ -27,6 +27,12 @@ export enum PaginationType {
 	 * Used by many APIs including Bitbucket
 	 */
 	PAGE = 'page',
+
+	/**
+	 * NextToken-based pagination (nextToken parameter)
+	 * Used by AWS APIs
+	 */
+	NEXT_TOKEN = 'next_token',
 }
 
 /**
@@ -59,12 +65,22 @@ export interface PagePaginationData {
 }
 
 /**
+ * Structure for nextToken-based pagination data (AWS style)
+ */
+export interface NextTokenPaginationData {
+	nextToken?: string;
+	accountList?: unknown[];
+	roleList?: unknown[];
+}
+
+/**
  * Union type for all pagination data types
  */
 export type PaginationData =
 	| OffsetPaginationData
 	| CursorPaginationData
-	| PagePaginationData;
+	| PagePaginationData
+	| NextTokenPaginationData;
 
 /**
  * Response pagination information
@@ -195,6 +211,39 @@ export function extractPaginationInfo<T extends Record<string, unknown>>(
 								{ error },
 							);
 						}
+					}
+				}
+				break;
+			}
+
+			case PaginationType.NEXT_TOKEN: {
+				// Type guard to check if data has expected nextToken pagination properties
+				const hasNextTokenProps = 'nextToken' in data;
+
+				if (hasNextTokenProps) {
+					// Handle nextToken-based pagination (AWS API style)
+					hasMore = Boolean(data.nextToken);
+					nextCursor = data.nextToken as string;
+
+					// Try to determine count from results array if present
+					if (
+						'accountList' in data &&
+						Array.isArray(data.accountList)
+					) {
+						count = data.accountList.length;
+					} else if (
+						'roleList' in data &&
+						Array.isArray(data.roleList)
+					) {
+						count = data.roleList.length;
+					} else if (
+						'accountsWithRoles' in data &&
+						Array.isArray(data.accountsWithRoles)
+					) {
+						count = data.accountsWithRoles.length;
+					} else if ('items' in data && Array.isArray(data.items)) {
+						// Generic fallback
+						count = data.items.length;
 					}
 				}
 				break;

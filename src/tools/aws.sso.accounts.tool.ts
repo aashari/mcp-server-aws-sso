@@ -22,18 +22,22 @@ toolLogger.debug('AWS SSO accounts tool module initialized');
 /**
  * Handles the AWS SSO list accounts tool
  * Lists all available AWS accounts and their roles
- * @param _args Tool arguments (none required, marked as unused)
+ * @param args Tool arguments including optional pagination parameters
  * @returns MCP response with accounts and roles
  */
-async function handleListAccounts(_args: ListAccountsToolArgsType) {
+async function handleListAccounts(args: ListAccountsToolArgsType) {
 	const listAccountsLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'handleListAccounts',
 	);
-	listAccountsLogger.debug('Handling list accounts request');
+	listAccountsLogger.debug('Handling list accounts request', args);
 
 	try {
-		const response = await awsSsoAccountsController.listAccounts();
+		// Pass pagination parameters to the controller
+		const response = await awsSsoAccountsController.listAccounts({
+			limit: args.limit,
+			cursor: args.cursor,
+		});
 
 		return {
 			content: [
@@ -42,7 +46,10 @@ async function handleListAccounts(_args: ListAccountsToolArgsType) {
 					text: response.content,
 				},
 			],
-			metadata: response.metadata,
+			metadata: {
+				...(response.metadata || {}),
+				pagination: response.pagination,
+			},
 		};
 	} catch (error) {
 		listAccountsLogger.error('List accounts failed', error);
@@ -63,13 +70,21 @@ function registerTools(server: McpServer): void {
 
 	// Define schema for the list_accounts tool
 	const ListAccountsArgs = z.object({
-		// No parameters - always list all accounts with all roles
+		// Add pagination parameters
+		limit: z
+			.number()
+			.optional()
+			.describe('Maximum number of accounts to return'),
+		cursor: z
+			.string()
+			.optional()
+			.describe('Pagination token for subsequent pages'),
 	});
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_ls_accounts',
-		`Lists all AWS accounts and associated roles accessible to the authenticated user via AWS SSO.\n- Use this after login (\`aws_sso_login\`) to discover available accounts and roles for use with \`aws_sso_exec_command\`.\n- Results are cached for efficiency.\nReturns a Markdown list of accounts with their available roles.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
+		`Lists all AWS accounts and associated roles accessible to the authenticated user via AWS SSO.\n- Use this after login (\`aws_sso_login\`) to discover available accounts and roles for use with \`aws_sso_exec_command\`.\n- Results are paginated with \`limit\` and \`cursor\` parameters.\nReturns a Markdown list of accounts with their available roles.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
 		ListAccountsArgs.shape,
 		handleListAccounts,
 	);

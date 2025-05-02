@@ -63,11 +63,11 @@ describe('AWS SSO Accounts Service', () => {
 
 		const accounts = await getAccountsWithRoles();
 		expect(accounts).toBeDefined();
-		expect(Array.isArray(accounts)).toBe(true);
+		expect(Array.isArray(accounts.accountsWithRoles)).toBe(true);
 
 		// If accounts exist, check their structure
-		if (accounts.length > 0) {
-			const firstAccount = accounts[0];
+		if (accounts.accountsWithRoles.length > 0) {
+			const firstAccount = accounts.accountsWithRoles[0];
 			expect(firstAccount.accountId).toBeDefined();
 			expect(firstAccount.accountName).toBeDefined();
 			expect(Array.isArray(firstAccount.roles)).toBe(true);
@@ -79,13 +79,13 @@ describe('AWS SSO Accounts Service', () => {
 
 		// First get a list of accounts to find a valid account/role combination
 		const accounts = await getAccountsWithRoles();
-		if (!accounts || accounts.length === 0) {
+		if (!accounts || accounts.accountsWithRoles.length === 0) {
 			console.warn('SKIPPING TEST: No AWS accounts available.');
 			return;
 		}
 
 		// Find an account with at least one role
-		const accountWithRole = accounts.find(
+		const accountWithRole = accounts.accountsWithRoles.find(
 			(account) => account.roles && account.roles.length > 0,
 		);
 		if (!accountWithRole) {

@@ -45,13 +45,13 @@ describe('AWS SSO Exec Controller', () => {
 
 		// First get a list of accounts to find a valid account/role combination
 		const accounts = await getAccountsWithRoles();
-		if (!accounts || accounts.length === 0) {
+		if (!accounts || accounts.accountsWithRoles.length === 0) {
 			console.warn('SKIPPING TEST: No AWS accounts available.');
 			return;
 		}
 
 		// Find an account with at least one role
-		const accountWithRole = accounts.find(
+		const accountWithRole = accounts.accountsWithRoles.find(
 			(account) => account.roles && account.roles.length > 0,
 		);
 		if (!accountWithRole) {

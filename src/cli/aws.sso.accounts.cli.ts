@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
 import { handleCliError } from '../utils/error.util.js';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
+import { formatPagination } from '../utils/formatter.util.js';
 
 /**
  * AWS SSO Accounts CLI Module
@@ -43,15 +44,39 @@ function registerListAccountsCommand(program: Command): void {
 		.description(
 			'List all AWS accounts and roles available to the authenticated user via AWS SSO.',
 		)
-		.action(async () => {
+		.option(
+			'--limit <number>',
+			'Maximum number of accounts to return',
+			(val) => parseInt(val, 10),
+		)
+		.option('--cursor <token>', 'Pagination token for subsequent pages')
+		.action(async (options) => {
 			const listLogger = Logger.forContext(
 				'cli/aws.sso.accounts.cli.ts',
 				'ls-accounts',
 			);
 			try {
-				listLogger.debug('Listing all AWS accounts and roles');
-				const result = await awsSsoAccountsController.listAccounts();
+				listLogger.debug('Listing all AWS accounts and roles', options);
+
+				// Pass pagination options to the controller
+				const result = await awsSsoAccountsController.listAccounts({
+					limit: options.limit,
+					cursor: options.cursor,
+				});
+
 				console.log(result.content);
+
+				// Display pagination information if available
+				if (result.pagination) {
+					console.log(
+						'\n' +
+							formatPagination(
+								result.pagination.count ?? 0,
+								result.pagination.hasMore ?? false,
+								result.pagination.nextCursor,
+							),
+					);
+				}
 			} catch (error) {
 				listLogger.error('List-accounts command failed', error);
 				handleCliError(error);

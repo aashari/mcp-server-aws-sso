@@ -305,12 +305,13 @@ async function getAwsCredentials(
  * @param {ListAccountsParams} [params={}] - Optional parameters for customizing the request
  * @param {number} [params.maxResults] - Maximum number of accounts to return
  * @param {string} [params.nextToken] - Pagination token for subsequent requests
- * @returns {Promise<AwsSsoAccountWithRoles[]>} List of AWS accounts with their roles
+ * @returns {Promise<{accountsWithRoles: AwsSsoAccountWithRoles[], nextToken?: string}>} List of AWS accounts with their roles and pagination token
  * @throws {Error} If SSO token is missing or API request fails
  */
-async function getAccountsWithRoles(
-	params: ListAccountsParams = {},
-): Promise<AwsSsoAccountWithRoles[]> {
+async function getAccountsWithRoles(params: ListAccountsParams = {}): Promise<{
+	accountsWithRoles: AwsSsoAccountWithRoles[];
+	nextToken?: string;
+}> {
 	const methodLogger = logger.forMethod('getAccountsWithRoles');
 	methodLogger.debug('Getting all AWS SSO accounts with roles', params);
 
@@ -350,9 +351,14 @@ async function getAccountsWithRoles(
 	}
 
 	methodLogger.debug(
-		`Retrieved ${accountsWithRoles.length} accounts with roles`,
+		`Retrieved ${accountsWithRoles.length} accounts with roles${accountsResponse.nextToken ? ' with pagination token' : ''}`,
 	);
-	return accountsWithRoles;
+
+	// Return both the accounts with roles and the nextToken for pagination
+	return {
+		accountsWithRoles,
+		nextToken: accountsResponse.nextToken,
+	};
 }
 
 export {

@@ -1,6 +1,9 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
-import { ControllerResponse } from '../types/common.types.js';
+import {
+	ControllerResponse,
+	PaginationOptions,
+} from '../types/common.types.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
 import {
 	getAccountsWithRoles,
@@ -14,6 +17,10 @@ import {
 	formatAccountRoles,
 } from './aws.sso.accounts.formatter.js';
 import { ListRolesOptions } from './aws.sso.accounts.types.js';
+import {
+	extractPaginationInfo,
+	PaginationType,
+} from '../utils/pagination.util.js';
 
 /**
  * AWS SSO Accounts Controller Module
@@ -38,18 +45,24 @@ controllerLogger.debug('AWS SSO accounts controller initialized');
  * can assume in each account via AWS SSO. Groups roles by account for better organization.
  *
  * @async
+ * @param {PaginationOptions} [options={}] - Optional pagination parameters
  * @returns {Promise<ControllerResponse>} Response with comprehensive formatted list of accounts and roles
  * @throws {Error} If account listing fails or authentication is required
  * @example
  * // List all accounts and their roles
  * const result = await listAccounts();
+ *
+ * // List accounts with pagination
+ * const result = await listAccounts({ limit: 10, cursor: "next-token-value" });
  */
-async function listAccounts(): Promise<ControllerResponse> {
+async function listAccounts(
+	options: PaginationOptions = {},
+): Promise<ControllerResponse> {
 	const listLogger = Logger.forContext(
 		'controllers/aws.sso.accounts.controller.ts',
 		'listAccounts',
 	);
-	listLogger.debug('Listing AWS SSO accounts and roles');
+	listLogger.debug('Listing AWS SSO accounts and roles', options);
 
 	try {
 		// First check if we have a valid token
@@ -119,52 +132,15 @@ async function listAccounts(): Promise<ControllerResponse> {
 		listLogger.debug('Getting AWS accounts with roles');
 
 		try {
-			// Check if we already have cached account roles data
-			const cacheUtil = await import('../utils/aws.sso.cache.util.js');
-			const cachedAccounts = await cacheUtil.getAccountRolesFromCache();
-
-			if (cachedAccounts && cachedAccounts.length > 0) {
-				listLogger.debug('Using account roles from cache');
-
-				// Map the cached accounts to the format expected by the formatter
-				// The cache uses {account: {...}, roles: [...]} format, but we need it flattened
-				const formattedAccountsWithRoles = cachedAccounts.map(
-					(item) => ({
-						...item.account,
-						roles: item.roles,
-						timestamp: Date.now(),
-					}),
-				);
-
-				return {
-					content: formatAccountsAndRoles(
-						expiresDate,
-						formattedAccountsWithRoles,
-					),
-					metadata: {
-						authenticated: true,
-						accounts: formattedAccountsWithRoles.map((account) => ({
-							accountId: account.accountId,
-							accountName: account.accountName,
-							accountEmail: account.emailAddress, // Note: different property name in cache
-							roles: account.roles,
-						})),
-					},
-				};
-			}
-
-			// If no cached data or cache is empty, get accounts with roles from API
-			listLogger.debug(
-				'No cached account roles, fetching from AWS SSO API',
-			);
-
-			// Get accounts with roles
-			const accountsWithRoles = await getAccountsWithRoles({
-				// Use the access token from the cached token
-				// The vendor implementation expects a params object, not just the token
+			// Call the service directly without checking cache
+			// Convert options.cursor to nextToken for AWS API
+			const accountsResponse = await getAccountsWithRoles({
+				maxResults: options.limit,
+				nextToken: options.cursor,
 			});
 
-			if (accountsWithRoles.length === 0) {
+			// Check if we have any accounts
+			if (accountsResponse.accountsWithRoles.length === 0) {
 				listLogger.debug('No accounts found');
 				return {
 					content: formatNoAccounts(),
@@ -175,30 +151,30 @@ async function listAccounts(): Promise<ControllerResponse> {
 				};
 			}
 
-			// Save accounts with roles to MCP cache
-			try {
-				await cacheUtil.saveAccountRolesToCache(accountsWithRoles);
-				listLogger.debug('Saved accounts with roles to MCP cache');
-			} catch (cacheError) {
-				listLogger.error('Error saving to MCP cache', cacheError);
-				// Continue even if caching fails
-			}
-
-			// Format the accounts with roles for the response
-			// The vendor implementation returns a different format compared to the non-vendor one
-			const formattedAccountsWithRoles = accountsWithRoles.map(
-				(account) => ({
-					...account,
-					timestamp: Date.now(),
-				}),
+			// Extract standardized pagination information
+			const pagination = extractPaginationInfo(
+				{
+					nextToken: accountsResponse.nextToken,
+					accountsWithRoles: accountsResponse.accountsWithRoles,
+				},
+				PaginationType.NEXT_TOKEN,
+				'AWS SSO Accounts',
 			);
 
-			// Return accounts and roles
+			// Format the accounts with roles for the response
+			const formattedAccountsWithRoles =
+				accountsResponse.accountsWithRoles.map((account) => ({
+					...account,
+					timestamp: Date.now(),
+				}));
+
+			// Return accounts and roles with pagination
 			return {
 				content: formatAccountsAndRoles(
 					expiresDate,
 					formattedAccountsWithRoles,
 				),
+				pagination,
 				metadata: {
 					authenticated: true,
 					accounts: formattedAccountsWithRoles.map((account) => ({

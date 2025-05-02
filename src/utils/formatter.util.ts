@@ -142,3 +142,27 @@ export function formatCodeBlock(
 ): string {
 	return '```' + language + '\n' + content.trim() + '\n```';
 }
+
+/**
+ * Format pagination information consistently
+ * @param count Number of items shown
+ * @param hasMore Whether there are more items available
+ * @param nextCursor The cursor/token for the next page, if applicable
+ * @returns Formatted pagination string
+ */
+export function formatPagination(
+	count: number,
+	hasMore: boolean,
+	nextCursor?: string,
+): string {
+	let result = `Showing ${count} item${count !== 1 ? 's' : ''}.`;
+
+	if (hasMore) {
+		result += ' More results available.';
+		if (nextCursor) {
+			result += ` Use --cursor ${nextCursor} for next page.`;
+		}
+	}
+
+	return result;
+}
