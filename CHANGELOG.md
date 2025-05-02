@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.0...v1.7.1) (2025-05-02)
+
+
+### Bug Fixes
+
+* Remove re-exports from index.ts ([b4794f8](https://github.com/aashari/mcp-server-aws-sso/commit/b4794f82dc8e79cd6daf1b24c454c4848da14e1d))
+
 # [1.7.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.6.0...v1.7.0) (2025-05-02)
 
 
