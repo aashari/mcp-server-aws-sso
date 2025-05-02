@@ -33,10 +33,11 @@ async function handleListAccounts(args: ListAccountsToolArgsType) {
 	listAccountsLogger.debug('Handling list accounts request', args);
 
 	try {
-		// Pass pagination parameters to the controller
+		// Pass pagination and query parameters to the controller
 		const response = await awsSsoAccountsController.listAccounts({
 			limit: args.limit,
 			cursor: args.cursor,
+			query: args.query,
 		});
 
 		return {
@@ -68,30 +69,35 @@ function registerTools(server: McpServer): void {
 	);
 	registerLogger.debug('Registering AWS SSO accounts tools');
 
-	// Define schema for the list_accounts tool
+	// Define schema for the list_accounts tool (ensure consistency with types file)
 	const ListAccountsArgs = z.object({
 		limit: z
 			.number()
 			.int()
 			.positive()
 			.optional()
-			.describe('Maximum number of accounts to return per page'),
+			.describe(
+				'Maximum number of accounts per API response page (default/max may vary)',
+			),
 		cursor: z
 			.string()
 			.optional()
-			.describe('Start index for pagination (0-based)'),
+			.describe(
+				'Pagination token (nextToken from previous page results)',
+			),
 		query: z
 			.string()
 			.optional()
 			.describe(
-				'Search term to filter cached accounts by ID, name, or email',
+				'Search term to filter accounts on the current page by ID, name, or email',
 			),
 	});
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_ls_accounts',
-		`Lists AWS accounts and roles from a local cache. \n- Use login command (\`aws_sso_login\`) first to populate/refresh the cache. \n- This might take time during login if you have many accounts. \n- Supports filtering with \`query\` (searches ID, name, email) and pagination with \`limit\` and \`cursor\` (start index).\n- Returns a Markdown list of matching accounts and their roles.`,
+		// Update description to reflect per-page filtering and API pagination
+		`Lists AWS accounts and associated roles accessible via AWS SSO. \n- Results are fetched page-by-page from the AWS API. \n- Use \`limit\` to suggest page size (API default/max may vary) and \`cursor\` (the nextToken from previous results) to get the next page. \n- Supports filtering the *current page* results with \`query\` (searches ID, name, email). \n- Returns a Markdown list of matching accounts from the current page and pagination info.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
 		ListAccountsArgs.shape,
 		handleListAccounts,
 	);
