@@ -1,3 +1,10 @@
+## [1.7.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.3...v1.7.4) (2025-05-02)
+
+
+### Bug Fixes
+
+* update query parameter description for consistency between CLI and Tool ([4b3fb5b](https://github.com/aashari/mcp-server-aws-sso/commit/4b3fb5b71bf6007ed20037e79c7160531b0e6f1b))
+
 ## [1.7.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.2...v1.7.3) (2025-05-02)
 
 
