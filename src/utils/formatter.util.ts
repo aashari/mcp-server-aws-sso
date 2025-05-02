@@ -160,7 +160,7 @@ export function formatPagination(
 	if (hasMore) {
 		result += ' More results available.';
 		if (nextCursor) {
-			result += ` Use --cursor ${nextCursor} for next page.`;
+			result += ` Use --cursor ${nextCursor} for next page (start index).`;
 		}
 	}
 

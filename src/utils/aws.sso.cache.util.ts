@@ -93,7 +93,7 @@ interface DeviceAuthorizationInfo {
 /**
  * Interface for AWS SSO cache file structure
  */
-interface AwsSsoCacheFile {
+export interface AwsSsoCacheFile {
 	ssoToken?: {
 		accessToken: string;
 		expiresAt: number;
@@ -584,7 +584,13 @@ async function readMcpAwsSsoCache(): Promise<AwsSsoCacheFile> {
 
 	try {
 		// Check if the cache file exists
-		if (await fileExists(MCP_AWS_SSO_CACHE_FILE)) {
+		const fileDoesExist = await fileExists(MCP_AWS_SSO_CACHE_FILE);
+		logger.debug('Result of fileExists check', {
+			path: MCP_AWS_SSO_CACHE_FILE,
+			exists: fileDoesExist,
+		});
+
+		if (fileDoesExist) {
 			const content = await fs.readFile(MCP_AWS_SSO_CACHE_FILE, 'utf8');
 			const data = JSON.parse(content) as AwsSsoCacheFile;
 			logger.debug('Successfully read MCP AWS SSO cache file');

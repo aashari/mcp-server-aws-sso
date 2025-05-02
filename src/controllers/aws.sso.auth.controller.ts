@@ -220,11 +220,10 @@ async function startLogin(params?: {
 				expiresAt: authResult.expiresAt,
 			});
 
-			// Format expiration date - handle potential invalid dates
+			// Format expiration date
 			let expiresDate = 'Unknown';
 			try {
 				if (authResult.expiresAt) {
-					// Convert seconds to milliseconds for Date constructor
 					const expirationDate = new Date(
 						authResult.expiresAt * 1000,
 					);
@@ -232,12 +231,11 @@ async function startLogin(params?: {
 				}
 			} catch (error) {
 				loginLogger.error('Error formatting expiration date', error);
-				// Keep default value
 			}
 
 			loginLogger.info('Authentication successful!');
 
-			// Return success without trying to list accounts
+			// Return success
 			return {
 				content: formatLoginSuccess(expiresDate),
 				metadata: {

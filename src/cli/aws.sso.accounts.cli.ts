@@ -42,14 +42,18 @@ function registerListAccountsCommand(program: Command): void {
 	program
 		.command('ls-accounts')
 		.description(
-			'List all AWS accounts and roles available to the authenticated user via AWS SSO.',
+			'List AWS accounts and roles from local cache. Use login to refresh cache.',
 		)
 		.option(
 			'--limit <number>',
-			'Maximum number of accounts to return',
+			'Maximum number of accounts to return per page',
 			(val) => parseInt(val, 10),
 		)
-		.option('--cursor <token>', 'Pagination token for subsequent pages')
+		.option('--cursor <index>', 'Start index for pagination (0-based)')
+		.option(
+			'--query <string>',
+			'Search term to filter cached accounts by ID, name, or email',
+		)
 		.action(async (options) => {
 			const listLogger = Logger.forContext(
 				'cli/aws.sso.accounts.cli.ts',
@@ -62,6 +66,7 @@ function registerListAccountsCommand(program: Command): void {
 				const result = await awsSsoAccountsController.listAccounts({
 					limit: options.limit,
 					cursor: options.cursor,
+					query: options.query,
 				});
 
 				console.log(result.content);

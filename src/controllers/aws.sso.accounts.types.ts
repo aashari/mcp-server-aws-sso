@@ -79,3 +79,24 @@ export interface AccountWithRoles {
 	 */
 	timestamp?: number;
 }
+
+/**
+ * Options for listing AWS accounts
+ * Extends common pagination options and adds search query
+ */
+export interface ListAccountsOptions {
+	/**
+	 * Optional limit for pagination
+	 */
+	limit?: number;
+
+	/**
+	 * Optional cursor (start index) for pagination
+	 */
+	cursor?: string;
+
+	/**
+	 * Optional search query
+	 */
+	query?: string;
+}

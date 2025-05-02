@@ -70,21 +70,28 @@ function registerTools(server: McpServer): void {
 
 	// Define schema for the list_accounts tool
 	const ListAccountsArgs = z.object({
-		// Add pagination parameters
 		limit: z
 			.number()
+			.int()
+			.positive()
 			.optional()
-			.describe('Maximum number of accounts to return'),
+			.describe('Maximum number of accounts to return per page'),
 		cursor: z
 			.string()
 			.optional()
-			.describe('Pagination token for subsequent pages'),
+			.describe('Start index for pagination (0-based)'),
+		query: z
+			.string()
+			.optional()
+			.describe(
+				'Search term to filter cached accounts by ID, name, or email',
+			),
 	});
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_ls_accounts',
-		`Lists all AWS accounts and associated roles accessible to the authenticated user via AWS SSO.\n- Use this after login (\`aws_sso_login\`) to discover available accounts and roles for use with \`aws_sso_exec_command\`.\n- Results are paginated with \`limit\` and \`cursor\` parameters.\nReturns a Markdown list of accounts with their available roles.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
+		`Lists AWS accounts and roles from a local cache. \n- Use login command (\`aws_sso_login\`) first to populate/refresh the cache. \n- This might take time during login if you have many accounts. \n- Supports filtering with \`query\` (searches ID, name, email) and pagination with \`limit\` and \`cursor\` (start index).\n- Returns a Markdown list of matching accounts and their roles.`,
 		ListAccountsArgs.shape,
 		handleListAccounts,
 	);
