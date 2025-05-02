@@ -1,3 +1,10 @@
+## [1.7.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.2...v1.7.3) (2025-05-02)
+
+
+### Bug Fixes
+
+* ensure CLI and Tool implementation consistency in AWS SSO server ([31780b1](https://github.com/aashari/mcp-server-aws-sso/commit/31780b1af832cfe3e442c78323ead1d0f25d9a8d))
+
 ## [1.7.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.1...v1.7.2) (2025-05-02)
 
 
