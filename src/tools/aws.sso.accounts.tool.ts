@@ -94,7 +94,7 @@ function registerTools(server: McpServer): void {
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
-		'aws_ls_accounts',
+		'aws_sso_ls_accounts',
 		// Update description to reflect per-page filtering and API pagination
 		`Lists AWS accounts and associated roles accessible via AWS SSO. \n- Results are fetched page-by-page from the AWS API. \n- Use \`limit\` to suggest page size (API default/max may vary) and \`cursor\` (the nextToken from previous results) to get the next page. \n- Supports filtering the *current page* results with \`query\` (searches ID, name, email). \n- Returns a Markdown list of matching accounts from the current page and pagination info.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
 		ListAccountsArgs.shape,
