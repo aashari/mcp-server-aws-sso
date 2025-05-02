@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.6.0...v1.7.0) (2025-05-02)
+
+
+### Features
+
+* Standardize pagination output structure ([e7162c3](https://github.com/aashari/mcp-server-aws-sso/commit/e7162c39d5199dea6566ad2f9518b028d78654a5))
+
 # [1.6.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.5.1...v1.6.0) (2025-05-02)
 
 
