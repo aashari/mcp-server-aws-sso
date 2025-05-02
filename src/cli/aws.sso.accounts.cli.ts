@@ -52,7 +52,7 @@ function registerListAccountsCommand(program: Command): void {
 		.option('--cursor <index>', 'Start index for pagination (0-based)')
 		.option(
 			'--query <string>',
-			'Search term to filter cached accounts by ID, name, or email',
+			'Search term to filter accounts on the current page by ID, name, or email',
 		)
 		.action(async (options) => {
 			const listLogger = Logger.forContext(
