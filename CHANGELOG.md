@@ -1,3 +1,10 @@
+## [1.4.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.5...v1.4.6) (2025-05-02)
+
+
+### Performance Improvements
+
+* Update dependencies ([a28d517](https://github.com/aashari/mcp-server-aws-sso/commit/a28d51795b80a1ee811c3d6f43b263f22c46c356))
+
 ## [1.4.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.4.4...v1.4.5) (2025-05-01)
 
 
