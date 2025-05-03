@@ -1,3 +1,10 @@
+## [1.7.8](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.7...v1.7.8) (2025-05-03)
+
+
+### Bug Fixes
+
+* **exec:** handle shell expansions in exec command ([bd94984](https://github.com/aashari/mcp-server-aws-sso/commit/bd9498423c4ccae1d6c319b1c78c619154f9da17))
+
 ## [1.7.7](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.6...v1.7.7) (2025-05-03)
 
 
