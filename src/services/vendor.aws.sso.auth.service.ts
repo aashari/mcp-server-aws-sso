@@ -76,9 +76,14 @@ async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
 
 			if (!fetchResponse.ok) {
 				// Create an error object with status information for our retry logic
-				const error: any = new Error(
+				type FetchErrorWithMetadata = Error & {
+					$metadata: { httpStatusCode: number };
+				};
+
+				const error = new Error(
 					`Request failed with status ${fetchResponse.status}: ${await fetchResponse.text()}`,
-				);
+				) as FetchErrorWithMetadata;
+
 				error.$metadata = { httpStatusCode: fetchResponse.status };
 				throw error;
 			}
