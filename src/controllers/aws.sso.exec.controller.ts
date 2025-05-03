@@ -71,11 +71,7 @@ async function executeCommand(
 		}
 
 		// Validate command options
-		if (
-			!options.accountId ||
-			!options.roleName ||
-			!options.command?.length
-		) {
+		if (!options.accountId || !options.roleName || !options.command) {
 			throw new Error(
 				'Missing required parameters: accountId, roleName, and command are required',
 			);
@@ -90,7 +86,7 @@ async function executeCommand(
 
 		// Execute the command
 		execCommandLogger.debug('Executing command with environment', {
-			command: options.command.join(' '),
+			command: options.command,
 			env: {
 				AWS_REGION: options.region,
 				AWS_DEFAULT_REGION: options.region,
@@ -111,10 +107,7 @@ async function executeCommand(
 		});
 
 		// Format the result
-		const formattedContent = formatCommandResult(
-			options.command.join(' '),
-			result,
-		);
+		const formattedContent = formatCommandResult(options.command, result);
 
 		return {
 			content: formattedContent,

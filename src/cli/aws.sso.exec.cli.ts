@@ -2,7 +2,6 @@ import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
 import { handleCliError } from '../utils/error.util.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
-import { parseCommand } from '../utils/command.util.js';
 
 /**
  * AWS SSO Execution CLI Module
@@ -65,15 +64,12 @@ function registerExecCommand(program: Command): void {
 			});
 
 			try {
-				// Parse the command string properly instead of simple split
-				const commandParts = parseCommand(options.command);
-
 				// Call the controller with the parsed options
 				const result = await awsSsoExecController.executeCommand({
 					accountId: options.accountId,
 					roleName: options.roleName,
 					region: options.region,
-					command: commandParts,
+					command: options.command,
 				});
 
 				console.log(result.content);

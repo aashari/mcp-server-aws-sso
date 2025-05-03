@@ -68,7 +68,7 @@ describe('AWS SSO Exec Controller', () => {
 		const result = await awsSsoExecController.executeCommand({
 			accountId,
 			roleName,
-			command: ['aws', '--version'],
+			command: 'aws --version',
 		});
 
 		expect(result).toBeDefined();

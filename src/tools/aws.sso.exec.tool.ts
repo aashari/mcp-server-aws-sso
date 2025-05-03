@@ -6,7 +6,7 @@ import {
 	ExecCommandToolArgsType,
 } from './aws.sso.types.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
-import { parseCommand } from '../utils/command.util.js';
+// import { parseCommand } from '../utils/command.util.js'; // No longer needed
 
 /**
  * AWS SSO Execution Tool Module
@@ -37,14 +37,14 @@ async function handleExecCommand(args: ExecCommandToolArgsType) {
 
 	try {
 		// Parse the command string properly instead of simple split
-		const commandParts = parseCommand(args.command);
+		// const commandParts = parseCommand(args.command); // Removed parsing
 
 		// Call the controller with proper args
 		const result = await awsSsoExecController.executeCommand({
 			accountId: args.accountId,
 			roleName: args.roleName,
 			region: args.region,
-			command: commandParts,
+			command: args.command, // Pass raw string
 		});
 
 		// Return the response in MCP format

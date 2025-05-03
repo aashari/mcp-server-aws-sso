@@ -65,11 +65,11 @@ describe('AWS SSO Exec Service', () => {
 		const roleName = accountWithRole.roles[0].roleName;
 
 		// Run a simple AWS command - get caller identity
-		const result = await executeCommand(accountId, roleName, [
-			'aws',
-			'sts',
-			'get-caller-identity',
-		]);
+		const result = await executeCommand(
+			accountId,
+			roleName,
+			'aws sts get-caller-identity',
+		);
 
 		expect(result).toBeDefined();
 		expect(result.exitCode).toBe(0);

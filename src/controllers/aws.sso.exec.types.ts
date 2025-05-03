@@ -23,8 +23,9 @@ export interface ExecuteCommandOptions {
 
 	/**
 	 * AWS CLI command to execute as an array of command and arguments
+	 * AWS CLI command string to execute
 	 */
-	command: string[];
+	command: string;
 }
 
 /**

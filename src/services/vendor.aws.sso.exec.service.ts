@@ -21,14 +21,14 @@ const logger = Logger.forContext('services/vendor.aws.sso.exec.service.ts');
 async function executeCommand(
 	accountId: string,
 	roleName: string,
-	command: string[],
+	commandString: string,
 	region?: string,
 ): Promise<CommandExecutionResult> {
 	const methodLogger = logger.forMethod('executeCommand');
 	methodLogger.debug('Executing AWS CLI command', {
 		accountId,
 		roleName,
-		command,
+		command: commandString,
 		region,
 	});
 
@@ -37,7 +37,7 @@ async function executeCommand(
 		throw new Error('Account ID and role name are required');
 	}
 
-	if (!command || command.length === 0) {
+	if (!commandString) {
 		throw new Error('Command is required');
 	}
 
@@ -70,11 +70,7 @@ async function executeCommand(
 		}
 
 		// Execute the command
-		const result = await executeChildProcess(
-			command[0],
-			command.slice(1),
-			processEnv,
-		);
+		const result = await executeChildProcess(commandString, processEnv);
 		methodLogger.debug('Command execution completed', {
 			exitCode: result.exitCode,
 			stdoutBytes: result.stdout.length,
@@ -99,21 +95,20 @@ async function executeCommand(
  * @returns {Promise<CommandExecutionResult>} Command execution result
  */
 async function executeChildProcess(
-	command: string,
-	args: string[],
+	commandString: string,
 	env: NodeJS.ProcessEnv,
 ): Promise<CommandExecutionResult> {
 	const methodLogger = logger.forMethod('executeChildProcess');
-	methodLogger.debug('Executing child process', {
-		command,
-		args,
+	methodLogger.debug('Executing child process via shell', {
+		command: commandString,
 	});
 
 	return new Promise((resolve, reject) => {
-		const child = spawn(command, args, {
+		// Use shell: true to handle expansions like $(date ...)
+		const child = spawn(commandString, [], {
 			env,
 			stdio: 'pipe',
-			shell: false,
+			shell: true,
 		});
 
 		let stdout = '';
