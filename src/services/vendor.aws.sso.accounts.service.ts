@@ -28,6 +28,7 @@ import {
 	ListAccountRolesCommand,
 	ListAccountsCommand,
 } from '@aws-sdk/client-sso';
+import { withRetry } from '../utils/retry.util.js';
 
 const logger = Logger.forContext('services/vendor.aws.sso.accounts.service.ts');
 
@@ -62,7 +63,8 @@ async function listSsoAccounts(
 		// Create SSO client with proper region
 		const ssoClient = new SSOClient({
 			region: region,
-			maxAttempts: 3,
+			// Disable the built-in retry to use our custom implementation
+			maxAttempts: 1,
 		});
 
 		// Configure command with proper parameters
@@ -72,9 +74,17 @@ async function listSsoAccounts(
 			nextToken: params.nextToken,
 		});
 
-		// Execute command to get accounts
-		methodLogger.debug('Requesting accounts list using AWS SDK');
-		const response = await ssoClient.send(command);
+		// Execute command with retry logic to handle 429 errors
+		methodLogger.debug(
+			'Requesting accounts list using AWS SDK with retry mechanism',
+		);
+		const response = await withRetry(() => ssoClient.send(command), {
+			// Use default retry options, can be adjusted if needed
+			maxRetries: 5,
+			initialDelayMs: 1000,
+			maxDelayMs: 30000,
+			backoffFactor: 2.0,
+		});
 
 		// Convert response to expected format with type handling
 		const accountList: AwsSsoAccount[] = (response.accountList || []).map(
@@ -144,7 +154,8 @@ async function listAccountRoles(
 		// Create SSO client with proper region
 		const ssoClient = new SSOClient({
 			region: region,
-			maxAttempts: 3,
+			// Disable the built-in retry to use our custom implementation
+			maxAttempts: 1,
 		});
 
 		// Configure command with proper parameters
@@ -155,9 +166,17 @@ async function listAccountRoles(
 			nextToken: params.nextToken,
 		});
 
-		// Execute command to get roles
-		methodLogger.debug('Requesting roles list using AWS SDK');
-		const response = await ssoClient.send(command);
+		// Execute command with retry logic to handle 429 errors
+		methodLogger.debug(
+			'Requesting roles list using AWS SDK with retry mechanism',
+		);
+		const response = await withRetry(() => ssoClient.send(command), {
+			// Use default retry options, can be adjusted if needed
+			maxRetries: 5,
+			initialDelayMs: 1000,
+			maxDelayMs: 30000,
+			backoffFactor: 2.0,
+		});
 
 		// Convert response to expected format
 		const result: ListAccountRolesResponse = {
@@ -256,7 +275,8 @@ async function getAwsCredentials(
 		// Create SSO client with proper region
 		const ssoClient = new SSOClient({
 			region: region,
-			maxAttempts: 3,
+			// Disable the built-in retry to use our custom implementation
+			maxAttempts: 1,
 		});
 
 		// Configure command with proper parameters
@@ -266,9 +286,17 @@ async function getAwsCredentials(
 			roleName: params.roleName,
 		});
 
-		// Execute command to get credentials
-		methodLogger.debug('Requesting temporary credentials using AWS SDK');
-		const response = await ssoClient.send(command);
+		// Execute command with retry logic to handle 429 errors
+		methodLogger.debug(
+			'Requesting temporary credentials using AWS SDK with retry mechanism',
+		);
+		const response = await withRetry(() => ssoClient.send(command), {
+			// Use default retry options, can be adjusted if needed
+			maxRetries: 5,
+			initialDelayMs: 1000,
+			maxDelayMs: 30000,
+			backoffFactor: 2.0,
+		});
 
 		if (!response.roleCredentials) {
 			throw new Error('No credentials returned from AWS SSO');

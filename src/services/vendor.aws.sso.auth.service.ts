@@ -7,6 +7,7 @@ import {
 import * as ssoCache from '../utils/aws.sso.cache.util.js';
 import { AwsSsoConfig, AwsSsoAuthResult } from './vendor.aws.sso.types.js';
 import { getSsoOidcEndpoint } from '../utils/transport.util.js';
+import { withRetry } from '../utils/retry.util.js';
 
 /**
  * Device authorization information
@@ -62,19 +63,47 @@ const logger = Logger.forContext('services/vendor.aws.sso.auth.service.ts');
  * @returns The JSON response
  */
 async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
-	const response = await fetch(url, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify(data),
-	});
+	// Use the retry mechanism for handling potential 429 errors
+	const response = await withRetry(
+		async () => {
+			const fetchResponse = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(data),
+			});
 
-	if (!response.ok) {
-		throw new Error(
-			`Request failed with status ${response.status}: ${await response.text()}`,
-		);
-	}
+			if (!fetchResponse.ok) {
+				// Create an error object with status information for our retry logic
+				const error: any = new Error(
+					`Request failed with status ${fetchResponse.status}: ${await fetchResponse.text()}`,
+				);
+				error.$metadata = { httpStatusCode: fetchResponse.status };
+				throw error;
+			}
+
+			return fetchResponse;
+		},
+		{
+			// Define custom retry condition for fetch responses
+			retryCondition: (error: unknown) => {
+				// Default retry on 429 responses
+				if (error && typeof error === 'object') {
+					if (
+						'$metadata' in error &&
+						typeof error.$metadata === 'object'
+					) {
+						const metadata = error.$metadata as {
+							httpStatusCode?: number;
+						};
+						return metadata.httpStatusCode === 429;
+					}
+				}
+				return false;
+			},
+		},
+	);
 
 	return (await response.json()) as T;
 }
