@@ -1,3 +1,10 @@
+## [1.7.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.5...v1.7.6) (2025-05-03)
+
+
+### Performance Improvements
+
+* add retry mechanism with exponential backoff for API rate limiting ([027d26b](https://github.com/aashari/mcp-server-aws-sso/commit/027d26b201ec32a00e08d05af28adacf6ea05412))
+
 ## [1.7.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.4...v1.7.5) (2025-05-03)
 
 
