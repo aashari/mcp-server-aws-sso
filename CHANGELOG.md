@@ -1,3 +1,11 @@
+## [1.7.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.4...v1.7.5) (2025-05-03)
+
+
+### Bug Fixes
+
+* handle null exitCode in formatters and add missing formatAuthRequired function ([2b7b81c](https://github.com/aashari/mcp-server-aws-sso/commit/2b7b81cad19597af16a0e549b4af1b80d288ea7b))
+* update test files to work with new API structure ([31d6813](https://github.com/aashari/mcp-server-aws-sso/commit/31d681356427bf41f3dc47f70c928d3445fb5bd7))
+
 ## [1.7.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.3...v1.7.4) (2025-05-02)
 
 
