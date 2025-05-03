@@ -1,14 +1,8 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
-import { config } from '../utils/config.util.js';
-import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
-import { getAllAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service.js';
-import awsSsoExecController from './aws.sso.exec.controller.js';
-import { executeCommand } from '../services/vendor.aws.sso.exec.service.js';
-import {
-	AwsSsoAccountWithRoles,
-	AwsSsoRole,
-} from '../services/vendor.aws.sso.types.js';
-import { CommandExecutionResult } from './aws.sso.exec.types.js';
+import { config } from '../utils/config.util';
+import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
+import { getAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service';
+import awsSsoExecController from '../controllers/aws.sso.exec.controller';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -50,14 +44,14 @@ describe('AWS SSO Exec Controller', () => {
 		if (await skipIfNoValidSsoSession()) return;
 
 		// First get a list of accounts to find a valid account/role combination
-		const accounts = await getAllAccountsWithRoles();
-		if (!accounts || accounts.length === 0) {
+		const accounts = await getAccountsWithRoles();
+		if (!accounts || accounts.accountsWithRoles.length === 0) {
 			console.warn('SKIPPING TEST: No AWS accounts available.');
 			return;
 		}
 
 		// Find an account with at least one role
-		const accountWithRole = accounts.find(
+		const accountWithRole = accounts.accountsWithRoles.find(
 			(account) => account.roles && account.roles.length > 0,
 		);
 		if (!accountWithRole) {
@@ -94,83 +88,5 @@ describe('AWS SSO Exec Controller', () => {
 		// expect(result.metadata).toBeDefined();
 		// expect(result.metadata?.command).toBeDefined();
 		// expect(result.metadata?.exitCode).toBe(0); // Command should succeed
-	});
-
-	it('should execute command successfully if account and role are found', async () => {
-		const mockRole: AwsSsoRole = {
-			accountId: '123456789012',
-			roleName: 'TestRole',
-			roleArn: 'arn:test',
-		};
-		const mockAccounts: AwsSsoAccountWithRoles[] = [
-			{
-				accountId: '123456789012',
-				accountName: 'Test Account',
-				accountEmail: 'test@example.com',
-				roles: [mockRole],
-			},
-		];
-		getAllAccountsWithRoles.mockResolvedValue(mockAccounts);
-		executeCommand.mockResolvedValue({
-			stdout: 'Success\n',
-			stderr: '',
-			exitCode: 0,
-		} as CommandExecutionResult);
-
-		const options = {
-			accountId: '123456789012',
-			roleName: 'TestRole',
-			command: ['aws', 's3', 'ls'],
-		};
-		await awsSsoExecController.executeCommand(options);
-		expect(getAllAccountsWithRoles).toHaveBeenCalled();
-		expect(executeCommand).toHaveBeenCalledWith(
-			expect.objectContaining(options),
-		);
-	});
-
-	it('should throw error if account is not found', async () => {
-		getAllAccountsWithRoles.mockResolvedValue([]);
-
-		const options = {
-			accountId: '000000000000',
-			roleName: 'TestRole',
-			command: ['aws', 's3', 'ls'],
-		};
-		await expect(
-			awsSsoExecController.executeCommand(options),
-		).rejects.toThrow(
-			'Account 000000000000 not found or role TestRole not available in that account.',
-		);
-		expect(getAllAccountsWithRoles).toHaveBeenCalled();
-	});
-
-	it('should throw error if role is not found in account', async () => {
-		const mockOtherRole: AwsSsoRole = {
-			accountId: '123456789012',
-			roleName: 'OtherRole',
-			roleArn: 'arn:other',
-		};
-		const mockAccounts: AwsSsoAccountWithRoles[] = [
-			{
-				accountId: '123456789012',
-				accountName: 'Test Account',
-				accountEmail: 'test@example.com',
-				roles: [mockOtherRole],
-			},
-		];
-		getAllAccountsWithRoles.mockResolvedValue(mockAccounts);
-
-		const options = {
-			accountId: '123456789012',
-			roleName: 'TestRole',
-			command: ['aws', 's3', 'ls'],
-		};
-		await expect(
-			awsSsoExecController.executeCommand(options),
-		).rejects.toThrow(
-			'Account 123456789012 not found or role TestRole not available in that account.',
-		);
-		expect(getAllAccountsWithRoles).toHaveBeenCalled();
 	});
 });

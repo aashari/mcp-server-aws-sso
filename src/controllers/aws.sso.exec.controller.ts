@@ -1,13 +1,10 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
-import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
-import { getAllAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service.js';
-import { executeCommand } from '../services/vendor.aws.sso.exec.service.js';
-import {
-	ExecuteCommandOptions,
-	CommandExecutionResult,
-} from './aws.sso.exec.types.js';
+import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
+import { formatAuthRequired } from './aws.sso.auth.formatter.js';
+import { executeCommand as executeServiceCommand } from '../services/vendor.aws.sso.exec.service.js';
+import { ExecuteCommandOptions } from './aws.sso.exec.types.js';
 import { formatCommandResult } from './aws.sso.exec.formatter.js';
 
 /**
@@ -100,7 +97,7 @@ async function executeCommand(
 			},
 		});
 
-		const result = await executeAwsCliCommandService(
+		const result = await executeServiceCommand(
 			options.accountId,
 			options.roleName,
 			options.command,

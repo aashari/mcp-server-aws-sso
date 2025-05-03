@@ -141,7 +141,7 @@ export function formatExecResult(
 		command,
 		result.stdout,
 		result.stderr,
-		result.exitCode,
+		result.exitCode !== null ? result.exitCode : 0,
 	);
 }
 
@@ -161,7 +161,11 @@ export function formatCommandResult(
 	lines.push('');
 
 	lines.push(formatHeading('Exit Code', 3));
-	lines.push(formatCodeBlock(String(result.exitCode ?? 'N/A')));
+	lines.push(
+		formatCodeBlock(
+			String(result.exitCode !== null ? result.exitCode : 'N/A'),
+		),
+	);
 	lines.push('');
 
 	if (result.stdout) {

@@ -128,3 +128,20 @@ For security reasons, the actual credential values are not displayed.`;
 
 	return header + message;
 }
+
+/**
+ * Format auth required message
+ * @returns Formatted markdown content
+ */
+export function formatAuthRequired(): string {
+	return `# Authentication Required
+
+You need to authenticate with AWS SSO before using this command.
+
+Please run:
+\`\`\`
+login
+\`\`\`
+
+This will initiate the AWS SSO authentication process.`;
+}
