@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service';
-import { getAccountsWithRoles } from './vendor.aws.sso.accounts.service';
+import { getAllAccountsWithRoles } from './vendor.aws.sso.accounts.service';
 import { executeCommand } from './vendor.aws.sso.exec.service';
 
 /**
@@ -44,15 +44,15 @@ describe('AWS SSO Exec Service', () => {
 		if (await skipIfNoValidSsoSession()) return;
 
 		// First get a list of accounts to find a valid account/role combination
-		const accounts = await getAccountsWithRoles();
-		if (!accounts || accounts.accountsWithRoles.length === 0) {
+		const accounts = await getAllAccountsWithRoles();
+		if (!accounts || accounts.length === 0) {
 			console.warn('SKIPPING TEST: No AWS accounts available.');
 			return;
 		}
 
-		// Find an account with at least one role
-		const accountWithRole = accounts.accountsWithRoles.find(
-			(account) => account.roles && account.roles.length > 0,
+		// Find an account that has at least one role
+		const accountWithRole = accounts.find(
+			(account: any) => account.roles && account.roles.length > 0,
 		);
 		if (!accountWithRole) {
 			console.warn(

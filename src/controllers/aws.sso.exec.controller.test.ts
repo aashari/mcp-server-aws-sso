@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
-import { getAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service';
+import { getAllAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller';
 
 /**
@@ -44,15 +44,15 @@ describe('AWS SSO Exec Controller', () => {
 		if (await skipIfNoValidSsoSession()) return;
 
 		// First get a list of accounts to find a valid account/role combination
-		const accounts = await getAccountsWithRoles();
-		if (!accounts || accounts.accountsWithRoles.length === 0) {
+		const accounts = await getAllAccountsWithRoles();
+		if (!accounts || accounts.length === 0) {
 			console.warn('SKIPPING TEST: No AWS accounts available.');
 			return;
 		}
 
-		// Find an account with at least one role
-		const accountWithRole = accounts.accountsWithRoles.find(
-			(account) => account.roles && account.roles.length > 0,
+		// Find an account that has at least one role
+		const accountWithRole = accounts.find(
+			(account: any) => account.roles && account.roles.length > 0,
 		);
 		if (!accountWithRole) {
 			console.warn(
@@ -76,9 +76,8 @@ describe('AWS SSO Exec Controller', () => {
 		expect(typeof result.content).toBe('string');
 
 		// Content should be Markdown formatted output
-		expect(result.content).toContain('# AWS CLI Command Execution');
-		expect(result.content).toContain('Command: `aws --version`');
-		expect(result.content).toContain('## Result:');
+		expect(result.content).toContain('Command Result: `aws --version`');
+		expect(result.content).toContain('Exit Code');
 
 		// The output should contain "aws-cli" somewhere
 		expect(result.content).toContain('aws-cli');

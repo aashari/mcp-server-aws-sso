@@ -3,8 +3,8 @@ import { config } from '../utils/config.util';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service';
 import {
 	listSsoAccounts,
-	getAccountsWithRoles,
 	getAwsCredentials,
+	getAllAccountsWithRoles,
 } from './vendor.aws.sso.accounts.service';
 
 /**
@@ -61,13 +61,15 @@ describe('AWS SSO Accounts Service', () => {
 	test('getAccountsWithRoles should return accounts with their roles', async () => {
 		if (await skipIfNoValidSsoSession()) return;
 
-		const accounts = await getAccountsWithRoles();
+		const accounts = await getAllAccountsWithRoles();
 		expect(accounts).toBeDefined();
-		expect(Array.isArray(accounts.accountsWithRoles)).toBe(true);
+		expect(Array.isArray(accounts)).toBe(true);
 
-		// If accounts exist, check their structure
-		if (accounts.accountsWithRoles.length > 0) {
-			const firstAccount = accounts.accountsWithRoles[0];
+		// Check if at least one account was returned
+		expect(accounts.length).toBeGreaterThan(0);
+
+		if (accounts.length > 0) {
+			const firstAccount = accounts[0];
 			expect(firstAccount.accountId).toBeDefined();
 			expect(firstAccount.accountName).toBeDefined();
 			expect(Array.isArray(firstAccount.roles)).toBe(true);
@@ -78,14 +80,14 @@ describe('AWS SSO Accounts Service', () => {
 		if (await skipIfNoValidSsoSession()) return;
 
 		// First get a list of accounts to find a valid account/role combination
-		const accounts = await getAccountsWithRoles();
-		if (!accounts || accounts.accountsWithRoles.length === 0) {
+		const accounts = await getAllAccountsWithRoles();
+		if (!accounts || accounts.length === 0) {
 			console.warn('SKIPPING TEST: No AWS accounts available.');
 			return;
 		}
 
 		// Find an account with at least one role
-		const accountWithRole = accounts.accountsWithRoles.find(
+		const accountWithRole = accounts.find(
 			(account) => account.roles && account.roles.length > 0,
 		);
 		if (!accountWithRole) {
