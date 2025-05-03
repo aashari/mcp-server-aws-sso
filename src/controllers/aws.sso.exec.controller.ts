@@ -1,13 +1,14 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
-import { executeCommand as executeAwsCliCommandService } from '../services/vendor.aws.sso.exec.service.js';
-import { ExecuteCommandOptions } from './aws.sso.exec.types.js';
+import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
+import { getAllAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service.js';
+import { executeCommand } from '../services/vendor.aws.sso.exec.service.js';
 import {
-	formatAuthRequired,
-	formatCommandOutput,
-} from './aws.sso.exec.formatter.js';
-import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
+	ExecuteCommandOptions,
+	CommandExecutionResult,
+} from './aws.sso.exec.types.js';
+import { formatCommandResult } from './aws.sso.exec.formatter.js';
 
 /**
  * AWS SSO Execution Controller Module
@@ -113,19 +114,21 @@ async function executeCommand(
 		});
 
 		// Format the result
-		const commandStr = Array.isArray(options.command)
-			? options.command.join(' ')
-			: options.command;
-
-		const formattedOutput = formatCommandOutput(
-			commandStr,
-			result.stdout,
-			result.stderr,
-			result.exitCode,
+		const formattedContent = formatCommandResult(
+			options.command.join(' '),
+			result,
 		);
 
 		return {
-			content: formattedOutput,
+			content: formattedContent,
+			metadata: {
+				stdout: result.stdout,
+				stderr: result.stderr,
+				exitCode: result.exitCode ?? -1,
+				accountId: options.accountId,
+				roleName: options.roleName,
+				region: options.region,
+			},
 		};
 	} catch (error) {
 		// Handle errors using standard pattern

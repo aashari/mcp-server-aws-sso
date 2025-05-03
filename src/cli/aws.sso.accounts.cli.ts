@@ -2,7 +2,6 @@ import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
 import { handleCliError } from '../utils/error.util.js';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
-import { formatPagination } from '../utils/formatter.util.js';
 
 /**
  * AWS SSO Accounts CLI Module
@@ -42,46 +41,20 @@ function registerListAccountsCommand(program: Command): void {
 	program
 		.command('ls-accounts')
 		.description(
-			'List AWS accounts and associated roles accessible via AWS SSO. Requires prior authentication via the `login` command.',
+			'List ALL AWS accounts and associated roles accessible via AWS SSO. Fetches all accounts before displaying. Requires prior authentication via the `login` command.',
 		)
-		.option(
-			'--limit <number>',
-			'Maximum number of accounts to return per page',
-			(val) => parseInt(val, 10),
-		)
-		.option('--cursor <index>', 'Start index for pagination (0-based)')
-		.option(
-			'--query <string>',
-			'Search term to filter accounts on the current page by ID, name, or email',
-		)
-		.action(async (options) => {
+		.action(async () => {
 			const listLogger = Logger.forContext(
 				'cli/aws.sso.accounts.cli.ts',
 				'ls-accounts',
 			);
 			try {
-				listLogger.debug('Listing all AWS accounts and roles', options);
+				listLogger.debug('Listing all AWS accounts and roles');
 
-				// Pass pagination options to the controller
-				const result = await awsSsoAccountsController.listAccounts({
-					limit: options.limit,
-					cursor: options.cursor,
-					query: options.query,
-				});
+				// Call controller with no options
+				const result = await awsSsoAccountsController.listAccounts();
 
 				console.log(result.content);
-
-				// Display pagination information if available
-				if (result.pagination) {
-					console.log(
-						'\n' +
-							formatPagination(
-								result.pagination.count ?? 0,
-								result.pagination.hasMore ?? false,
-								result.pagination.nextCursor,
-							),
-					);
-				}
 			} catch (error) {
 				listLogger.error('List-accounts command failed', error);
 				handleCliError(error);

@@ -6,6 +6,8 @@ import { createAuthMissingError, createApiError } from '../utils/error.util.js';
 import {
 	getCachedCredentials,
 	saveCachedCredentials,
+	getCachedAccountRoles,
+	saveAccountRoles,
 } from '../utils/aws.sso.cache.util.js';
 import {
 	AwsSsoAccountWithRoles,
@@ -16,7 +18,9 @@ import {
 	ListAccountRolesParams,
 	ListAccountRolesResponse,
 	AwsSsoAccount,
+	AwsSsoRole,
 } from './vendor.aws.sso.types.js';
+import { AwsSsoAccountRole } from './aws.sso.types.js';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service.js';
 import {
 	SSOClient,
@@ -297,74 +301,137 @@ async function getAwsCredentials(
 }
 
 /**
- * Get all AWS accounts with their available roles
+ * Get ALL AWS accounts with their available roles, handling pagination internally.
  *
  * Retrieves a combined view of all accounts and their roles that the user has access to.
- * This is a convenience function that combines listSsoAccounts and listAccountRoles.
+ * This function loops through all pages of accounts and roles, utilizing caching for roles.
  *
- * @param {ListAccountsParams} [params={}] - Optional parameters for customizing the request
- * @param {number} [params.maxResults] - Maximum number of accounts to return
- * @param {string} [params.nextToken] - Pagination token for subsequent requests
- * @returns {Promise<{accountsWithRoles: AwsSsoAccountWithRoles[], nextToken?: string}>} List of AWS accounts with their roles and pagination token
+ * @returns {Promise<AwsSsoAccountWithRoles[]>} Complete list of AWS accounts with their roles
  * @throws {Error} If SSO token is missing or API request fails
  */
-async function getAccountsWithRoles(params: ListAccountsParams = {}): Promise<{
-	accountsWithRoles: AwsSsoAccountWithRoles[];
-	nextToken?: string;
-}> {
-	const methodLogger = logger.forMethod('getAccountsWithRoles');
-	methodLogger.debug('Getting all AWS SSO accounts with roles', params);
-
-	// Get accounts
-	const accountsResponse = await listSsoAccounts(params);
-	const accounts = accountsResponse.accountList;
-
-	// Get roles for each account
-	const accountsWithRoles: AwsSsoAccountWithRoles[] = [];
-	for (const account of accounts) {
-		try {
-			const rolesResponse = await listAccountRoles({
-				accountId: account.accountId,
-			});
-
-			accountsWithRoles.push({
-				...account,
-				roles: rolesResponse.roleList.map((role) => ({
-					accountId: account.accountId,
-					roleName: role.roleName || '',
-					roleArn:
-						role.roleArn ||
-						`arn:aws:iam::${account.accountId}:role/${role.roleName || ''}`,
-				})),
-			});
-		} catch (error) {
-			methodLogger.warn(
-				`Error getting roles for account ${account.accountId}`,
-				error,
-			);
-			// Include account with empty roles array
-			accountsWithRoles.push({
-				...account,
-				roles: [],
-			});
-		}
-	}
-
+async function getAllAccountsWithRoles(): Promise<AwsSsoAccountWithRoles[]> {
+	const methodLogger = logger.forMethod('getAllAccountsWithRoles');
 	methodLogger.debug(
-		`Retrieved ${accountsWithRoles.length} accounts with roles${accountsResponse.nextToken ? ' with pagination token' : ''}`,
+		'Getting ALL AWS SSO accounts with roles (using cache)...',
 	);
 
-	// Return both the accounts with roles and the nextToken for pagination
-	return {
-		accountsWithRoles,
-		nextToken: accountsResponse.nextToken,
-	};
+	const allAccountsWithRoles: AwsSsoAccountWithRoles[] = [];
+	let accountsNextToken: string | undefined;
+
+	do {
+		const accountsResponse = await listSsoAccounts({
+			nextToken: accountsNextToken,
+		});
+		const accounts = accountsResponse.accountList;
+		accountsNextToken = accountsResponse.nextToken;
+
+		methodLogger.debug(
+			`Fetched page of ${accounts.length} accounts. Next token: ${accountsNextToken ? 'Yes' : 'No'}`,
+		);
+
+		for (const account of accounts) {
+			try {
+				// --- Check Cache First (Uses AwsSsoAccountRole[]) ---
+				const rolesFromCache: AwsSsoAccountRole[] =
+					await getCachedAccountRoles(account.accountId);
+				if (rolesFromCache && rolesFromCache.length > 0) {
+					methodLogger.debug(
+						`Using cached roles for account ${account.accountId}`,
+					);
+					// Map cached roles (AwsSsoAccountRole[]) to the expected AwsSsoRole[]
+					const mappedCachedRoles: AwsSsoRole[] = rolesFromCache.map(
+						(role) => ({
+							accountId: account.accountId,
+							roleName: role.roleName,
+							roleArn:
+								role.roleArn ||
+								`arn:aws:iam::${account.accountId}:role/${role.roleName}`,
+						}),
+					);
+					allAccountsWithRoles.push({
+						...account,
+						roles: mappedCachedRoles,
+					});
+					continue;
+				} else {
+					methodLogger.debug(
+						`No valid cached roles found for account ${account.accountId}, fetching...`,
+					);
+				}
+				// --- End Cache Check ---
+
+				let allRolesForAccountApi: {
+					roleName?: string;
+					roleArn?: string;
+				}[] = []; // SDK RoleInfo type
+				let rolesNextToken: string | undefined;
+
+				do {
+					const rolesResponse = await listAccountRoles({
+						accountId: account.accountId,
+						nextToken: rolesNextToken,
+					});
+					allRolesForAccountApi = allRolesForAccountApi.concat(
+						rolesResponse.roleList || [],
+					);
+					rolesNextToken = rolesResponse.nextToken;
+					methodLogger.debug(
+						`Fetched page of roles for account ${account.accountId}. Next token: ${rolesNextToken ? 'Yes' : 'No'}`,
+					);
+				} while (rolesNextToken);
+
+				// Map fetched roles (RoleInfo[]) to AwsSsoRole[] for the return type
+				const formattedRoles: AwsSsoRole[] = allRolesForAccountApi.map(
+					(role) => ({
+						accountId: account.accountId,
+						roleName: role.roleName || '',
+						roleArn:
+							role.roleArn ||
+							`arn:aws:iam::${account.accountId}:role/${role.roleName || ''}`,
+					}),
+				);
+
+				allAccountsWithRoles.push({
+					...account,
+					roles: formattedRoles,
+				});
+
+				// --- Save Fetched Roles to Cache ---
+				// Map formattedRoles (AwsSsoRole[]) back to AwsSsoAccountRole[]
+				const rolesToCache: AwsSsoAccountRole[] = formattedRoles.map(
+					(role) => ({
+						accountId: role.accountId,
+						roleName: role.roleName,
+						roleArn: role.roleArn,
+					}),
+				);
+				await saveAccountRoles(account, rolesToCache);
+				// --- End Save Cache ---
+			} catch (error) {
+				methodLogger.warn(
+					`Error getting roles for account ${account.accountId}, including account with empty roles list.`,
+					error,
+				);
+				// Include account even if role fetching fails, but with empty roles
+				allAccountsWithRoles.push({
+					...account,
+					roles: [],
+				});
+			}
+		}
+	} while (accountsNextToken);
+
+	methodLogger.debug(
+		`Retrieved a total of ${allAccountsWithRoles.length} accounts with their roles.`,
+	);
+
+	return allAccountsWithRoles;
 }
 
 export {
 	listSsoAccounts,
 	listAccountRoles,
 	getAwsCredentials,
-	getAccountsWithRoles,
+	getAllAccountsWithRoles,
 	getCachedCredentials,
 };

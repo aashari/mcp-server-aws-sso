@@ -4,7 +4,7 @@ import { ControllerResponse } from '../types/common.types.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
 import {
 	listAccountRoles,
-	getAccountsWithRoles, // Use the single-page fetch function
+	getAllAccountsWithRoles,
 } from '../services/vendor.aws.sso.accounts.service.js';
 import {
 	clearSsoToken,
@@ -19,12 +19,8 @@ import {
 } from './aws.sso.accounts.formatter.js';
 import {
 	ListRolesOptions,
-	ListAccountsOptions,
-} from './aws.sso.accounts.types.js'; // Add ListAccountsOptions
-import {
-	extractPaginationInfo,
-	PaginationType,
-} from '../utils/pagination.util.js';
+	// ListAccountsOptions, // Removed as it's empty and unused
+} from './aws.sso.accounts.types.js';
 
 /**
  * AWS SSO Accounts Controller Module
@@ -43,33 +39,24 @@ const controllerLogger = Logger.forContext(
 controllerLogger.debug('AWS SSO accounts controller initialized');
 
 /**
- * List all AWS accounts and their roles
+ * List all AWS accounts and their roles (no pagination)
  *
  * Retrieves and formats all available AWS accounts and the roles the user
- * can assume in each account via AWS SSO. Groups roles by account for better organization.
+ * can assume in each account via AWS SSO. Handles pagination internally.
  *
  * @async
- * @param {ListAccountsOptions} options - List accounts options
- * @returns {Promise<ControllerResponse>} Response with comprehensive formatted list of accounts and roles
+ * @returns {Promise<ControllerResponse>} Response with comprehensive formatted list of accounts and roles (no pagination info).
  * @throws {Error} If account listing fails or authentication is required
- * @example
- * // List all accounts and their roles
- * const result = await listAccounts();
- *
- * // List accounts with pagination
- * const result = await listAccounts({ limit: 10, cursor: "next-token-value" });
  */
-async function listAccounts(
-	options: ListAccountsOptions = {},
-): Promise<ControllerResponse> {
+async function listAccounts(): Promise<ControllerResponse> {
 	const listLogger = Logger.forContext(
 		'controllers/aws.sso.accounts.controller.ts',
 		'listAccounts',
 	);
-	listLogger.debug('Listing AWS SSO accounts via API', options);
+	listLogger.debug('Listing ALL AWS SSO accounts');
 
 	try {
-		// --- Authentication Check (remains the same) ---
+		// --- Authentication Check ---
 		const cachedToken = await getCachedSsoToken();
 		if (!cachedToken) {
 			return {
@@ -109,90 +96,47 @@ async function listAccounts(
 		}
 		// --- End Authentication Check ---
 
-		listLogger.debug('Fetching page of AWS accounts with roles');
+		listLogger.debug(
+			'Fetching ALL AWS accounts with roles from service...',
+		);
 		try {
-			const accountsResponse = await getAccountsWithRoles({
-				maxResults: options.limit, // Let service handle default if undefined
-				nextToken: options.cursor,
-			});
+			// Fetch the complete list from the service
+			const allAccountsData = await getAllAccountsWithRoles();
+			const totalAccountsFetched = allAccountsData.length;
+			listLogger.debug(
+				`Fetched ${totalAccountsFetched} accounts in total.`,
+			);
 
-			// Handle case where API returns no accounts for this page/token
-			if (
-				!accountsResponse.accountsWithRoles ||
-				accountsResponse.accountsWithRoles.length === 0
-			) {
-				listLogger.debug(
-					'No accounts returned from API for this page.',
-				);
+			// Handle case where no accounts are found
+			if (allAccountsData.length === 0) {
+				listLogger.debug('No accounts found after fetching.');
 				return {
-					content: formatNoAccounts(), // Use the formatter for consistency
-					metadata: { authenticated: true, accounts: [] },
-					// Include pagination info even if empty, as API might still have nextToken
-					pagination: extractPaginationInfo(
-						{
-							nextToken: accountsResponse.nextToken,
-							accountsWithRoles: [],
-						},
-						PaginationType.NEXT_TOKEN,
-						'AWS SSO Accounts (Empty Page)',
-					),
+					content: formatNoAccounts(),
+					metadata: {
+						authenticated: true,
+						accounts: [],
+						totalAccountsFetched,
+					},
 				};
 			}
 
-			// --- Apply Client-Side Filtering to the CURRENT page ---
-			let pageData = accountsResponse.accountsWithRoles;
-			const totalFoundOnPage = pageData.length; // Count before filtering
-			if (options.query && options.query.trim() !== '') {
-				const searchTerm = options.query.trim().toLowerCase();
-				listLogger.debug(
-					`Filtering current page with query: ${searchTerm}`,
-				);
-				pageData = pageData.filter(
-					(account) =>
-						account.accountId.includes(searchTerm) ||
-						account.accountName
-							.toLowerCase()
-							.includes(searchTerm) ||
-						(account.accountEmail &&
-							account.accountEmail
-								.toLowerCase()
-								.includes(searchTerm)),
-				);
-				listLogger.debug(
-					`Found ${pageData.length} accounts on this page after filtering.`,
-				);
-			}
-			// --- End Filtering ---
-
-			const pagination = extractPaginationInfo(
-				{
-					nextToken: accountsResponse.nextToken,
-					accountsWithRoles: accountsResponse.accountsWithRoles, // Pass original array for count
-				},
-				PaginationType.NEXT_TOKEN,
-				'AWS SSO Accounts',
+			// Format the full list
+			const formattedContent = formatAccountsAndRoles(
+				expiresDate,
+				allAccountsData,
 			);
-			listLogger.debug('API pagination result', { pagination });
 
-			const formattedContent =
-				pageData.length > 0
-					? formatAccountsAndRoles(expiresDate, pageData)
-					: options.query
-						? `No accounts matching query "${options.query}" found on this page.`
-						: 'No accounts found on this page.';
-
+			// Return content WITHOUT pagination object
 			return {
 				content: formattedContent,
-				pagination,
 				metadata: {
 					authenticated: true,
-					filterApplied: !!options.query,
-					accountsOnPageBeforeFilter: totalFoundOnPage,
-					accountsOnPageAfterFilter: pageData.length,
+					totalAccountsFetched,
+					accountsDisplayed: allAccountsData.length,
 				},
 			};
 		} catch (error) {
-			// Handle API errors during account fetching
+			// Handle API errors during account fetching (authentication check still applies)
 			if (
 				error instanceof Error &&
 				(error.message.includes('invalid') ||
@@ -211,18 +155,13 @@ async function listAccounts(
 			throw error; // Rethrow other API errors
 		}
 	} catch (error) {
-		// Handle broader errors (like auth check failure initially)
+		// Handle broader errors
 		const processedError =
 			error instanceof Error ? error : new Error(String(error));
 		return handleControllerError(processedError, {
 			entityType: 'AWS SSO Accounts',
-			operation: 'listing via API', // Update operation description
+			operation: 'listing all',
 			source: 'controllers/aws.sso.accounts.controller.ts@listAccounts',
-			additionalInfo: {
-				query: options.query,
-				limit: options.limit,
-				cursor: options.cursor,
-			},
 		});
 	}
 }

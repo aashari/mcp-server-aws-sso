@@ -1,95 +1,123 @@
-import { describe, test, expect, beforeAll, jest } from '@jest/globals';
-import { config } from '../utils/config.util';
-import { getCachedSsoToken } from './vendor.aws.sso.auth.service';
-import { getAccountsWithRoles } from './vendor.aws.sso.accounts.service';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { executeCommand } from './vendor.aws.sso.exec.service';
+import { getCachedSsoToken } from './vendor.aws.sso.auth.service';
+import {
+	getAllAccountsWithRoles,
+	getAwsCredentials,
+} from './vendor.aws.sso.accounts.service.js';
+import {
+	AwsSsoAccountWithRoles,
+	AwsSsoRole,
+	AwsCredentials,
+	GetCredentialsParams,
+} from './vendor.aws.sso.types';
+import { CommandExecutionResult } from '../controllers/aws.sso.exec.types.js';
 
-/**
- * Helper function to skip tests when no valid AWS SSO session is available
- * @returns {Promise<boolean>} True if tests should be skipped, false otherwise
- */
-const skipIfNoValidSsoSession = async (): Promise<boolean> => {
-	config.load(); // Ensure config is loaded in case beforeAll didn't run first
-	const token = await getCachedSsoToken();
-	if (!token) {
-		console.warn(
-			'SKIPPING TEST: No AWS SSO token found. Please run login first.',
-		);
-		return true;
-	}
-	const now = Math.floor(Date.now() / 1000);
-	if (token.expiresAt <= now) {
-		console.warn(
-			'SKIPPING TEST: AWS SSO token is expired. Please run login first.',
-		);
-		return true;
-	}
-	// Check if AWS_SSO_START_URL is set, as it's required for some operations
-	if (!config.get('AWS_SSO_START_URL')) {
-		console.warn('SKIPPING TEST: AWS_SSO_START_URL is not configured.');
-		return true;
-	}
-	return false;
-};
+// Mock dependencies
+jest.mock('child_process');
+jest.mock('../utils/logger.util.js');
+jest.mock('./vendor.aws.sso.auth.service');
+jest.mock('./vendor.aws.sso.accounts.service');
 
-describe('AWS SSO Exec Service', () => {
-	// Set longer timeout for API calls
-	jest.setTimeout(60000);
+// Import after mocks
+import * as child_process from 'child_process';
 
-	beforeAll(() => {
-		config.load();
+// Assign mocks using direct casting with correct function signatures
+const mockSpawn = child_process.spawn as jest.Mock;
+const mockGetCachedSsoToken = getCachedSsoToken as jest.Mock<
+	typeof getCachedSsoToken
+>;
+const mockGetAllAccountsWithRoles = getAllAccountsWithRoles as jest.Mock<
+	typeof getAllAccountsWithRoles
+>;
+const mockGetAwsCredentials = getAwsCredentials as jest.Mock<
+	typeof getAwsCredentials
+>;
+
+describe('AWS SSO Exec Service Tests', () => {
+	const mockValidToken = {
+		accessToken: 'valid-token',
+		expiresAt: Date.now() / 1000 + 3600,
+	};
+	const mockCreds: AwsCredentials = {
+		accessKeyId: 'key',
+		secretAccessKey: 'secret',
+		sessionToken: 'token',
+		expiration: new Date(Date.now() + 3600 * 1000),
+	};
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+		mockGetCachedSsoToken.mockResolvedValue(mockValidToken);
+		mockGetAwsCredentials.mockResolvedValue(mockCreds);
+		mockSpawn.mockReturnValue({
+			stdout: {
+				on: jest.fn(
+					(event: string, cb: (chunk: Buffer | string) => void) => {
+						if (event === 'data') cb('Success');
+					},
+				),
+			},
+			stderr: { on: jest.fn() },
+			on: jest.fn((event: string, cb: (code: number | null) => void) => {
+				if (event === 'close') cb(0);
+			}),
+		});
 	});
 
-	test('executeCommand should run AWS CLI commands with temporary credentials', async () => {
-		if (await skipIfNoValidSsoSession()) return;
+	it('should execute command successfully after validating account/role', async () => {
+		const mockRole: AwsSsoRole = {
+			accountId: '123456789012',
+			roleName: 'ValidRole',
+			roleArn: 'arn:valid',
+		};
+		const mockAccounts: AwsSsoAccountWithRoles[] = [
+			{
+				accountId: '123456789012',
+				accountName: 'TestAccount',
+				roles: [mockRole],
+			},
+		];
+		mockGetAllAccountsWithRoles.mockResolvedValue(mockAccounts);
 
-		// First get a list of accounts to find a valid account/role combination
-		const accounts = await getAccountsWithRoles();
-		if (!accounts || accounts.accountsWithRoles.length === 0) {
-			console.warn('SKIPPING TEST: No AWS accounts available.');
-			return;
-		}
-
-		// Find an account with at least one role
-		const accountWithRole = accounts.accountsWithRoles.find(
-			(account) => account.roles && account.roles.length > 0,
+		const result: CommandExecutionResult = await executeCommand(
+			'123456789012',
+			'ValidRole',
+			['aws', 's3', 'ls'],
 		);
-		if (!accountWithRole) {
-			console.warn(
-				'SKIPPING TEST: No AWS accounts with roles available.',
-			);
-			return;
-		}
 
-		const accountId = accountWithRole.accountId;
-		const roleName = accountWithRole.roles[0].roleName;
+		expect(mockGetAllAccountsWithRoles).toHaveBeenCalledTimes(1);
+		expect(mockGetAwsCredentials).toHaveBeenCalledWith({
+			accountId: '123456789012',
+			roleName: 'ValidRole',
+		} as GetCredentialsParams);
+		expect(mockSpawn).toHaveBeenCalled();
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain('Success');
+	});
 
-		// Run a simple AWS command - get caller identity
-		const result = await executeCommand(accountId, roleName, [
-			'aws',
-			'sts',
-			'get-caller-identity',
+	it('should throw McpError if account or role validation fails', async () => {
+		mockGetAllAccountsWithRoles.mockResolvedValue([
+			{
+				accountId: '123456789012',
+				accountName: 'TestAccount',
+				roles: [
+					{
+						accountId: '123456789012',
+						roleName: 'SomeOtherRole',
+						roleArn: 'arn:other',
+					} as AwsSsoRole,
+				],
+			},
 		]);
 
-		expect(result).toBeDefined();
-		expect(result.exitCode).toBe(0);
-		expect(result.stdout).toBeTruthy();
-
-		// Parse the JSON output and verify it contains the expected fields
-		try {
-			const identity = JSON.parse(result.stdout);
-			expect(identity.Account).toBeDefined();
-			expect(identity.UserId).toBeDefined();
-			expect(identity.Arn).toBeDefined();
-		} catch (error) {
-			// If parsing fails, the output format might have changed or been unexpected
-			console.warn(
-				'Could not parse caller identity output:',
-				result.stdout,
-			);
-			expect(result.stdout).toContain('Account');
-			expect(result.stdout).toContain('UserId');
-			expect(result.stdout).toContain('Arn');
-		}
+		await expect(
+			executeCommand('123456789012', 'InvalidRole', ['aws', 's3', 'ls']),
+		).rejects.toThrow(
+			'Account 123456789012 not found or role InvalidRole not available in that account.',
+		);
+		expect(mockGetAllAccountsWithRoles).toHaveBeenCalledTimes(1);
+		expect(mockGetAwsCredentials).not.toHaveBeenCalled();
+		expect(mockSpawn).not.toHaveBeenCalled();
 	});
 });

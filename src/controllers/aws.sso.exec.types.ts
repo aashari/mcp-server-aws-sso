@@ -28,7 +28,7 @@ export interface ExecuteCommandOptions {
 }
 
 /**
- * Result of executing a command
+ * Result of executing an AWS CLI command
  */
 export interface CommandExecutionResult {
 	/**
@@ -44,7 +44,7 @@ export interface CommandExecutionResult {
 	/**
 	 * Exit code from the command
 	 */
-	exitCode: number;
+	exitCode: number | null;
 }
 
 /**

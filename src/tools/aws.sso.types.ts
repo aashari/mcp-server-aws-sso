@@ -24,37 +24,7 @@ export type LoginToolArgsType = {
 /**
  * Schema for the list accounts tool
  */
-export const ListAccountsArgs = z.object({
-	/**
-	 * Optional limit for number of results per API page
-	 */
-	limit: z
-		.number()
-		.int()
-		.positive()
-		.optional()
-		.describe(
-			'Maximum number of accounts per API response page (default/max may vary)',
-		),
-
-	/**
-	 * Optional pagination token from previous response to get next page
-	 */
-	cursor: z
-		.string()
-		.optional()
-		.describe('Pagination token (nextToken from previous page results)'),
-
-	/**
-	 * Optional search query to filter results on the current page
-	 */
-	query: z
-		.string()
-		.optional()
-		.describe(
-			'Search term to filter accounts on the current page by ID, name, or email',
-		),
-});
+export const ListAccountsArgs = z.object({});
 
 /**
  * Type for the list accounts tool arguments

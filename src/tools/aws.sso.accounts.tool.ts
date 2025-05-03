@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-import { ListAccountsToolArgsType } from './aws.sso.types.js';
+// Imports removed as they are no longer used
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
 import { z } from 'zod';
 
@@ -22,23 +22,18 @@ toolLogger.debug('AWS SSO accounts tool module initialized');
 /**
  * Handles the AWS SSO list accounts tool
  * Lists all available AWS accounts and their roles
- * @param args Tool arguments including optional pagination parameters
  * @returns MCP response with accounts and roles
  */
-async function handleListAccounts(args: ListAccountsToolArgsType) {
+async function handleListAccounts() {
 	const listAccountsLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'handleListAccounts',
 	);
-	listAccountsLogger.debug('Handling list accounts request', args);
+	listAccountsLogger.debug('Handling list accounts request');
 
 	try {
-		// Pass pagination and query parameters to the controller
-		const response = await awsSsoAccountsController.listAccounts({
-			limit: args.limit,
-			cursor: args.cursor,
-			query: args.query,
-		});
+		// Call controller with no arguments
+		const response = await awsSsoAccountsController.listAccounts();
 
 		return {
 			content: [
@@ -48,6 +43,7 @@ async function handleListAccounts(args: ListAccountsToolArgsType) {
 				},
 			],
 			metadata: {
+				// No pagination or query info to return
 				...(response.metadata || {}),
 			},
 		};
@@ -68,36 +64,15 @@ function registerTools(server: McpServer): void {
 	);
 	registerLogger.debug('Registering AWS SSO accounts tools');
 
-	// Define schema for the list_accounts tool (ensure consistency with types file)
-	const ListAccountsArgs = z.object({
-		limit: z
-			.number()
-			.int()
-			.positive()
-			.optional()
-			.describe(
-				'Maximum number of accounts per API response page (default/max may vary)',
-			),
-		cursor: z
-			.string()
-			.optional()
-			.describe(
-				'Pagination token (nextToken from previous page results)',
-			),
-		query: z
-			.string()
-			.optional()
-			.describe(
-				'Search term to filter accounts on the current page by ID, name, or email',
-			),
-	});
+	// Define schema - Now empty as no arguments are needed
+	const ListAccountsArgsSchema = z.object({});
 
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_sso_ls_accounts',
-		// Update description to reflect per-page filtering and API pagination
-		`Lists AWS accounts and associated roles accessible via AWS SSO. \n- Results are fetched page-by-page from the AWS API. \n- Use \`limit\` to suggest page size (API default/max may vary) and \`cursor\` (the nextToken from previous results) to get the next page. \n- Supports filtering the *current page* results with \`query\` (searches ID, name, email). \n- Returns a Markdown list of matching accounts from the current page and pagination info.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
-		ListAccountsArgs.shape,
+		// Update description to remove query filter
+		`Lists ALL AWS accounts and associated roles accessible via AWS SSO. Fetches the complete list, handling pagination internally. \n- Returns a Markdown list of all accessible accounts.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
+		ListAccountsArgsSchema.shape,
 		handleListAccounts,
 	);
 
