@@ -57,7 +57,10 @@ mcp-aws-sso ls-accounts
 To execute an AWS CLI command, use:
 \`\`\`bash
 mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"
-\`\`\``;
+\`\`\`
+
+---
+*Information retrieved at: ${new Date().toLocaleString()}*`;
 }
 
 /**
@@ -94,7 +97,10 @@ To execute an AWS CLI command, use:
 mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"
 \`\`\`
 
-**Note**: If you want to force a new login session, you need to clear your AWS SSO token cache first.`;
+**Note**: If you want to force a new login session, you need to clear your AWS SSO token cache first.
+
+---
+*Information retrieved at: ${new Date().toLocaleString()}*`;
 }
 
 /**
@@ -117,7 +123,10 @@ A browser window should have opened automatically to complete authentication.
 3. Approve the requested permissions
 
 ## Browser URL
-${verificationUri}`;
+${verificationUri}
+
+---
+*Information retrieved at: ${new Date().toLocaleString()}*`;
 }
 
 /**
@@ -141,7 +150,10 @@ If the browser didn't open automatically, please follow these steps:
    \`\`\`
 2. Enter this verification code when prompted: **${userCode}**
 3. Complete the AWS SSO login process
-4. Return here after authentication is complete`;
+4. Return here after authentication is complete
+
+---
+*Information retrieved at: ${new Date().toLocaleString()}*`;
 }
 
 /**
@@ -191,7 +203,10 @@ To use these credentials for an AWS CLI command:
 mcp-aws-sso exec-command --account-id ${accountId} --role-name ${roleName} --command "aws s3 ls"
 \`\`\`
 
-**Note**: For security reasons, the actual credential values are not displayed.`;
+**Note**: For security reasons, the actual credential values are not displayed.
+
+---
+*Information retrieved at: ${new Date().toLocaleString()}*`;
 }
 
 /**
@@ -209,5 +224,8 @@ Run the following command to start the login process:
 mcp-aws-sso login
 \`\`\`
 
-This will open a browser window for AWS SSO authentication. Follow the prompts to complete the process.`;
+This will open a browser window for AWS SSO authentication. Follow the prompts to complete the process.
+
+---
+*Information retrieved at: ${new Date().toLocaleString()}*`;
 }

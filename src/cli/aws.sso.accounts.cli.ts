@@ -54,6 +54,7 @@ function registerListAccountsCommand(program: Command): void {
 				// Call controller with no options
 				const result = await awsSsoAccountsController.listAccounts();
 
+				// Directly print the content from the controller
 				console.log(result.content);
 			} catch (error) {
 				listLogger.error('List-accounts command failed', error);

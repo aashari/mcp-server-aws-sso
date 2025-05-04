@@ -131,5 +131,8 @@ export function formatCommandResult(
 		lines.push(formatCodeBlock(result.stderr));
 	}
 
-	return lines.join('\n');
+	// --- Footer --- (Added standard footer)
+	const footer = `\n\n---\n*Information retrieved at: ${new Date().toLocaleString()}*`;
+
+	return lines.join('\n') + footer;
 }

@@ -2,6 +2,11 @@ import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
 import { handleCliError } from '../utils/error.util.js';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
+import {
+	formatAlreadyLoggedIn,
+	formatAuthRequired,
+} from '../controllers/aws.sso.auth.formatter.js';
+import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
 
 /**
  * AWS SSO Authentication CLI Module
@@ -29,6 +34,46 @@ function register(program: Command): void {
 	registerLogger.debug('Registering AWS SSO auth CLI commands');
 
 	registerLoginCommand(program);
+
+	// Register the status command
+	program
+		.command('status')
+		.description('Check the current AWS SSO authentication status.')
+		.action(async () => {
+			const actionLogger = Logger.forContext(
+				'cli/aws.sso.auth.cli.ts',
+				'status',
+			);
+			try {
+				actionLogger.debug('Checking authentication status via cache');
+				// Get token directly from cache
+				const token = await getCachedSsoToken();
+
+				// Format the result based on authentication status
+				let formattedContent: string;
+				const now = Math.floor(Date.now() / 1000); // Current time in seconds
+
+				if (token && token.expiresAt > now) {
+					// Format expiration date for display
+					let expiresDate = 'Unknown';
+					try {
+						const expirationDate = new Date(token.expiresAt * 1000);
+						expiresDate = expirationDate.toLocaleString();
+					} catch (error) {
+						actionLogger.error(
+							'Error formatting expiration date',
+							error,
+						);
+					}
+					formattedContent = formatAlreadyLoggedIn(expiresDate);
+				} else {
+					formattedContent = formatAuthRequired();
+				}
+				console.log(formattedContent);
+			} catch (error) {
+				handleCliError(error);
+			}
+		});
 
 	registerLogger.debug('AWS SSO auth CLI commands registered');
 }

@@ -21,6 +21,7 @@ import {
 	ListRolesOptions,
 	// ListAccountsOptions, // Removed as it's empty and unused
 } from './aws.sso.accounts.types.js';
+// Removed unused imports for pagination, defaults, and ListAccountsParams
 
 /**
  * AWS SSO Accounts Controller Module
@@ -111,7 +112,7 @@ async function listAccounts(): Promise<ControllerResponse> {
 			if (allAccountsData.length === 0) {
 				listLogger.debug('No accounts found after fetching.');
 				return {
-					content: formatNoAccounts(),
+					content: formatNoAccounts(true),
 					metadata: {
 						authenticated: true,
 						accounts: [],
@@ -120,13 +121,22 @@ async function listAccounts(): Promise<ControllerResponse> {
 				};
 			}
 
-			// Format the full list
+			// Prepare pagination object for the formatter (even if not paginated)
+			const paginationForFormatter = {
+				total: totalAccountsFetched,
+				limit: totalAccountsFetched, // Show all
+				startAt: 0,
+				hasMore: false, // No more pages as we fetched all
+			};
+
+			// Format the full list, passing pagination info
 			const formattedContent = formatAccountsAndRoles(
 				expiresDate,
 				allAccountsData,
+				paginationForFormatter, // Pass the info
 			);
 
-			// Return content WITHOUT pagination object
+			// Return content WITHOUT pagination object (as this command fetches all)
 			return {
 				content: formattedContent,
 				metadata: {
