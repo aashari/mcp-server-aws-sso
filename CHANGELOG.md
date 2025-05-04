@@ -1,3 +1,13 @@
+## [1.7.9](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.8...v1.7.9) (2025-05-04)
+
+
+### Bug Fixes
+
+* Remove more unused exports ([c56c4d9](https://github.com/aashari/mcp-server-aws-sso/commit/c56c4d942d055a9d13cf58a73a642e4b446580f4))
+* Remove unused exports and files identified by ts-prune ([3c93f70](https://github.com/aashari/mcp-server-aws-sso/commit/3c93f708604fbb22b0975df386c587d19cb6f7c0))
+* Remove unused exports and functions ([6b98e2a](https://github.com/aashari/mcp-server-aws-sso/commit/6b98e2ae041ed430b84621668a72f96d42a2693e))
+* Remove unused pagination types ([c1471db](https://github.com/aashari/mcp-server-aws-sso/commit/c1471db01a8f7ea6531ae0851d9b4b0562f379d7))
+
 ## [1.7.8](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.7...v1.7.8) (2025-05-03)
 
 
