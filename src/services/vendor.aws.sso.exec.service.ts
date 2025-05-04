@@ -1,9 +1,21 @@
 import { Logger } from '../utils/logger.util.js';
-import { spawn } from 'child_process';
+// Import promisify and exec statically
+import { promisify } from 'node:util';
+import { exec as nodeExec } from 'node:child_process';
 import { getAwsCredentials } from './vendor.aws.sso.accounts.service.js';
 import { CommandExecutionResult } from '../controllers/aws.sso.exec.types.js';
 
 const logger = Logger.forContext('services/vendor.aws.sso.exec.service.ts');
+
+// Create promisified version once
+const exec = promisify(nodeExec);
+
+// Define interface for expected exec error properties
+interface ExecError extends Error {
+	code?: number;
+	stdout?: string;
+	stderr?: string;
+}
 
 /**
  * Execute AWS CLI command with temporary credentials
@@ -13,7 +25,7 @@ const logger = Logger.forContext('services/vendor.aws.sso.exec.service.ts');
  *
  * @param {string} accountId - AWS account ID to get credentials for
  * @param {string} roleName - AWS role name to assume via SSO
- * @param {string[]} command - AWS CLI command and arguments as array
+ * @param {string} commandString - AWS CLI command as a single string
  * @param {string} [region] - Optional AWS region override
  * @returns {Promise<CommandExecutionResult>} Command execution result with stdout, stderr, and exit code
  * @throws {Error} If credentials cannot be obtained or command execution fails
@@ -89,8 +101,7 @@ async function executeCommand(
  *
  * Helper function to spawn a child process and collect its output.
  *
- * @param {string} command - Command to execute
- * @param {string[]} args - Command arguments
+ * @param {string} commandString - Command string to execute via shell
  * @param {NodeJS.ProcessEnv} env - Environment variables for the process
  * @returns {Promise<CommandExecutionResult>} Command execution result
  */
@@ -103,44 +114,47 @@ async function executeChildProcess(
 		command: commandString,
 	});
 
-	return new Promise((resolve, reject) => {
-		// Use shell: true to handle expansions like $(date ...)
-		const child = spawn(commandString, [], {
-			env,
-			stdio: 'pipe',
-			shell: true,
+	try {
+		// Execute using exec, which uses a shell
+		const { stdout, stderr } = await exec(commandString, { env });
+
+		methodLogger.debug('Shell command completed successfully', {
+			stdoutLength: stdout.length,
+			stderrLength: stderr.length,
 		});
 
+		return {
+			stdout,
+			stderr,
+			exitCode: 0, // exec throws on non-zero exit code
+		};
+	} catch (error) {
+		// Handle errors from exec (includes non-zero exit codes)
+		methodLogger.error('Shell command execution failed', { error });
+
+		let exitCode = 1;
 		let stdout = '';
 		let stderr = '';
 
-		child.stdout.on('data', (data) => {
-			stdout += data.toString();
-		});
+		if (typeof error === 'object' && error !== null) {
+			// Cast to check for common exec error properties
+			const execError = error as ExecError;
+			exitCode = typeof execError.code === 'number' ? execError.code : 1;
+			stdout =
+				typeof execError.stdout === 'string' ? execError.stdout : '';
+			stderr =
+				typeof execError.stderr === 'string' ? execError.stderr : '';
+		} else if (error instanceof Error) {
+			// Fallback for generic Errors
+			stderr = error.message;
+		}
 
-		child.stderr.on('data', (data) => {
-			stderr += data.toString();
-		});
-
-		child.on('error', (error) => {
-			methodLogger.error('Child process error', error);
-			reject(error);
-		});
-
-		child.on('close', (exitCode) => {
-			methodLogger.debug('Child process completed', {
-				exitCode,
-				stdoutLength: stdout.length,
-				stderrLength: stderr.length,
-			});
-
-			resolve({
-				stdout,
-				stderr,
-				exitCode: exitCode ?? 1,
-			});
-		});
-	});
+		return {
+			stdout: String(stdout),
+			stderr: String(stderr),
+			exitCode: Number(exitCode) || 1,
+		};
+	}
 }
 
 export { executeCommand };
