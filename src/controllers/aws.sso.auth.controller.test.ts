@@ -2,6 +2,7 @@ import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller';
+import { formatAuthRequired } from '../controllers/aws.sso.auth.formatter';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -50,7 +51,18 @@ describe('AWS SSO Auth Controller', () => {
 
 		expect(result).toBeDefined();
 		expect(result.content).toBeDefined();
-		expect(result.content).toContain('Already Authenticated');
+
+		// Check for new format elements
+		expect(result.content).toContain('# AWS SSO Session Active');
+		expect(result.content).toContain('Session Details');
+		expect(result.content).toContain('Expiration');
+		expect(result.content).toContain('Duration');
+
+		// Verify it contains duration information (either as hours or minutes)
+		expect(result.content).toMatch(
+			/Valid for (approximately \d+ hours|less than an hour|approximately 1 hour)/,
+		);
+
 		expect(result.metadata).toBeDefined();
 		expect(result.metadata?.alreadyLoggedIn).toBe(true);
 		expect(result.metadata?.authenticated).toBe(true);
@@ -69,5 +81,16 @@ describe('AWS SSO Auth Controller', () => {
 			// We have a valid session, so we should be authenticated
 			expect(result.isAuthenticated).toBe(true);
 		}
+	});
+
+	// Test the auth required message format
+	test('formatAuthRequired should return properly formatted message', () => {
+		const result = formatAuthRequired();
+
+		expect(result).toBeDefined();
+		expect(typeof result).toBe('string');
+		expect(result).toContain('# AWS SSO Authentication Required');
+		expect(result).toContain('How to Authenticate');
+		expect(result).toContain('mcp-aws-sso login');
 	});
 });

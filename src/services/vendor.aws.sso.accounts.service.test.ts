@@ -6,6 +6,7 @@ import {
 	getAwsCredentials,
 	getAllAccountsWithRoles,
 } from './vendor.aws.sso.accounts.service';
+import { McpError, ErrorType } from '../utils/error.util';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -46,75 +47,122 @@ describe('AWS SSO Accounts Service', () => {
 	test('listSsoAccounts should return a list of AWS accounts', async () => {
 		if (await skipIfNoValidSsoSession()) return;
 
-		const accounts = await listSsoAccounts();
-		expect(accounts).toBeDefined();
-		expect(Array.isArray(accounts.accountList)).toBe(true);
+		try {
+			const accounts = await listSsoAccounts();
+			expect(accounts).toBeDefined();
+			expect(Array.isArray(accounts.accountList)).toBe(true);
 
-		// If accounts exist, check their structure
-		if (accounts.accountList.length > 0) {
-			const firstAccount = accounts.accountList[0];
-			expect(firstAccount.accountId).toBeDefined();
-			expect(firstAccount.accountName).toBeDefined();
+			// If accounts exist, check their structure
+			if (accounts.accountList.length > 0) {
+				const firstAccount = accounts.accountList[0];
+				expect(firstAccount.accountId).toBeDefined();
+				expect(firstAccount.accountName).toBeDefined();
+			}
+		} catch (error) {
+			// Skip test if we hit rate limits (HTTP 429)
+			if (
+				error instanceof McpError &&
+				error.type === ErrorType.API_ERROR &&
+				error.message.includes('429')
+			) {
+				console.warn(
+					'SKIPPING TEST: AWS API rate limit reached (HTTP 429)',
+				);
+				return;
+			}
+			throw error;
 		}
 	});
 
 	test('getAccountsWithRoles should return accounts with their roles', async () => {
 		if (await skipIfNoValidSsoSession()) return;
 
-		const accounts = await getAllAccountsWithRoles();
-		expect(accounts).toBeDefined();
-		expect(Array.isArray(accounts)).toBe(true);
+		try {
+			const accounts = await getAllAccountsWithRoles();
+			expect(accounts).toBeDefined();
+			expect(Array.isArray(accounts)).toBe(true);
 
-		// Check if at least one account was returned
-		expect(accounts.length).toBeGreaterThan(0);
+			// Check if at least one account was returned
+			expect(accounts.length).toBeGreaterThan(0);
 
-		if (accounts.length > 0) {
-			const firstAccount = accounts[0];
-			expect(firstAccount.accountId).toBeDefined();
-			expect(firstAccount.accountName).toBeDefined();
-			expect(Array.isArray(firstAccount.roles)).toBe(true);
+			if (accounts.length > 0) {
+				const firstAccount = accounts[0];
+				expect(firstAccount.accountId).toBeDefined();
+				expect(firstAccount.accountName).toBeDefined();
+				expect(Array.isArray(firstAccount.roles)).toBe(true);
+			}
+		} catch (error) {
+			// Skip test if we hit rate limits (HTTP 429)
+			if (
+				error instanceof McpError &&
+				error.type === ErrorType.API_ERROR &&
+				error.message.includes('429')
+			) {
+				console.warn(
+					'SKIPPING TEST: AWS API rate limit reached (HTTP 429)',
+				);
+				return;
+			}
+			throw error;
 		}
 	});
 
 	test('getAwsCredentials should return valid credentials for a role', async () => {
 		if (await skipIfNoValidSsoSession()) return;
 
-		// First get a list of accounts to find a valid account/role combination
-		const accounts = await getAllAccountsWithRoles();
-		if (!accounts || accounts.length === 0) {
-			console.warn('SKIPPING TEST: No AWS accounts available.');
-			return;
-		}
+		try {
+			// First get a list of accounts to find a valid account/role combination
+			const accounts = await getAllAccountsWithRoles();
+			if (!accounts || accounts.length === 0) {
+				console.warn('SKIPPING TEST: No AWS accounts available.');
+				return;
+			}
 
-		// Find an account with at least one role
-		const accountWithRole = accounts.find(
-			(account) => account.roles && account.roles.length > 0,
-		);
-		if (!accountWithRole) {
-			console.warn(
-				'SKIPPING TEST: No AWS accounts with roles available.',
+			// Find an account with at least one role
+			const accountWithRole = accounts.find(
+				(account) => account.roles && account.roles.length > 0,
 			);
-			return;
+			if (!accountWithRole) {
+				console.warn(
+					'SKIPPING TEST: No AWS accounts with roles available.',
+				);
+				return;
+			}
+
+			const accountId = accountWithRole.accountId;
+			const roleName = accountWithRole.roles[0].roleName;
+
+			// Now get credentials for this account/role
+			const credentials = await getAwsCredentials({
+				accountId,
+				roleName,
+			});
+
+			expect(credentials).toBeDefined();
+			expect(credentials.accessKeyId).toBeDefined();
+			expect(credentials.secretAccessKey).toBeDefined();
+			expect(credentials.sessionToken).toBeDefined();
+			expect(credentials.expiration).toBeDefined();
+
+			// Verify credentials are not expired
+			const now = new Date();
+			expect(credentials.expiration).toBeInstanceOf(Date);
+			expect(credentials.expiration.getTime()).toBeGreaterThan(
+				now.getTime(),
+			);
+		} catch (error) {
+			// Skip test if we hit rate limits (HTTP 429)
+			if (
+				error instanceof McpError &&
+				error.type === ErrorType.API_ERROR &&
+				error.message.includes('429')
+			) {
+				console.warn(
+					'SKIPPING TEST: AWS API rate limit reached (HTTP 429)',
+				);
+				return;
+			}
+			throw error;
 		}
-
-		const accountId = accountWithRole.accountId;
-		const roleName = accountWithRole.roles[0].roleName;
-
-		// Now get credentials for this account/role
-		const credentials = await getAwsCredentials({
-			accountId,
-			roleName,
-		});
-
-		expect(credentials).toBeDefined();
-		expect(credentials.accessKeyId).toBeDefined();
-		expect(credentials.secretAccessKey).toBeDefined();
-		expect(credentials.sessionToken).toBeDefined();
-		expect(credentials.expiration).toBeDefined();
-
-		// Verify credentials are not expired
-		const now = new Date();
-		expect(credentials.expiration).toBeInstanceOf(Date);
-		expect(credentials.expiration.getTime()).toBeGreaterThan(now.getTime());
 	});
 });

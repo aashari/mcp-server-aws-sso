@@ -26,28 +26,60 @@ describe('AWS SSO Auth CLI Commands', () => {
 	};
 
 	describe('login command', () => {
-		// Skip this test due to issues simulating --auto-poll false in test environment
+		// Skip this test due to issues simulating --no-auto-poll in test environment
 		it.skip('should display login instructions without errors when not polling', async () => {
 			if (await skipIfNoCredentials()) {
 				console.warn('Skipping login test - no credentials');
 				return;
 			}
 
-			// Revert to using positive flag with explicit 'false' value
+			// Use the new negative flag
 			const { stdout, stderr } = await CliTestUtil.runCommand([
 				'login',
-				'--auto-poll',
-				'false',
+				'--no-auto-poll',
 			]);
 
 			// Check for specific known errors instead of exact exit code/stderr
 			expect(stderr).not.toMatch(/error: unknown option/i);
 			expect(stderr).not.toMatch(/error: too many arguments/i);
-			// Verify that the output contains instructions for manual authentication
+
+			// Verify that the output contains the new format elements
 			expect(stdout).toMatch(
-				/verification|user code|browser|authenticate/i,
+				/AWS SSO (Authentication Started|Manual Authentication Required)/i,
 			);
+			expect(stdout).toMatch(/browser|authentication steps/i);
+			expect(stdout).toMatch(/verification code/i);
 		}, 15000);
+
+		// Test for already authenticated scenario
+		it('should display session information when already authenticated', async () => {
+			if (await skipIfNoCredentials()) {
+				console.warn('Skipping login test - no credentials');
+				return;
+			}
+
+			const { stdout, stderr, exitCode } = await CliTestUtil.runCommand([
+				'login',
+			]);
+
+			// If not authenticated, skip the check
+			if (exitCode !== 0 || stderr.includes('not authenticated')) {
+				console.warn('Skipping verification - not authenticated');
+				return;
+			}
+
+			// Check for the new format elements for already authenticated users
+			CliTestUtil.validateOutputContains(stdout, [
+				'# AWS SSO Session Active',
+				'Session Details',
+				'Expiration',
+				'Duration',
+				'Valid for ',
+				'Available Actions',
+				'mcp-aws-sso ls-accounts',
+				'mcp-aws-sso exec-command',
+			]);
+		}, 30000);
 
 		it('should handle help flag correctly', async () => {
 			const { stdout, exitCode } = await CliTestUtil.runCommand([
@@ -58,6 +90,10 @@ describe('AWS SSO Auth CLI Commands', () => {
 			expect(exitCode).toBe(0);
 			expect(stdout).toMatch(/Usage|Options|Description/i);
 			expect(stdout).toContain('login');
+
+			// Check for the newly renamed flags
+			expect(stdout).toMatch(/--no-launch-browser/i);
+			expect(stdout).toMatch(/--no-auto-poll/i);
 		}, 15000);
 
 		it('should handle unknown flags gracefully', async () => {

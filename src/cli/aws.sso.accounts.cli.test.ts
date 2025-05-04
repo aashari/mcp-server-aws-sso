@@ -26,18 +26,35 @@ describe('AWS SSO Accounts CLI Commands', () => {
 	};
 
 	describe('ls-accounts command', () => {
-		it('should list accounts and return success exit code', async () => {
+		it('should list accounts with the new format', async () => {
 			if (await skipIfNoCredentials()) {
 				console.warn('Skipping ls-accounts test - no credentials');
 				return;
 			}
 
-			const { exitCode } = await CliTestUtil.runCommand(['ls-accounts']);
+			const { stdout, stderr, exitCode } = await CliTestUtil.runCommand([
+				'ls-accounts',
+			]);
 
-			// Since we're using --silent flag during testing and we may not have valid credentials,
-			// we shouldn't expect a specific exit code or validate markdown output
-			// Just check the command runs without crashing
-			expect(exitCode).not.toBe(null);
+			// If not authenticated or other error, skip detailed checks
+			if (exitCode !== 0 || stderr.includes('not authenticated')) {
+				console.warn('Skipping detailed verification - error occurred');
+				return;
+			}
+
+			// Check for new format elements
+			CliTestUtil.validateOutputContains(stdout, [
+				'# AWS SSO Accounts and Roles',
+				'Session Status',
+				'Valid until',
+				'remaining',
+				'## Available Accounts',
+				'Account:',
+				'Email',
+				'Roles',
+				'## Next Steps',
+				'mcp-aws-sso exec-command',
+			]);
 		}, 60000);
 
 		it('should handle help flag correctly', async () => {
@@ -60,6 +77,24 @@ describe('AWS SSO Accounts CLI Commands', () => {
 
 			expect(exitCode).not.toBe(0);
 			expect(stderr).toMatch(/unknown option|invalid|error/i);
+		}, 15000);
+
+		// Test authentication required message
+		it('should show authentication required message when not logged in', async () => {
+			// Skip real verification if credentials exist
+			if (!(await skipIfNoCredentials())) {
+				console.warn('Skipping auth check - credentials exist');
+				return;
+			}
+
+			const { stdout } = await CliTestUtil.runCommand(['ls-accounts']);
+
+			// Check for auth required message
+			CliTestUtil.validateOutputContains(stdout, [
+				'# AWS SSO Authentication Required',
+				'How to Authenticate',
+				'mcp-aws-sso login',
+			]);
 		}, 15000);
 	});
 });

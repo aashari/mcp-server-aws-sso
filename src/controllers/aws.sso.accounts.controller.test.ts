@@ -2,6 +2,10 @@ import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller';
+import {
+	formatNoAccounts,
+	formatAuthRequired,
+} from '../controllers/aws.sso.accounts.formatter';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -72,14 +76,24 @@ describe('AWS SSO Accounts Controller', () => {
 		expect(result.content).toBeDefined();
 		expect(typeof result.content).toBe('string');
 
-		// Content should be Markdown format with AWS accounts information
+		// Check for new format elements
 		expect(result.content).toContain('# AWS SSO Accounts and Roles');
 
-		// Should include session validity time
-		expect(result.content).toContain('Session valid until:');
+		// Should include session validity with duration
+		expect(result.content).toContain('Session Status');
+		expect(result.content).toMatch(/Valid until .* \(.*remaining\)/);
 
-		// Should include at least one account (if we're authenticated)
-		expect(result.content).toContain('Available Roles:');
+		// Should have structured sections
+		expect(result.content).toContain('## Available Accounts');
+
+		// Should have account structure with email and roles
+		expect(result.content).toMatch(/### Account:/);
+		expect(result.content).toMatch(/- \*\*Email\*\*:/);
+		expect(result.content).toMatch(/- \*\*Roles\*\*:/);
+
+		// Should include next steps section
+		expect(result.content).toContain('## Next Steps');
+		expect(result.content).toContain('mcp-aws-sso exec-command');
 
 		// Metadata should include accounts data
 		expect(result.metadata).toBeDefined();
@@ -96,5 +110,28 @@ describe('AWS SSO Accounts Controller', () => {
 			expect(firstAccount.accountName).toBeDefined();
 			expect(Array.isArray(firstAccount.roles)).toBe(true);
 		}
+	});
+
+	// Test the no accounts message format
+	test('formatNoAccounts should return properly formatted message', () => {
+		const result = formatNoAccounts();
+
+		expect(result).toBeDefined();
+		expect(typeof result).toBe('string');
+		expect(result).toContain('# AWS SSO Accounts and Roles');
+		expect(result).toContain('## No Accounts Found');
+		expect(result).toContain('Possible Causes');
+		expect(result).toContain('Suggested Actions');
+	});
+
+	// Test the auth required message format
+	test('formatAuthRequired should return properly formatted message', () => {
+		const result = formatAuthRequired();
+
+		expect(result).toBeDefined();
+		expect(typeof result).toBe('string');
+		expect(result).toContain('# AWS SSO Authentication Required');
+		expect(result).toContain('How to Authenticate');
+		expect(result).toContain('mcp-aws-sso login');
 	});
 });
