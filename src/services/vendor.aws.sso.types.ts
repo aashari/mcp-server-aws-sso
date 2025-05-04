@@ -178,7 +178,11 @@ export const AwsCredentialsSchema = z.object({
 	/**
 	 * The expiration time
 	 */
-	expiration: z.date().or(z.number().transform((n) => new Date(n * 1000))),
+	expiration: z.union([
+		z.date(),
+		z.number().transform((n) => new Date(n * 1000)),
+		z.string().transform((s) => new Date(s)),
+	]),
 
 	/**
 	 * Optional region override
