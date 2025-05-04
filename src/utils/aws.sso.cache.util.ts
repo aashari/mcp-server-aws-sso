@@ -448,11 +448,6 @@ export async function saveAccountRoles(
 }
 
 /**
- * Alias for saveCachedCredentials to maintain backward compatibility
- */
-export const saveCredentials = saveCachedCredentials;
-
-/**
  * Clear the cached SSO token
  */
 export async function clearSsoToken(): Promise<void> {

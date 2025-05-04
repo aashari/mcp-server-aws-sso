@@ -9,11 +9,6 @@ export type LoginToolArgsType = {
 };
 
 /**
- * Schema for the list accounts tool
- */
-export const ListAccountsArgs = z.object({});
-
-/**
  * Schema for the Execute Command tool arguments
  */
 export const ExecCommandToolArgs = z.object({
