@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.8.0...v1.8.1) (2025-05-04)
+
+
+### Bug Fixes
+
+* remove unused exports to improve type safety and reduce bundle size ([c63f558](https://github.com/aashari/mcp-server-aws-sso/commit/c63f5584e218589378c1e33b779e8b692df4980a))
+
 # [1.8.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.9...v1.8.0) (2025-05-04)
 
 
