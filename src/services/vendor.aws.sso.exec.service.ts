@@ -1,62 +1,108 @@
 import { Logger } from '../utils/logger.util.js';
 import { spawn } from 'child_process';
 import { getAwsCredentials } from './vendor.aws.sso.accounts.service.js';
-import { CommandExecutionResult } from './vendor.aws.sso.types.js';
+import { CommandExecutionResult } from '../controllers/aws.sso.exec.types.js';
 
 const logger = Logger.forContext('services/vendor.aws.sso.exec.service.ts');
 
 /**
- * Execute a command with AWS credentials injected into the environment.
+ * Execute AWS CLI command with temporary credentials
  *
- * Retrieves AWS credentials using the accounts service, injects them into
- * the environment, and then executes the provided command string using spawn.
+ * Gets temporary credentials for the specified account and role, then executes
+ * the AWS CLI command with those credentials in the environment.
  *
- * @param accountId The AWS account ID.
- * @param roleName The AWS role name.
- * @param commandString The full command string to execute.
- * @param region Optional AWS region.
- * @returns Promise resolving to CommandExecutionResult.
+ * @param {string} accountId - AWS account ID to get credentials for
+ * @param {string} roleName - AWS role name to assume via SSO
+ * @param {string[]} command - AWS CLI command and arguments as array
+ * @param {string} [region] - Optional AWS region override
+ * @returns {Promise<CommandExecutionResult>} Command execution result with stdout, stderr, and exit code
+ * @throws {Error} If credentials cannot be obtained or command execution fails
  */
-async function executeAwsCommand(
+async function executeCommand(
 	accountId: string,
 	roleName: string,
 	commandString: string,
 	region?: string,
 ): Promise<CommandExecutionResult> {
-	const methodLogger = logger.forMethod('executeAwsCommand');
-	methodLogger.debug('Executing command with AWS credentials', {
+	const methodLogger = logger.forMethod('executeCommand');
+	methodLogger.debug('Executing AWS CLI command', {
 		accountId,
 		roleName,
 		command: commandString,
 		region,
 	});
 
-	// Get AWS credentials
-	const credentials = await getAwsCredentials({
-		accountId,
-		roleName,
-	});
-
-	// Set environment variables for the command
-	const env: NodeJS.ProcessEnv = {
-		...process.env,
-		AWS_ACCESS_KEY_ID: credentials.accessKeyId,
-		AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey,
-		AWS_SESSION_TOKEN: credentials.sessionToken,
-	};
-
-	if (region) {
-		env.AWS_REGION = region;
-		env.AWS_DEFAULT_REGION = region;
+	// Validate parameters
+	if (!accountId || !roleName) {
+		throw new Error('Account ID and role name are required');
 	}
 
-	methodLogger.debug('Environment prepared for command execution', {
+	if (!commandString) {
+		throw new Error('Command is required');
+	}
+
+	try {
+		// Get credentials for the account and role
+		const credentials = await getAwsCredentials({
+			accountId,
+			roleName,
+			region,
+		});
+
+		methodLogger.debug('Obtained temporary credentials', {
+			accountId,
+			roleName,
+			expiration: credentials.expiration.toISOString(),
+		});
+
+		// Set up environment variables for the command
+		const processEnv = { ...process.env };
+
+		// Add AWS credentials to the environment
+		processEnv.AWS_ACCESS_KEY_ID = credentials.accessKeyId;
+		processEnv.AWS_SECRET_ACCESS_KEY = credentials.secretAccessKey;
+		processEnv.AWS_SESSION_TOKEN = credentials.sessionToken;
+
+		// Set region if provided
+		if (region) {
+			processEnv.AWS_REGION = region;
+			processEnv.AWS_DEFAULT_REGION = region;
+		}
+
+		// Execute the command
+		const result = await executeChildProcess(commandString, processEnv);
+		methodLogger.debug('Command execution completed', {
+			exitCode: result.exitCode,
+			stdoutBytes: result.stdout.length,
+			stderrBytes: result.stderr.length,
+		});
+
+		return result;
+	} catch (error) {
+		methodLogger.error('Failed to execute command', error);
+		throw error;
+	}
+}
+
+/**
+ * Execute child process with the given command and arguments
+ *
+ * Helper function to spawn a child process and collect its output.
+ *
+ * @param {string} command - Command to execute
+ * @param {string[]} args - Command arguments
+ * @param {NodeJS.ProcessEnv} env - Environment variables for the process
+ * @returns {Promise<CommandExecutionResult>} Command execution result
+ */
+async function executeChildProcess(
+	commandString: string,
+	env: NodeJS.ProcessEnv,
+): Promise<CommandExecutionResult> {
+	const methodLogger = logger.forMethod('executeChildProcess');
+	methodLogger.debug('Executing child process via shell', {
 		command: commandString,
-		region: env.AWS_REGION,
-		hasSessionToken: !!env.AWS_SESSION_TOKEN,
 	});
 
-	// Execute the command using spawn
 	return new Promise((resolve, reject) => {
 		// Use shell: true to handle expansions like $(date ...)
 		const child = spawn(commandString, [], {
@@ -68,31 +114,33 @@ async function executeAwsCommand(
 		let stdout = '';
 		let stderr = '';
 
-		if (child.stdout) {
-			child.stdout.on('data', (data) => {
-				stdout += data.toString();
-			});
-		}
-
-		if (child.stderr) {
-			child.stderr.on('data', (data) => {
-				stderr += data.toString();
-			});
-		}
-
-		child.on('close', (code) => {
-			methodLogger.debug('Command finished', { commandString, code });
-			resolve({ stdout, stderr, exitCode: code });
+		child.stdout.on('data', (data) => {
+			stdout += data.toString();
 		});
 
-		child.on('error', (err) => {
-			methodLogger.error('Command execution error', {
-				commandString,
-				err,
+		child.stderr.on('data', (data) => {
+			stderr += data.toString();
+		});
+
+		child.on('error', (error) => {
+			methodLogger.error('Child process error', error);
+			reject(error);
+		});
+
+		child.on('close', (exitCode) => {
+			methodLogger.debug('Child process completed', {
+				exitCode,
+				stdoutLength: stdout.length,
+				stderrLength: stderr.length,
 			});
-			reject(err);
+
+			resolve({
+				stdout,
+				stderr,
+				exitCode: exitCode ?? 1,
+			});
 		});
 	});
 }
 
-export { executeAwsCommand };
+export { executeCommand };

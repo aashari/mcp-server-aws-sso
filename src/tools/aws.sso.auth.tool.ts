@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-import { LoginToolArgsType, LoginToolArgsSchema } from './aws.sso.types.js';
+import { LoginToolArgsSchema, LoginToolArgsType } from './aws.sso.types.js';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
 
 /**
@@ -18,16 +18,16 @@ const toolLogger = Logger.forContext('tools/aws.sso.auth.tool.ts');
 toolLogger.debug('AWS SSO authentication tool module initialized');
 
 /**
- * Handles the AWS SSO login process.
+ * Handles the AWS SSO login tool
  * @param args Tool arguments
- * @returns MCP response
+ * @returns MCP response with login information
  */
 async function handleLogin(args: LoginToolArgsType) {
-	const methodLogger = Logger.forContext(
+	const loginLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'handleLogin',
 	);
-	methodLogger.debug('Handling login request', args);
+	loginLogger.debug('Handling login request', args);
 
 	try {
 		// Call controller to start login, passing launchBrowser argument
@@ -47,7 +47,7 @@ async function handleLogin(args: LoginToolArgsType) {
 			metadata: response.metadata,
 		};
 	} catch (error) {
-		methodLogger.error('Login failed', error);
+		loginLogger.error('Login failed', error);
 		return formatErrorForMcpTool(error);
 	}
 }
@@ -56,7 +56,7 @@ async function handleLogin(args: LoginToolArgsType) {
  * Register AWS SSO auth tools with the MCP server
  * @param server MCP server instance
  */
-export function registerTools(server: McpServer): void {
+function registerTools(server: McpServer): void {
 	const registerLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'registerTools',
@@ -66,7 +66,7 @@ export function registerTools(server: McpServer): void {
 	// Register the AWS SSO login tool
 	server.tool(
 		'aws_sso_login',
-		'Initiates the AWS SSO login flow. Opens a browser for authentication unless `launchBrowser` is false. Polls for completion unless `autoPoll` is false. Returns user code and verification URL if manual interaction is needed.',
+		`Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction. Can optionally control browser launch with \`launchBrowser\` and automatic polling with \`autoPoll\`. Returns Markdown with login instructions (URL and code) or success confirmation with available accounts. Must be used before any other AWS SSO tools like \`aws_sso_list_accounts\` or \`aws_sso_exec_command\`.`,
 		LoginToolArgsSchema.shape,
 		handleLogin,
 	);

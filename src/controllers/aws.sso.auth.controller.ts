@@ -18,7 +18,6 @@ import {
 	formatLoginManual,
 	formatCredentials,
 } from './aws.sso.auth.formatter.js';
-// import { LoginToolArgsType } from '../tools/aws.sso.types.js'; // Reverted - Will use in Phase 3
 
 /**
  * AWS SSO Authentication Controller Module
@@ -37,11 +36,23 @@ const controllerLogger = Logger.forContext(
 controllerLogger.debug('AWS SSO authentication controller initialized');
 
 /**
- * Starts the AWS SSO login flow.
+ * Start the AWS SSO login process and automatically poll for the token
+ *
+ * Initiates the device authorization flow, displays verification instructions,
+ * and optionally waits for authentication completion.
+ *
+ * @async
  * @param {Object} [params] - Optional parameters for login
  * @param {boolean} [params.autoPoll=true] - Whether to automatically poll for token completion
  * @param {boolean} [params.launchBrowser=true] - Whether to automatically launch a browser with the verification URI
- * @returns A promise resolving to the formatted login instructions or success message.
+ * @returns {Promise<ControllerResponse>} Response with login result, including accounts if successful
+ * @throws {Error} If login initialization fails or polling times out
+ * @example
+ * // Start login with automatic polling and browser launch
+ * const result = await startLogin();
+ *
+ * // Start login without automatic polling or browser launch
+ * const result = await startLogin({ autoPoll: false, launchBrowser: false });
  */
 async function startLogin(params?: {
 	autoPoll?: boolean;
@@ -119,6 +130,7 @@ async function startLogin(params?: {
 				const open = openModule.default;
 
 				// Try to open the browser with the verification URI
+				// Important: Use the complete URI that includes the user code if available
 				await open(verificationUrl || deviceAuth.verificationUri);
 				browserLaunched = true;
 				loginLogger.debug(

@@ -256,12 +256,3 @@ export interface ListAccountRolesResponse {
 	 */
 	nextToken?: string;
 }
-
-/**
- * Represents the standard result of executing a command.
- */
-export interface CommandExecutionResult {
-	stdout: string;
-	stderr: string;
-	exitCode: number | null;
-}

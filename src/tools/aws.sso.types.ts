@@ -1,37 +1,44 @@
 import { z } from 'zod';
 
 /**
- * Schema for the Login tool arguments
+ * Schema for the login tool arguments
  */
 export const LoginToolArgsSchema = z.object({
+	/**
+	 * Whether to launch the browser automatically
+	 */
 	launchBrowser: z
 		.boolean()
 		.optional()
 		.default(true)
 		.describe(
-			'Whether to automatically launch the browser for authentication',
+			'Whether to launch the browser automatically for authentication',
 		),
+
+	/**
+	 * Whether to automatically poll for authentication completion
+	 */
 	autoPoll: z
 		.boolean()
 		.optional()
 		.default(true)
 		.describe(
-			'Whether to automatically poll for completion after browser launch',
+			'Whether to automatically poll for authentication completion',
 		),
 });
 
 /**
- * Type for the Login tool arguments, inferred from Zod schema
+ * Type definition from the LoginToolArgsSchema Zod schema
  */
 export type LoginToolArgsType = z.infer<typeof LoginToolArgsSchema>;
 
 /**
- * Schema for the List Accounts tool arguments (currently none)
+ * Schema for the List Accounts tool arguments (empty object as it takes no arguments)
  */
 export const ListAccountsArgsSchema = z.object({});
 
 /**
- * Type for the List Accounts tool arguments, inferred from Zod schema
+ * Type definition from the ListAccountsArgsSchema Zod schema
  */
 export type ListAccountsArgsType = z.infer<typeof ListAccountsArgsSchema>;
 
@@ -64,6 +71,6 @@ export const ExecCommandToolArgs = z.object({
 });
 
 /**
- * Type definition from the Zod schema
+ * Type definition from the ExecCommandToolArgs Zod schema
  */
 export type ExecCommandToolArgsType = z.infer<typeof ExecCommandToolArgs>;
