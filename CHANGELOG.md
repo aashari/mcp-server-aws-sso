@@ -1,3 +1,15 @@
+# [1.11.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.10.0...v1.11.0) (2025-05-04)
+
+
+### Bug Fixes
+
+* adjust test assertion for auth required message ([ea76f76](https://github.com/aashari/mcp-server-aws-sso/commit/ea76f768c4af6753a428e6b8683a3b2fcbf15034))
+
+
+### Features
+
+* **format:** standardize CLI and Tool output formatting ([aef1191](https://github.com/aashari/mcp-server-aws-sso/commit/aef1191e20c870d0e8d822a68b10ba30e051b6ca))
+
 # [1.10.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.9.0...v1.10.0) (2025-05-04)
 
 
