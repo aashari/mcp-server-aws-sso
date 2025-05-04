@@ -1,94 +1,77 @@
-import { z } from 'zod';
-
 /**
  * AWS SSO service types
  * Defines the interfaces used for AWS SSO authentication and credential management
  */
 
 /**
- * Zod schema for AWS SSO Credentials
+ * Type definition for AWS SSO Credentials
  * Contains the temporary AWS credentials retrieved after SSO authentication
  */
-export const AwsSsoCredentialsSchema = z.object({
+export type AwsSsoCredentials = {
 	/**
 	 * The access key ID for AWS credentials
 	 */
-	accessKeyId: z.string(),
+	accessKeyId: string;
 
 	/**
 	 * The secret access key for AWS credentials
 	 */
-	secretAccessKey: z.string(),
+	secretAccessKey: string;
 
 	/**
 	 * The session token for AWS credentials
 	 */
-	sessionToken: z.string(),
+	sessionToken: string;
 
 	/**
 	 * The expiration time as a Unix timestamp in milliseconds
 	 */
-	expiration: z.number(),
+	expiration: number;
 
 	/**
 	 * Optional region override for AWS credentials
 	 */
-	region: z.string().optional(),
-});
+	region?: string;
+};
 
 /**
- * AWS SSO Credentials type inferred from Zod schema
- */
-export type AwsSsoCredentials = z.infer<typeof AwsSsoCredentialsSchema>;
-
-/**
- * Zod schema for AWS SSO Account
+ * Type definition for AWS SSO Account
  * Represents an AWS account accessible via SSO
  */
-export const AwsSsoAccountSchema = z.object({
+export type AwsSsoAccount = {
 	/**
 	 * The AWS account ID
 	 */
-	accountId: z.string(),
+	accountId: string;
 
 	/**
 	 * The AWS account name
 	 */
-	accountName: z.string(),
+	accountName: string;
 
 	/**
 	 * Optional email address associated with the AWS account
 	 */
-	emailAddress: z.string().optional(),
-});
+	emailAddress?: string;
+};
 
 /**
- * AWS SSO Account type inferred from Zod schema
- */
-export type AwsSsoAccount = z.infer<typeof AwsSsoAccountSchema>;
-
-/**
- * Zod schema for AWS SSO Account Role
+ * Type definition for AWS SSO Account Role
  * Role within an AWS account that can be assumed via SSO
  */
-export const AwsSsoAccountRoleSchema = z.object({
+export type AwsSsoAccountRole = {
 	/**
 	 * The AWS account ID
 	 */
-	accountId: z.string(),
+	accountId: string;
 
 	/**
 	 * The AWS role name
 	 */
-	roleName: z.string(),
+	roleName: string;
 
 	/**
 	 * Optional AWS role ARN
 	 */
-	roleArn: z.string().optional(),
-});
-
-/**
- * AWS SSO Account Role type inferred from Zod schema
- */
-export type AwsSsoAccountRole = z.infer<typeof AwsSsoAccountRoleSchema>;
+	roleArn?: string;
+};

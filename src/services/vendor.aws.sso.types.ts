@@ -122,7 +122,7 @@ export type AwsSsoRole = z.infer<typeof AwsSsoRoleSchema>;
 /**
  * Zod schema for AWS SSO Account
  */
-export const AwsSsoAccountSchema = z.object({
+const AwsSsoAccountSchema = z.object({
 	/**
 	 * The account ID
 	 */
@@ -138,11 +138,6 @@ export const AwsSsoAccountSchema = z.object({
 	 */
 	accountEmail: z.string().optional(),
 });
-
-/**
- * AWS SSO Account type inferred from Zod schema
- */
-export type AwsSsoAccount = z.infer<typeof AwsSsoAccountSchema>;
 
 /**
  * Zod schema for AWS SSO Account with roles
@@ -244,7 +239,7 @@ export type ListAccountsParams = z.infer<typeof ListAccountsParamsSchema>;
 /**
  * Zod schema for AWS SSO account info from SDK
  */
-export const AccountInfoSchema = z.object({
+const AccountInfoSchema = z.object({
 	/**
 	 * The account ID
 	 */
@@ -260,11 +255,6 @@ export const AccountInfoSchema = z.object({
 	 */
 	emailAddress: z.string().optional(),
 });
-
-/**
- * AWS SSO account info from SDK type inferred from Zod schema
- */
-export type AccountInfo = z.infer<typeof AccountInfoSchema>;
 
 /**
  * Zod schema for response for listing AWS SSO accounts

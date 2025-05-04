@@ -21,9 +21,7 @@ import {
 	ListAccountRolesResponse,
 	ListAccountRolesResponseSchema,
 	AwsSsoRole,
-	AccountInfoSchema,
 	RoleInfoSchema,
-	AwsSsoAccountSchema,
 } from './vendor.aws.sso.types.js';
 import { AwsSsoAccountRole } from './aws.sso.types.js';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service.js';
@@ -37,6 +35,20 @@ import { withRetry } from '../utils/retry.util.js';
 import { z } from 'zod';
 
 const logger = Logger.forContext('services/vendor.aws.sso.accounts.service.ts');
+
+// Create inline schemas that were previously imported
+const AccountInfoSchema = z.object({
+	accountId: z.string().optional(),
+	accountName: z.string().optional(),
+	emailAddress: z.string().optional(),
+});
+
+// Add a local AwsSsoAccountSchema (no export needed)
+const AwsSsoAccountSchema = z.object({
+	accountId: z.string(),
+	accountName: z.string(),
+	accountEmail: z.string().optional(),
+});
 
 /**
  * List AWS SSO accounts for the authenticated user
