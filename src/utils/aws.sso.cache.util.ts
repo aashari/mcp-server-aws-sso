@@ -12,10 +12,6 @@ const HOME_DIR = os.homedir();
 const CACHE_DIR = path.join(HOME_DIR, '.mcp-server', CLI_NAME);
 const TOKEN_FILE = path.join(CACHE_DIR, 'token.json');
 
-// Constants for the MCP cache location
-const MCP_DATA_DIR = path.join(HOME_DIR, '.mcp', 'data');
-const MCP_AWS_SSO_CACHE_FILE = path.join(MCP_DATA_DIR, `${CLI_NAME}.json`);
-
 /**
  * Ensure the cache directory exists
  */
@@ -88,32 +84,6 @@ interface DeviceAuthorizationInfo {
 	 * The AWS region for SSO
 	 */
 	region: string;
-}
-
-/**
- * Interface for AWS SSO cache file structure
- */
-export interface AwsSsoCacheFile {
-	ssoToken?: {
-		accessToken: string;
-		expiresAt: number;
-		region: string;
-		startUrl: string;
-	};
-	lastAuth?: number;
-	credentials?: Record<string, unknown>;
-	accountRoles?: Array<{
-		account: {
-			accountId: string;
-			accountName: string;
-			emailAddress: string;
-		};
-		roles: Array<{
-			accountId: string;
-			roleName: string;
-			roleArn: string;
-		}>;
-	}>;
 }
 
 /**
@@ -476,29 +446,3 @@ export async function clearSsoToken(): Promise<void> {
  * Save data to the MCP AWS SSO cache file
  * @param data The data to save
  */
-export async function saveMcpAwsSsoCache(data: AwsSsoCacheFile): Promise<void> {
-	const logger = Logger.forContext(
-		'utils/aws.sso.cache.util.ts',
-		'saveMcpAwsSsoCache',
-	);
-	logger.debug('Saving to MCP AWS SSO cache file');
-
-	try {
-		// Make sure the MCP data directory exists
-		if (!fsSync.existsSync(MCP_DATA_DIR)) {
-			logger.debug(`Creating MCP data directory: ${MCP_DATA_DIR}`);
-			fsSync.mkdirSync(MCP_DATA_DIR, { recursive: true });
-		}
-
-		// Write to the cache file
-		await fs.writeFile(
-			MCP_AWS_SSO_CACHE_FILE,
-			JSON.stringify(data, null, 2),
-			'utf8',
-		);
-		logger.debug('Successfully saved MCP AWS SSO cache file');
-	} catch (error) {
-		logger.error('Error saving MCP AWS SSO cache file', error);
-		throw error;
-	}
-}

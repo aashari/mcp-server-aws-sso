@@ -44,11 +44,6 @@ export function createAuthMissingError(
 /**
  * Create an authentication invalid error
  */
-export function createAuthInvalidError(
-	message: string = 'Authentication credentials are invalid',
-): McpError {
-	return new McpError(message, ErrorType.AUTH_INVALID, 401);
-}
 
 /**
  * Create an authentication timeout error

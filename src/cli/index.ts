@@ -68,5 +68,3 @@ export async function runCli(args: string[]): Promise<void> {
 	await program.parseAsync(args.length ? args : ['--help'], { from: 'user' });
 	cliLogger.debug('CLI command execution completed');
 }
-
-export default { runCli };
