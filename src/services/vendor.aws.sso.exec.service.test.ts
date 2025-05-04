@@ -2,7 +2,7 @@ import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service';
 import { getAllAccountsWithRoles } from './vendor.aws.sso.accounts.service';
-import { executeCommand } from './vendor.aws.sso.exec.service';
+import { executeAwsCommand } from './vendor.aws.sso.exec.service';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -65,7 +65,7 @@ describe('AWS SSO Exec Service', () => {
 		const roleName = accountWithRole.roles[0].roleName;
 
 		// Run a simple AWS command - get caller identity
-		const result = await executeCommand(
+		const result = await executeAwsCommand(
 			accountId,
 			roleName,
 			'aws sts get-caller-identity',

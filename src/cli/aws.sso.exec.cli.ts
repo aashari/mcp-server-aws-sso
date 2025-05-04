@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
 import { handleCliError } from '../utils/error.util.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
+import { ExecCommandToolArgsType } from '../tools/aws.sso.types.js';
 
 /**
  * AWS SSO Execution CLI Module
@@ -51,30 +52,27 @@ function registerExecCommand(program: Command): void {
 			'AWS CLI command to execute (e.g., "aws s3 ls")',
 		)
 		.action(async (options) => {
-			const execLogger = Logger.forContext(
+			const methodLogger = Logger.forContext(
 				'cli/aws.sso.exec.cli.ts',
-				'exec-command',
+				'action:exec-command',
 			);
-
-			execLogger.debug('Executing AWS command with SSO credentials', {
-				accountId: options.accountId,
-				roleName: options.roleName,
-				region: options.region,
-				command: options.command,
-			});
+			methodLogger.debug('CLI exec-command called', options);
 
 			try {
-				// Call the controller with the parsed options
-				const result = await awsSsoExecController.executeCommand({
+				// Map CLI options to controller options type
+				const controllerOptions: ExecCommandToolArgsType = {
 					accountId: options.accountId,
 					roleName: options.roleName,
 					region: options.region,
-					command: options.command,
-				});
+					command: options.command, // Pass raw command string
+				};
 
+				const result =
+					await awsSsoExecController.executeCommand(
+						controllerOptions,
+					);
 				console.log(result.content);
 			} catch (error) {
-				execLogger.error('Exec command failed', error);
 				handleCliError(error);
 			}
 		});

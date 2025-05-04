@@ -1,4 +1,4 @@
-import { CommandExecutionResult } from './aws.sso.exec.types.js';
+import { CommandExecutionResult } from '../services/vendor.aws.sso.types.js';
 import { formatHeading, formatCodeBlock } from '../utils/formatter.util.js';
 
 /**

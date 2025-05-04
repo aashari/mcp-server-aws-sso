@@ -3,9 +3,9 @@ import { handleControllerError } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
 import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 import { formatAuthRequired } from './aws.sso.auth.formatter.js';
-import { executeCommand as executeServiceCommand } from '../services/vendor.aws.sso.exec.service.js';
-import { ExecuteCommandOptions } from './aws.sso.exec.types.js';
+import { executeAwsCommand as executeServiceCommand } from '../services/vendor.aws.sso.exec.service.js';
 import { formatCommandResult } from './aws.sso.exec.formatter.js';
+import { ExecCommandToolArgsType } from '../tools/aws.sso.types.js';
 
 /**
  * AWS SSO Execution Controller Module
@@ -31,7 +31,7 @@ controllerLogger.debug('AWS SSO execution controller initialized');
  * Handles authentication verification, command execution, and result formatting.
  *
  * @async
- * @param {ExecuteCommandOptions} options - Command execution options
+ * @param {ExecCommandToolArgsType} options - Command execution options
  * @param {string} options.accountId - AWS account ID to get credentials for
  * @param {string} options.roleName - AWS role name to assume via SSO
  * @param {string} [options.region] - AWS region to use for the command (optional)
@@ -48,7 +48,7 @@ controllerLogger.debug('AWS SSO execution controller initialized');
  * });
  */
 async function executeCommand(
-	options: ExecuteCommandOptions,
+	options: ExecCommandToolArgsType,
 ): Promise<ControllerResponse> {
 	const execCommandLogger = Logger.forContext(
 		'controllers/aws.sso.exec.controller.ts',
@@ -93,7 +93,7 @@ async function executeCommand(
 			},
 		});
 
-		const result = await executeServiceCommand(
+		const executionResult = await executeServiceCommand(
 			options.accountId,
 			options.roleName,
 			options.command,
@@ -101,20 +101,23 @@ async function executeCommand(
 		);
 
 		execCommandLogger.debug('Command execution completed', {
-			exitCode: result.exitCode,
-			stdoutLength: result.stdout.length,
-			stderrLength: result.stderr.length,
+			exitCode: executionResult.exitCode,
+			stdoutLength: executionResult.stdout.length,
+			stderrLength: executionResult.stderr.length,
 		});
 
 		// Format the result
-		const formattedContent = formatCommandResult(options.command, result);
+		const formattedContent = formatCommandResult(
+			options.command,
+			executionResult,
+		);
 
 		return {
 			content: formattedContent,
 			metadata: {
-				stdout: result.stdout,
-				stderr: result.stderr,
-				exitCode: result.exitCode ?? -1,
+				stdout: executionResult.stdout,
+				stderr: executionResult.stderr,
+				exitCode: executionResult.exitCode ?? -1,
 				accountId: options.accountId,
 				roleName: options.roleName,
 				region: options.region,
