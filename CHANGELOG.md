@@ -1,3 +1,10 @@
+## [1.11.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.1...v1.11.2) (2025-05-04)
+
+
+### Bug Fixes
+
+* **sso:** revert exec_command to use exec for better shell compatibility ([76b0126](https://github.com/aashari/mcp-server-aws-sso/commit/76b01267deb139a419650c383c13578409295065))
+
 ## [1.11.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.0...v1.11.1) (2025-05-04)
 
 
