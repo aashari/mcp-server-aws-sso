@@ -1,3 +1,17 @@
+# [1.9.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.8.2...v1.9.0) (2025-05-04)
+
+
+### Bug Fixes
+
+* add rate limiting handling to AWS SSO tests ([2fb9f00](https://github.com/aashari/mcp-server-aws-sso/commit/2fb9f00ee7a67b8dc3679414525b73006dc72ff7))
+* improve schema validation for AWS SSO auth responses ([42909e0](https://github.com/aashari/mcp-server-aws-sso/commit/42909e07a40f1a28b06a8318d9ec6e90c9b711f1))
+
+
+### Features
+
+* enhance AWS SSO output formats with session duration and improved structures ([ac5784a](https://github.com/aashari/mcp-server-aws-sso/commit/ac5784a5cf98162d40c850ab7b584bcbf5473f39))
+* improve exec-command output with timestamp and role suggestions for permission errors ([20ce619](https://github.com/aashari/mcp-server-aws-sso/commit/20ce619cf57316085a7fbd6193ebb8e044dacb94))
+
 ## [1.8.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.8.1...v1.8.2) (2025-05-04)
 
 
