@@ -146,22 +146,6 @@ export async function fetchApi<T>(
 }
 
 /**
- * Convenience function to make a POST request using fetchApi
- * @param url The URL to send the POST request to
- * @param data The data to include in the request body
- * @returns The response data parsed as type T
- */
-export async function post<T>(
-	url: string,
-	data: Record<string, unknown>,
-): Promise<T> {
-	return fetchApi<T>(url, {
-		method: 'POST',
-		body: data,
-	});
-}
-
-/**
  * Constructs a fully qualified AWS SSO OIDC endpoint URL
  * @param region The AWS region (e.g., 'us-east-1')
  * @param apiPath The API path (e.g., '/client/register', '/device_authorization', '/token')

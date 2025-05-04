@@ -59,23 +59,3 @@ export interface AwsRole {
 	 */
 	createdDate?: string;
 }
-
-/**
- * Account with associated roles
- */
-export interface AccountWithRoles {
-	/**
-	 * Account information
-	 */
-	account: AwsAccount;
-
-	/**
-	 * Roles available in this account
-	 */
-	roles: AwsRole[];
-
-	/**
-	 * Timestamp when this data was retrieved
-	 */
-	timestamp?: number;
-}

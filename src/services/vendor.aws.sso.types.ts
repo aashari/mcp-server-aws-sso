@@ -18,61 +18,6 @@ export interface AwsSsoConfig {
 }
 
 /**
- * SSOOIDCClient registration data
- */
-export interface SsoRegistrationData {
-	/**
-	 * The client ID for SSO authentication
-	 */
-	clientId: string;
-
-	/**
-	 * The client secret for SSO authentication
-	 */
-	clientSecret: string;
-
-	/**
-	 * The registration expiration date
-	 */
-	expiresAt: string;
-}
-
-/**
- * SSO login response data
- */
-export interface SsoLoginResponse {
-	/**
-	 * The verification URI for SSO login
-	 */
-	verificationUriComplete: string;
-
-	/**
-	 * The device code for verification
-	 */
-	deviceCode: string;
-
-	/**
-	 * The user code for verification
-	 */
-	userCode: string;
-
-	/**
-	 * The verification URI
-	 */
-	verificationUri: string;
-
-	/**
-	 * The interval in seconds to poll for SSO token
-	 */
-	interval: number;
-
-	/**
-	 * The expiration time in seconds
-	 */
-	expiresIn: number;
-}
-
-/**
  * SSO token data
  */
 export interface SsoToken {

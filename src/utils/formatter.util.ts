@@ -1,13 +1,4 @@
 /**
- * Standardized formatting utilities for consistent output across all CLI and Tool interfaces.
- * These functions should be used by all formatters to ensure consistent formatting.
- */
-
-import { Logger } from './logger.util.js'; // Ensure logger is imported
-
-const formatterLogger = Logger.forContext('utils/formatter.util.ts'); // Define logger instance
-
-/**
  * Format a date in a standardized way: YYYY-MM-DD HH:MM:SS UTC
  * @param dateString - ISO date string or Date object
  * @returns Formatted date string
@@ -145,48 +136,4 @@ export function formatCodeBlock(
 	language: string = '',
 ): string {
 	return '```' + language + '\n' + content.trim() + '\n```';
-}
-
-/**
- * Format pagination information consistently
- * @param count Number of items shown
- * @param hasMore Whether there are more items available
- * @param nextCursor The cursor/token for the next page, if applicable
- * @param total Optional total count of items
- * @returns Formatted pagination string
- */
-export function formatPagination(
-	count: number,
-	hasMore: boolean,
-	nextCursor?: string,
-	total?: number,
-): string {
-	const methodLogger = formatterLogger.forMethod('formatPagination');
-	const parts: string[] = [];
-
-	// Showing count and potentially total
-	if (total !== undefined && total > 0) {
-		parts.push(`*Showing ${count} of ${total} total items.*`);
-	} else if (count > 0) {
-		parts.push(`*Showing ${count} item${count !== 1 ? 's' : ''}.*`);
-	} else if (total === 0) {
-		parts.push('*Showing 0 of 0 total items.*'); // Handle zero total case
-	} else {
-		// If count is 0 and total is undefined, perhaps don't show count message
-		// parts.push('*Showing 0 items.*');
-	}
-
-	// More results availability
-	if (hasMore) {
-		parts.push('More results are available.');
-	}
-
-	// Prompt for next cursor
-	if (hasMore && nextCursor) {
-		parts.push(`\nTo see more results, use --cursor "${nextCursor}"`);
-	}
-
-	const result = parts.join(' ').trim(); // Join with space, trim ends
-	methodLogger.debug(`Formatted pagination: ${result}`);
-	return result;
 }

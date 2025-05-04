@@ -129,39 +129,6 @@ export function formatErrorForMcpTool(error: unknown): {
 }
 
 /**
- * Format error for MCP resource response
- */
-export function formatErrorForMcpResource(
-	error: unknown,
-	uri: string,
-): {
-	contents: Array<{
-		uri: string;
-		text: string;
-		mimeType: string;
-		description?: string;
-	}>;
-} {
-	const methodLogger = Logger.forContext(
-		'utils/error.util.ts',
-		'formatErrorForMcpResource',
-	);
-	const mcpError = ensureMcpError(error);
-	methodLogger.error(`${mcpError.type} error`, mcpError);
-
-	return {
-		contents: [
-			{
-				uri,
-				text: `Error: ${mcpError.message}`,
-				mimeType: 'text/plain',
-				description: `Error: ${mcpError.type}`,
-			},
-		],
-	};
-}
-
-/**
  * Handle error in CLI context
  * @param error The error to handle
  * @param source Optional source information for better error messages

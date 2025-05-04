@@ -27,16 +27,6 @@ export interface AwsSsoAuthResult {
 }
 
 /**
- * AWS SSO Configuration
- * Settings used to configure AWS SSO login
- */
-export interface AwsSsoConfig {
-	region: string; // AWS region for SSO service calls
-	startUrl?: string; // Optional explicit SSO start URL
-	profileName?: string; // Optional AWS profile name for config/credential lookup
-}
-
-/**
  * AWS SSO Account
  * Represents an AWS account accessible via SSO
  */
@@ -64,33 +54,6 @@ export interface AwsSsoAccountWithRoles {
 	account: AwsSsoAccount;
 	roles: AwsSsoAccountRole[];
 	timestamp: number; // When roles were last retrieved
-}
-
-/**
- * AWS SSO Device Authorization Details
- * Details returned from the SSO OIDC device authorization flow
- */
-export interface AwsSsoDeviceAuth {
-	deviceCode: string;
-	userCode: string;
-	verificationUri: string;
-	verificationUriComplete?: string;
-	expiresIn: number;
-	interval: number;
-	clientId: string;
-	clientSecret: string;
-}
-
-/**
- * AWS SSO Cache Entry
- * Structure for storing SSO data in cache file
- */
-export interface AwsSsoCache {
-	ssoToken?: AwsSsoAuthResult;
-	credentials?: Record<string, AwsSsoCredentialsCacheEntry>;
-	lastAuth?: number;
-	accountRoles?: AwsSsoAccountWithRoles[]; // Cached account and role data
-	accountsTimestamp?: number; // When accounts list was last retrieved
 }
 
 /**

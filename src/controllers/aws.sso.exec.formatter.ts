@@ -8,33 +8,6 @@ import {
 } from '../utils/formatter.util.js';
 
 /**
- * Format authentication required message
- *
- * Creates a standardized message indicating AWS SSO authentication is required
- * before command execution can proceed.
- *
- * @returns {string} Formatted authentication required message in markdown
- */
-export function formatAuthRequired(): string {
-	const methodLogger = Logger.forContext(
-		'controllers/aws.sso.exec.formatter.ts',
-		'formatAuthRequired',
-	);
-	methodLogger.debug('Formatting auth required message');
-
-	const lines: string[] = [
-		formatHeading('Authentication Required', 1),
-		'',
-		'You need to authenticate with AWS SSO first.',
-		'',
-		'Please use the `login` command to authenticate.',
-		'',
-	];
-
-	return lines.join('\n');
-}
-
-/**
  * Format command execution output
  *
  * Creates a detailed Markdown representation of command execution results,
@@ -124,25 +97,6 @@ export function formatCommandOutput(
 	}
 
 	return lines.join('\n');
-}
-
-/**
- * Format command execution result into markdown
- *
- * @param command The command that was executed
- * @param result The result of the command execution
- * @returns Formatted output as Markdown
- */
-export function formatExecResult(
-	command: string,
-	result: CommandExecutionResult,
-): string {
-	return formatCommandOutput(
-		command,
-		result.stdout,
-		result.stderr,
-		result.exitCode !== null ? result.exitCode : 0,
-	);
 }
 
 /**
