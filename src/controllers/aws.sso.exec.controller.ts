@@ -4,7 +4,7 @@ import { ControllerResponse } from '../types/common.types.js';
 import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 import { formatAuthRequired } from './aws.sso.auth.formatter.js';
 import { executeCommand as executeServiceCommand } from '../services/vendor.aws.sso.exec.service.js';
-import { ExecuteCommandOptions } from './aws.sso.exec.types.js';
+import { ExecCommandToolArgsType } from '../tools/aws.sso.types.js';
 import { formatCommandResult } from './aws.sso.exec.formatter.js';
 
 /**
@@ -31,11 +31,11 @@ controllerLogger.debug('AWS SSO execution controller initialized');
  * Handles authentication verification, command execution, and result formatting.
  *
  * @async
- * @param {ExecuteCommandOptions} options - Command execution options
+ * @param {ExecCommandToolArgsType} options - Command execution options
  * @param {string} options.accountId - AWS account ID to get credentials for
  * @param {string} options.roleName - AWS role name to assume via SSO
  * @param {string} [options.region] - AWS region to use for the command (optional)
- * @param {string[]} options.command - AWS CLI command to execute as array of strings
+ * @param {string} options.command - AWS CLI command to execute as string
  * @returns {Promise<ControllerResponse>} - Formatted command execution result
  * @throws {Error} If authentication fails, command execution fails, or parameters are invalid
  * @example
@@ -44,11 +44,11 @@ controllerLogger.debug('AWS SSO execution controller initialized');
  *   accountId: "123456789012",
  *   roleName: "AdminAccess",
  *   region: "us-east-1",
- *   command: ["aws", "s3", "ls"]
+ *   command: "aws s3 ls"
  * });
  */
 async function executeCommand(
-	options: ExecuteCommandOptions,
+	options: ExecCommandToolArgsType,
 ): Promise<ControllerResponse> {
 	const execCommandLogger = Logger.forContext(
 		'controllers/aws.sso.exec.controller.ts',

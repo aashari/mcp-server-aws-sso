@@ -18,6 +18,7 @@ import {
 	formatLoginManual,
 	formatCredentials,
 } from './aws.sso.auth.formatter.js';
+import { LoginToolArgsType } from '../tools/aws.sso.types.js';
 
 /**
  * AWS SSO Authentication Controller Module
@@ -42,7 +43,7 @@ controllerLogger.debug('AWS SSO authentication controller initialized');
  * and optionally waits for authentication completion.
  *
  * @async
- * @param {Object} [params] - Optional parameters for login
+ * @param {LoginToolArgsType} [params] - Optional parameters for login
  * @param {boolean} [params.autoPoll=true] - Whether to automatically poll for token completion
  * @param {boolean} [params.launchBrowser=true] - Whether to automatically launch a browser with the verification URI
  * @returns {Promise<ControllerResponse>} Response with login result, including accounts if successful
@@ -54,10 +55,9 @@ controllerLogger.debug('AWS SSO authentication controller initialized');
  * // Start login without automatic polling or browser launch
  * const result = await startLogin({ autoPoll: false, launchBrowser: false });
  */
-async function startLogin(params?: {
-	autoPoll?: boolean;
-	launchBrowser?: boolean;
-}): Promise<ControllerResponse> {
+async function startLogin(
+	params?: LoginToolArgsType,
+): Promise<ControllerResponse> {
 	const loginLogger = Logger.forContext(
 		'controllers/aws.sso.auth.controller.ts',
 		'startLogin',
