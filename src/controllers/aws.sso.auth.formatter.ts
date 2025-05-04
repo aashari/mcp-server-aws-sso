@@ -1,24 +1,62 @@
 import { AwsSsoCredentials } from '../services/aws.sso.types.js';
 
 /**
+ * Calculate the approximate duration from now until the expiration time
+ * @param expirationDate The date when the session expires
+ * @returns Formatted duration string like "approximately 12 hours"
+ */
+function calculateDuration(expirationDate: Date): string {
+	try {
+		const now = new Date();
+		const diffMs = expirationDate.getTime() - now.getTime();
+
+		// Convert to hours
+		const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+
+		if (diffHours < 1) {
+			return 'less than an hour';
+		} else if (diffHours === 1) {
+			return 'approximately 1 hour';
+		} else {
+			return `approximately ${diffHours} hours`;
+		}
+	} catch {
+		return 'unknown duration';
+	}
+}
+
+/**
  * Format login success message
  * @param expiresDate Formatted expiration date
  * @returns Formatted markdown content
  */
 export function formatLoginSuccess(expiresDate: string): string {
-	return `# Authentication Successful
+	// Parse the expiration date to calculate the duration
+	let durationText = 'unknown duration';
+	try {
+		const expirationDate = new Date(expiresDate);
+		durationText = calculateDuration(expirationDate);
+	} catch {
+		// Keep the default text if parsing fails
+	}
 
-You've successfully authenticated with AWS SSO.
-Your session is valid until: ${expiresDate}.
+	return `# AWS SSO Authentication Successful
 
-To view your available AWS accounts and roles, run:
-\`\`\`
-list_accounts
+You have successfully authenticated with AWS SSO.
+
+## Session Details
+- **Expiration**: ${expiresDate}
+- **Duration**: Valid for ${durationText}
+
+## Next Steps
+To explore your AWS accounts and roles, run:
+\`\`\`bash
+mcp-aws-sso ls-accounts
 \`\`\`
 
-Then you can execute AWS CLI commands using:
-\`\`\`
-exec --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws <command>"
+To execute an AWS CLI command, use:
+\`\`\`bash
+mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"
 \`\`\``;
 }
 
@@ -28,22 +66,35 @@ exec --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws <command>"
  * @returns Formatted markdown content
  */
 export function formatAlreadyLoggedIn(expiresDate: string): string {
-	return `# Already Authenticated
+	// Parse the expiration date to calculate the duration
+	let durationText = 'unknown duration';
+	try {
+		const expirationDate = new Date(expiresDate);
+		durationText = calculateDuration(expirationDate);
+	} catch {
+		// Keep the default text if parsing fails
+	}
+
+	return `# AWS SSO Session Active
 
 You are already authenticated with AWS SSO.
-Your session is valid until: ${expiresDate}.
 
-To view your available AWS accounts and roles, run:
-\`\`\`
-list_accounts
+## Session Details
+- **Expiration**: ${expiresDate}
+- **Duration**: Valid for ${durationText}
+
+## Available Actions
+To explore your AWS accounts and roles, run:
+\`\`\`bash
+mcp-aws-sso ls-accounts
 \`\`\`
 
-To execute AWS CLI commands:
-\`\`\`
-exec --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws <command>"
+To execute an AWS CLI command, use:
+\`\`\`bash
+mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"
 \`\`\`
 
-If you want to force a new login session, first clear your AWS SSO token cache.`;
+**Note**: If you want to force a new login session, you need to clear your AWS SSO token cache first.`;
 }
 
 /**
@@ -58,12 +109,15 @@ export function formatLoginWithBrowserLaunch(
 ): string {
 	return `# AWS SSO Authentication Started
 
-A browser window should have opened automatically to: ${verificationUri}
+A browser window should have opened automatically to complete authentication.
 
-If the browser opened successfully:
-1. Complete the login process in your browser window
+## Browser Authentication Steps
+1. Complete the login process in the browser window
 2. Enter the verification code: **${userCode}** (if not pre-filled)
-3. Authorize the requested permissions`;
+3. Approve the requested permissions
+
+## Browser URL
+${verificationUri}`;
 }
 
 /**
@@ -76,14 +130,18 @@ export function formatLoginManual(
 	verificationUri: string,
 	userCode: string,
 ): string {
-	return `# Manual Login Instructions
+	return `# AWS SSO Manual Authentication Required
 
-If the browser didn't open automatically, please:
+If the browser didn't open automatically, please follow these steps:
 
-1. Open this URL in your browser: ${verificationUri}
-2. Enter this code when prompted: **${userCode}**
+## Authentication Steps
+1. Open this URL in your browser: 
+   \`\`\`
+   ${verificationUri}
+   \`\`\`
+2. Enter this verification code when prompted: **${userCode}**
 3. Complete the AWS SSO login process
-4. Return here after successful authentication`;
+4. Return here after authentication is complete`;
 }
 
 /**
@@ -102,31 +160,38 @@ export function formatCredentials(
 ): string {
 	// Format expiration timestamp
 	let expirationFormatted = 'Unknown';
+	let durationText = 'unknown duration';
 	try {
 		if (credentials.expiration) {
 			const expirationDate = new Date(credentials.expiration * 1000);
 			expirationFormatted = expirationDate.toLocaleString();
+			durationText = calculateDuration(expirationDate);
 		}
 	} catch {
 		// Keep the default
 	}
 
 	// Build the response
-	const sourceText = fromCache ? 'from cache' : 'freshly retrieved';
-	const header = `# AWS Credentials ${sourceText.toUpperCase()}`;
-	const message = `
+	const sourceText = fromCache ? 'Retrieved from cache' : 'Freshly obtained';
 
-Temporary credentials for account **${accountId}** with role **${roleName}** have been ${sourceText}.
-These credentials will expire at: **${expirationFormatted}**
+	return `# AWS Credentials
 
-The credentials are used automatically with the \`exec\` command:
+Temporary credentials have been ${sourceText.toLowerCase()} for:
+- **Account**: ${accountId}
+- **Role**: ${roleName}
+
+## Credential Details
+- **Source**: ${sourceText}
+- **Expiration**: ${expirationFormatted}
+- **Valid for**: ${durationText}
+
+## Usage Example
+To use these credentials for an AWS CLI command:
+\`\`\`bash
+mcp-aws-sso exec-command --account-id ${accountId} --role-name ${roleName} --command "aws s3 ls"
 \`\`\`
-exec --account-id ${accountId} --role-name ${roleName} --command "aws s3 ls"
-\`\`\`
 
-For security reasons, the actual credential values are not displayed.`;
-
-	return header + message;
+**Note**: For security reasons, the actual credential values are not displayed.`;
 }
 
 /**
@@ -134,14 +199,15 @@ For security reasons, the actual credential values are not displayed.`;
  * @returns Formatted markdown content
  */
 export function formatAuthRequired(): string {
-	return `# Authentication Required
+	return `# AWS SSO Authentication Required
 
 You need to authenticate with AWS SSO before using this command.
 
-Please run:
-\`\`\`
-login
+## How to Authenticate
+Run the following command to start the login process:
+\`\`\`bash
+mcp-aws-sso login
 \`\`\`
 
-This will initiate the AWS SSO authentication process.`;
+This will open a browser window for AWS SSO authentication. Follow the prompts to complete the process.`;
 }

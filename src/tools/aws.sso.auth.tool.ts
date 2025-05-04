@@ -66,7 +66,7 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO login tool
 	server.tool(
 		'aws_sso_login',
-		`Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction. Can optionally control browser launch with \`launchBrowser\` and automatic polling with \`autoPoll\`. Returns Markdown with login instructions (URL and code) or success confirmation with available accounts. Must be used before any other AWS SSO tools like \`aws_sso_list_accounts\` or \`aws_sso_exec_command\`.`,
+		`Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction. Browser launch and automatic polling are enabled by default. Set \`launchBrowser: false\` to disable browser launch or \`autoPoll: false\` to disable automatic polling. Returns Markdown with login instructions (URL and code) or success confirmation with available accounts. Must be used before any other AWS SSO tools like \`aws_sso_ls_accounts\` or \`aws_sso_exec_command\`.`,
 		LoginToolArgsSchema.shape,
 		handleLogin,
 	);

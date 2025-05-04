@@ -4,6 +4,31 @@ import {
 } from '../services/vendor.aws.sso.types.js';
 
 /**
+ * Calculate the approximate duration from now until the expiration time
+ * @param expirationDate The date when the session expires
+ * @returns Formatted duration string like "approximately 12 hours"
+ */
+function calculateDuration(expirationDate: Date): string {
+	try {
+		const now = new Date();
+		const diffMs = expirationDate.getTime() - now.getTime();
+
+		// Convert to hours
+		const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+
+		if (diffHours < 1) {
+			return 'less than an hour';
+		} else if (diffHours === 1) {
+			return 'approximately 1 hour';
+		} else {
+			return `approximately ${diffHours} hours`;
+		}
+	} catch {
+		return 'unknown duration';
+	}
+}
+
+/**
  * Format accounts and roles information
  * @param expiresDate Formatted expiration date
  * @param accountsWithRoles List of accounts with roles
@@ -13,34 +38,52 @@ export function formatAccountsAndRoles(
 	expiresDate: string,
 	accountsWithRoles: AwsSsoAccountWithRoles[],
 ): string {
-	const header = `# AWS SSO Accounts and Roles\nSession valid until: ${expiresDate}`;
-
-	if (accountsWithRoles.length === 0) {
-		return `${header}\n\nNo accounts found.`;
+	// Parse the expiration date to calculate the duration
+	let durationText = 'unknown duration';
+	try {
+		const expirationDate = new Date(expiresDate);
+		durationText = calculateDuration(expirationDate);
+	} catch {
+		// Keep the default text if parsing fails
 	}
 
-	let content = header + '\n';
+	const header = `# AWS SSO Accounts and Roles\n\n**Session Status**: Valid until ${expiresDate} (${durationText} remaining)`;
+
+	if (accountsWithRoles.length === 0) {
+		return formatNoAccounts();
+	}
+
+	let content = header + '\n\n## Available Accounts\n';
 
 	// Simplified account list with roles
 	accountsWithRoles.forEach((account) => {
-		// Account information - just ID and name
-		content += `\n### ${account.accountName || 'Unnamed Account'} (${account.accountId})`;
+		// Account information with ID and name
+		content += `\n### Account: ${account.accountName || 'Unnamed Account'} (${account.accountId})`;
+		if (account.accountEmail) {
+			content += `\n- **Email**: ${account.accountEmail}`;
+		}
 
-		// List roles in a simple bullet format
+		// List roles in a bullet format
 		if (account.roles.length === 0) {
-			content += '\nNo roles available';
+			content += '\n- **Roles**: No roles available';
 		} else {
-			content += '\nAvailable Roles:';
+			content += '\n- **Roles**:';
 			account.roles.forEach((role) => {
-				content += `\n• ${role.roleName}`;
+				content += `\n  - ${role.roleName}`;
 			});
 		}
 
 		content += '\n';
 	});
 
-	// Add a simple usage hint at the end
-	content += `\nTo use a role: exec --account-id <ACCOUNT_ID> --role-name <ROLE_NAME>`;
+	// Add a usage example at the end
+	content += `\n## Next Steps
+To execute a command in an account, run:
+\`\`\`bash
+mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"
+\`\`\`
+
+**Tip**: Use \`mcp-aws-sso login\` if you need to re-authenticate.`;
 
 	return content;
 }
@@ -50,22 +93,23 @@ export function formatAccountsAndRoles(
  * @returns Formatted markdown content
  */
 export function formatNoAccounts(): string {
-	return `# No AWS Accounts Found
+	return `# AWS SSO Accounts and Roles
 
-You are authenticated to AWS SSO, but no accounts were found that you have access to.
+## No Accounts Found
 
-Possible reasons:
-- Your AWS SSO user doesn't have any account assignments
-- Your AWS SSO permissions are limited to specific services but not account access
-- There might be an issue with your AWS SSO configuration
+Your AWS SSO user has no assigned accounts.
 
-Please contact your AWS administrator if you believe you should have access to AWS accounts.
+### Possible Causes
+- Your user lacks account assignments in AWS IAM Identity Center.
+- Your SSO permissions are restricted.
+- There may be a configuration issue with your AWS SSO setup.
 
-If you think this is an authentication issue, try running:
-\`\`\`
-login
-\`\`\`
-to re-authenticate and try again.`;
+### Suggested Actions
+1. Contact your AWS administrator to verify account assignments.
+2. Re-authenticate to refresh your session:
+   \`\`\`bash
+   mcp-aws-sso login
+   \`\`\``;
 }
 
 /**
@@ -73,17 +117,17 @@ to re-authenticate and try again.`;
  * @returns Formatted markdown content
  */
 export function formatAuthRequired(): string {
-	return `# Authentication Required
+	return `# AWS SSO Authentication Required
 
-You need to authenticate with AWS SSO before accessing accounts and roles.
+You need to authenticate with AWS SSO to view accounts and roles.
 
-Please run the following command to log in:
+## How to Authenticate
+Run the following command to start the login process:
+\`\`\`bash
+mcp-aws-sso login
 \`\`\`
-login
-\`\`\`
 
-This will open a browser window where you can complete the AWS SSO authentication process.
-After successful authentication, you can run \`list_accounts\` to view your accounts and roles.`;
+This will open a browser window for AWS SSO authentication. Follow the prompts to complete the process.`;
 }
 
 /**
@@ -96,25 +140,24 @@ export function formatAccountRoles(
 	accountId: string,
 	roles: RoleInfo[],
 ): string {
-	let rolesList: string;
-
-	if (roles.length === 0) {
-		rolesList =
-			'No roles are available for this account with your SSO credentials.';
-	} else {
-		rolesList = roles
-			.map(
-				(role) =>
-					`- **${role.roleName || 'Unnamed Role'}**${role.roleArn ? ` (${role.roleArn})` : ''}`,
-			)
-			.join('\n');
-	}
+	const rolesList =
+		roles.length === 0
+			? 'No roles are available for this account with your SSO credentials.'
+			: roles
+					.map(
+						(role) =>
+							`- **${role.roleName || 'Unnamed Role'}**${role.roleArn ? ` (${role.roleArn})` : ''}`,
+					)
+					.join('\n');
 
 	return `# Roles for Account ${accountId}
 
-The following roles are available for this account:
-
+## Available Roles
 ${rolesList}
 
-To get credentials for a specific role, use the \`exec\` command with the account ID and role name.`;
+## Usage Example
+To use a role for executing AWS CLI commands:
+\`\`\`bash
+mcp-aws-sso exec-command --account-id ${accountId} --role-name <ROLE_NAME> --command "aws s3 ls"
+\`\`\``;
 }
