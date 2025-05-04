@@ -3,41 +3,21 @@ import { config } from '../utils/config.util.js';
 import {
 	createAuthMissingError,
 	createAuthTimeoutError,
+	createApiError,
 } from '../utils/error.util.js';
 import * as ssoCache from '../utils/aws.sso.cache.util.js';
-import { AwsSsoConfig, AwsSsoAuthResult } from './vendor.aws.sso.types.js';
+import {
+	AwsSsoConfig,
+	AwsSsoConfigSchema,
+	AwsSsoAuthResult,
+	SsoToken,
+	SsoTokenSchema,
+	DeviceAuthorizationInfo,
+	DeviceAuthorizationInfoSchema,
+} from './vendor.aws.sso.types.js';
 import { getSsoOidcEndpoint } from '../utils/transport.util.js';
 import { withRetry } from '../utils/retry.util.js';
-
-/**
- * Device authorization information
- */
-interface DeviceAuthorizationInfo {
-	/**
-	 * The client ID for SSO
-	 */
-	clientId: string;
-
-	/**
-	 * The client secret for SSO
-	 */
-	clientSecret: string;
-
-	/**
-	 * The device code for SSO
-	 */
-	deviceCode: string;
-
-	/**
-	 * The expiration time in seconds
-	 */
-	expiresIn: number;
-
-	/**
-	 * The AWS region for SSO
-	 */
-	region: string;
-}
+import { z } from 'zod';
 
 /**
  * Auth check result
@@ -114,39 +94,39 @@ async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
 }
 
 /**
- * Client registration response
+ * Zod schema for client registration response
  */
-interface ClientRegistrationResponse {
-	clientId: string;
-	clientSecret: string;
-	expiresAt: string;
-}
+const ClientRegistrationResponseSchema = z.object({
+	clientId: z.string(),
+	clientSecret: z.string(),
+	expiresAt: z.string(),
+});
 
 /**
- * Device authorization response
+ * Zod schema for device authorization response
  */
-interface DeviceAuthorizationResponse {
-	deviceCode: string;
-	userCode: string;
-	verificationUri: string;
-	verificationUriComplete: string;
-	expiresIn: number;
-	interval: number;
-}
+const DeviceAuthorizationResponseSchema = z.object({
+	deviceCode: z.string(),
+	userCode: z.string(),
+	verificationUri: z.string(),
+	verificationUriComplete: z.string(),
+	expiresIn: z.number(),
+	interval: z.number(),
+});
 
 /**
- * Token response
+ * Zod schema for token response
  */
-interface TokenResponse {
-	accessToken?: string;
-	access_token?: string;
-	refreshToken?: string;
-	refresh_token?: string;
-	tokenType?: string;
-	token_type?: string;
-	expires_in?: number;
-	expiresIn?: number;
-}
+const TokenResponseSchema = z.object({
+	accessToken: z.string().optional(),
+	access_token: z.string().optional(),
+	refreshToken: z.string().optional(),
+	refresh_token: z.string().optional(),
+	tokenType: z.string().optional(),
+	token_type: z.string().optional(),
+	expires_in: z.number().optional(),
+	expiresIn: z.number().optional(),
+});
 
 /**
  * Get AWS SSO configuration from the environment
@@ -174,12 +154,23 @@ export async function getAwsSsoConfig(): Promise<AwsSsoConfig> {
 		throw error;
 	}
 
-	methodLogger.debug('AWS SSO configuration retrieved', {
-		startUrl,
-		region,
-	});
+	// Validate config with Zod schema
+	try {
+		const validatedConfig = AwsSsoConfigSchema.parse({ startUrl, region });
 
-	return { startUrl, region };
+		methodLogger.debug('AWS SSO configuration retrieved', validatedConfig);
+		return validatedConfig;
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			methodLogger.error('Invalid AWS SSO configuration', error);
+			throw createApiError(
+				`Invalid AWS SSO configuration: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+				undefined,
+				error,
+			);
+		}
+		throw error;
+	}
 }
 
 /**
@@ -188,10 +179,12 @@ export async function getAwsSsoConfig(): Promise<AwsSsoConfig> {
  * Initiates the SSO login flow by registering a client and starting device authorization.
  * Returns a verification URI and user code that the user must visit to complete authentication.
  *
- * @returns {Promise<DeviceAuthorizationResponse>} Login information including verification URI and user code
+ * @returns {Promise<DeviceAuthorizationResponseSchema['_output']>} Login information including verification URI and user code
  * @throws {Error} If login initialization fails
  */
-export async function startSsoLogin(): Promise<DeviceAuthorizationResponse> {
+export async function startSsoLogin(): Promise<
+	z.infer<typeof DeviceAuthorizationResponseSchema>
+> {
 	const methodLogger = logger.forMethod('startSsoLogin');
 	methodLogger.debug('Starting AWS SSO login process');
 
@@ -208,7 +201,7 @@ export async function startSsoLogin(): Promise<DeviceAuthorizationResponse> {
 
 	// Step 1: Register client
 	const registerEndpoint = getSsoOidcEndpoint(region, '/client/register');
-	const registerResponse = await post<ClientRegistrationResponse>(
+	const registerResponseData = await post<Record<string, unknown>>(
 		registerEndpoint,
 		{
 			clientName: 'mcp-aws-sso',
@@ -216,37 +209,86 @@ export async function startSsoLogin(): Promise<DeviceAuthorizationResponse> {
 		},
 	);
 
-	methodLogger.debug('Client registered successfully', {
-		clientId: registerResponse.clientId,
-	});
+	// Validate with Zod schema
+	try {
+		const registerResponse =
+			ClientRegistrationResponseSchema.parse(registerResponseData);
 
-	// Step 2: Start device authorization
-	const authEndpoint = getSsoOidcEndpoint(region, '/device_authorization');
-	const authResponse = await post<DeviceAuthorizationResponse>(authEndpoint, {
-		clientId: registerResponse.clientId,
-		clientSecret: registerResponse.clientSecret,
-		startUrl,
-	});
+		methodLogger.debug('Client registered successfully', {
+			clientId: registerResponse.clientId,
+		});
 
-	// Log entire response for debugging
-	methodLogger.debug('Device authorization started', {
-		verificationUri: authResponse.verificationUri,
-		verificationUriComplete: authResponse.verificationUriComplete,
-		userCode: authResponse.userCode,
-		expiresIn: authResponse.expiresIn,
-	});
+		// Step 2: Start device authorization
+		const authEndpoint = getSsoOidcEndpoint(
+			region,
+			'/device_authorization',
+		);
+		const authResponseData = await post<Record<string, unknown>>(
+			authEndpoint,
+			{
+				clientId: registerResponse.clientId,
+				clientSecret: registerResponse.clientSecret,
+				startUrl,
+			},
+		);
 
-	// Store device authorization info in cache for later polling
-	await ssoCache.cacheDeviceAuthorizationInfo({
-		clientId: registerResponse.clientId,
-		clientSecret: registerResponse.clientSecret,
-		deviceCode: authResponse.deviceCode,
-		expiresIn: authResponse.expiresIn,
-		interval: authResponse.interval,
-		region,
-	});
+		// Validate with Zod schema
+		try {
+			const authResponse =
+				DeviceAuthorizationResponseSchema.parse(authResponseData);
 
-	return authResponse;
+			// Log entire response for debugging
+			methodLogger.debug('Device authorization started', {
+				verificationUri: authResponse.verificationUri,
+				verificationUriComplete: authResponse.verificationUriComplete,
+				userCode: authResponse.userCode,
+				expiresIn: authResponse.expiresIn,
+			});
+
+			// Store device authorization info in cache for later polling
+			const deviceAuthInfo: DeviceAuthorizationInfo = {
+				clientId: registerResponse.clientId,
+				clientSecret: registerResponse.clientSecret,
+				deviceCode: authResponse.deviceCode,
+				expiresIn: authResponse.expiresIn,
+				interval: authResponse.interval,
+				verificationUri: authResponse.verificationUri,
+				verificationUriComplete: authResponse.verificationUriComplete,
+				userCode: authResponse.userCode,
+				region,
+			};
+
+			// Validate with Zod schema before caching
+			DeviceAuthorizationInfoSchema.parse(deviceAuthInfo);
+
+			await ssoCache.cacheDeviceAuthorizationInfo(deviceAuthInfo);
+
+			return authResponse;
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				methodLogger.error(
+					'Invalid device authorization response',
+					error,
+				);
+				throw createApiError(
+					`Invalid response from AWS SSO device authorization: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					undefined,
+					error,
+				);
+			}
+			throw error;
+		}
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			methodLogger.error('Invalid client registration response', error);
+			throw createApiError(
+				`Invalid response from AWS SSO client registration: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+				undefined,
+				error,
+			);
+		}
+		throw error;
+	}
 }
 
 /**
@@ -308,52 +350,77 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 
 		try {
 			// Try to get the token
-			const tokenResponse = await post<TokenResponse>(tokenEndpoint, {
-				clientId,
-				clientSecret,
-				deviceCode,
-				grantType: 'urn:ietf:params:oauth:grant-type:device_code',
-			});
+			const tokenResponseData = await post<Record<string, unknown>>(
+				tokenEndpoint,
+				{
+					clientId,
+					clientSecret,
+					deviceCode,
+					grantType: 'urn:ietf:params:oauth:grant-type:device_code',
+				},
+			);
 
-			// Process token response - handle both camelCase and snake_case responses
-			// AWS seems to return a mix of these formats across different services
-			const accessToken =
-				tokenResponse.accessToken || tokenResponse.access_token;
-			const refreshToken =
-				tokenResponse.refreshToken || tokenResponse.refresh_token;
-			const tokenType =
-				tokenResponse.tokenType || tokenResponse.token_type;
-			const expiresIn =
-				tokenResponse.expiresIn || tokenResponse.expires_in;
+			// Validate with Zod schema
+			try {
+				const tokenResponse =
+					TokenResponseSchema.parse(tokenResponseData);
 
-			if (!accessToken) {
-				throw new Error('No access token in response');
+				// Process token response - handle both camelCase and snake_case responses
+				// AWS seems to return a mix of these formats across different services
+				const accessToken =
+					tokenResponse.accessToken || tokenResponse.access_token;
+				const refreshToken =
+					tokenResponse.refreshToken || tokenResponse.refresh_token;
+				const tokenType =
+					tokenResponse.tokenType || tokenResponse.token_type;
+				const expiresIn =
+					tokenResponse.expiresIn || tokenResponse.expires_in;
+
+				if (!accessToken) {
+					throw new Error('No access token in response');
+				}
+
+				// Create token expiration time
+				const expiresAt =
+					Math.floor(Date.now() / 1000) + (expiresIn as number);
+
+				// Create standardized token object
+				const ssoToken: SsoToken = {
+					accessToken: accessToken as string,
+					expiresAt,
+					region,
+					refreshToken: (refreshToken as string) || '',
+					tokenType: (tokenType as string) || 'Bearer',
+					expiresIn: expiresIn as number,
+					retrievedAt: Math.floor(Date.now() / 1000),
+				};
+
+				// Validate with Zod schema
+				SsoTokenSchema.parse(ssoToken);
+
+				// Create auth result object
+				const authResult: AwsSsoAuthResult = {
+					accessToken: accessToken as string,
+					expiresAt,
+					region,
+				};
+
+				// Cache the token
+				await ssoCache.saveSsoToken(ssoToken);
+
+				methodLogger.debug('Successfully obtained SSO token');
+				return authResult;
+			} catch (error) {
+				if (error instanceof z.ZodError) {
+					methodLogger.error('Invalid token response', error);
+					throw createApiError(
+						`Invalid response from AWS SSO token endpoint: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+						undefined,
+						error,
+					);
+				}
+				throw error;
 			}
-
-			// Create token expiration time
-			const expiresAt =
-				Math.floor(Date.now() / 1000) + (expiresIn as number);
-
-			// Create standardized token object
-			const ssoToken: AwsSsoAuthResult = {
-				accessToken: accessToken as string,
-				expiresAt,
-				region,
-			};
-
-			// Cache the token
-			await ssoCache.saveSsoToken({
-				accessToken: accessToken as string,
-				expiresAt,
-				region,
-				tokenType: tokenType as string,
-				retrievedAt: Math.floor(Date.now() / 1000),
-				expiresIn: expiresIn as number,
-				refreshToken: (refreshToken as string) || '',
-			});
-
-			methodLogger.debug('Successfully obtained SSO token');
-			return ssoToken;
 		} catch (error: unknown) {
 			// Check for "authorization pending" error
 			// This is normal and expected until the user completes the flow

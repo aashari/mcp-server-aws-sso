@@ -4,8 +4,16 @@ import * as path from 'path';
 import * as os from 'os';
 import { Logger } from './logger.util.js';
 import { CLI_NAME } from './constants.util.js';
-import { AwsCredentials, SsoToken } from '../services/vendor.aws.sso.types.js';
+import {
+	AwsCredentials,
+	SsoToken,
+	SsoTokenSchema,
+	AwsCredentialsSchema,
+	DeviceAuthorizationInfo,
+	DeviceAuthorizationInfoSchema,
+} from '../services/vendor.aws.sso.types.js';
 import { AwsSsoAccount, AwsSsoAccountRole } from '../services/aws.sso.types.js';
+import { z } from 'zod';
 
 // Define the cache directory for MCP server
 const HOME_DIR = os.homedir();
@@ -52,41 +60,6 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 /**
- * Device authorization information
- */
-interface DeviceAuthorizationInfo {
-	/**
-	 * The client ID for SSO
-	 */
-	clientId: string;
-
-	/**
-	 * The client secret for SSO
-	 */
-	clientSecret: string;
-
-	/**
-	 * The device code for SSO
-	 */
-	deviceCode: string;
-
-	/**
-	 * The expiration time in seconds
-	 */
-	expiresIn: number;
-
-	/**
-	 * The polling interval in seconds
-	 */
-	interval?: number;
-
-	/**
-	 * The AWS region for SSO
-	 */
-	region: string;
-}
-
-/**
  * Get cached SSO token
  * @returns Cached SSO token or undefined if not found or expired
  */
@@ -106,22 +79,32 @@ export async function getCachedSsoToken(): Promise<SsoToken | undefined> {
 
 		// Read token from file
 		const tokenContent = await fs.readFile(TOKEN_FILE, 'utf8');
-		const token = JSON.parse(tokenContent) as SsoToken;
+		try {
+			// Parse and validate the token with Zod
+			const token = SsoTokenSchema.parse(JSON.parse(tokenContent));
 
-		// Check if token is expired
-		const now = Math.floor(Date.now() / 1000);
-		if (token.expiresAt <= now) {
-			methodLogger.debug('Token is expired');
+			// Check if token is expired
+			const now = Math.floor(Date.now() / 1000);
+			if (token.expiresAt <= now) {
+				methodLogger.debug('Token is expired');
+				return undefined;
+			}
+
+			// Token is valid
+			methodLogger.debug('Found valid token, expires in', {
+				expiresIn: token.expiresAt - now,
+				expiresAt: new Date(token.expiresAt * 1000).toISOString(),
+			});
+
+			return token;
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				methodLogger.error('Token validation failed', error);
+			} else {
+				methodLogger.error('Error parsing token from cache', error);
+			}
 			return undefined;
 		}
-
-		// Token is valid
-		methodLogger.debug('Found valid token, expires in', {
-			expiresIn: token.expiresAt - now,
-			expiresAt: new Date(token.expiresAt * 1000).toISOString(),
-		});
-
-		return token;
 	} catch (error) {
 		methodLogger.error('Error getting token from cache', error);
 		return undefined;
@@ -152,11 +135,22 @@ export async function saveSsoToken(token: SsoToken): Promise<void> {
 			region: token.region,
 		});
 
+		// Validate token with Zod schema before saving
+		const validatedToken = SsoTokenSchema.parse(token);
+
 		// Save token to file
-		await fs.writeFile(TOKEN_FILE, JSON.stringify(token, null, 2), 'utf8');
+		await fs.writeFile(
+			TOKEN_FILE,
+			JSON.stringify(validatedToken, null, 2),
+			'utf8',
+		);
 		methodLogger.debug('Token saved to cache');
 	} catch (error) {
-		methodLogger.error('Error saving token to cache', error);
+		if (error instanceof z.ZodError) {
+			methodLogger.error('Token validation failed', error);
+		} else {
+			methodLogger.error('Error saving token to cache', error);
+		}
 		throw error;
 	}
 }
@@ -190,20 +184,28 @@ export async function getCachedCredentials(
 
 		// Read credentials file
 		const data = await fs.readFile(credentialsFile, 'utf8');
-		const credentials = JSON.parse(data) as AwsCredentials;
+		try {
+			// Parse and validate with Zod schema
+			const credentials = AwsCredentialsSchema.parse(JSON.parse(data));
 
-		// Ensure expiration is a Date
-		if (typeof credentials.expiration === 'string') {
-			credentials.expiration = new Date(credentials.expiration);
+			methodLogger.debug('Retrieved credentials from cache', {
+				accountId,
+				roleName,
+				expiration: credentials.expiration,
+			});
+
+			return credentials;
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				methodLogger.error('Credentials validation failed', error);
+			} else {
+				methodLogger.error(
+					'Error parsing credentials from cache',
+					error,
+				);
+			}
+			return undefined;
 		}
-
-		methodLogger.debug('Retrieved credentials from cache', {
-			accountId,
-			roleName,
-			expiration: credentials.expiration,
-		});
-
-		return credentials;
 	} catch (error) {
 		methodLogger.error('Error getting cached credentials', error);
 		return undefined;
@@ -231,6 +233,9 @@ export async function saveCachedCredentials(
 		// Ensure cache directory exists
 		await ensureCacheDir();
 
+		// Validate credentials with Zod schema
+		const validatedCredentials = AwsCredentialsSchema.parse(credentials);
+
 		// Generate credentials file path
 		const key = `${accountId}_${roleName}`;
 		const credentialsFile = path.join(CACHE_DIR, `${key}.json`);
@@ -238,12 +243,16 @@ export async function saveCachedCredentials(
 		// Save credentials to file
 		await fs.writeFile(
 			credentialsFile,
-			JSON.stringify(credentials, null, 2),
+			JSON.stringify(validatedCredentials, null, 2),
 			'utf8',
 		);
 		methodLogger.debug('Credentials saved to cache');
 	} catch (error) {
-		methodLogger.error('Error saving credentials to cache', error);
+		if (error instanceof z.ZodError) {
+			methodLogger.error('Credentials validation failed', error);
+		} else {
+			methodLogger.error('Error saving credentials to cache', error);
+		}
 		throw error;
 	}
 }
@@ -265,16 +274,29 @@ export async function cacheDeviceAuthorizationInfo(
 		// Ensure cache directory exists
 		await ensureCacheDir();
 
+		// Validate device authorization info with Zod schema
+		const validatedInfo = DeviceAuthorizationInfoSchema.parse(info);
+
 		// Save device authorization info to file
 		const deviceAuthFile = path.join(CACHE_DIR, 'device-auth.json');
 		await fs.writeFile(
 			deviceAuthFile,
-			JSON.stringify(info, null, 2),
+			JSON.stringify(validatedInfo, null, 2),
 			'utf8',
 		);
 		methodLogger.debug('Device authorization info cached');
 	} catch (error) {
-		methodLogger.error('Error caching device authorization info', error);
+		if (error instanceof z.ZodError) {
+			methodLogger.error(
+				'Device authorization info validation failed',
+				error,
+			);
+		} else {
+			methodLogger.error(
+				'Error caching device authorization info',
+				error,
+			);
+		}
 		throw error;
 	}
 }
@@ -303,10 +325,30 @@ export async function getCachedDeviceAuthorizationInfo(): Promise<
 
 		// Read device auth file
 		const data = await fs.readFile(deviceAuthFile, 'utf8');
-		const deviceInfo = JSON.parse(data) as DeviceAuthorizationInfo;
+		try {
+			// Parse and validate with Zod schema
+			const deviceInfo = DeviceAuthorizationInfoSchema.parse(
+				JSON.parse(data),
+			);
 
-		methodLogger.debug('Retrieved device authorization info from cache');
-		return deviceInfo;
+			methodLogger.debug(
+				'Retrieved device authorization info from cache',
+			);
+			return deviceInfo;
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				methodLogger.error(
+					'Device authorization info validation failed',
+					error,
+				);
+			} else {
+				methodLogger.error(
+					'Error parsing device authorization info from cache',
+					error,
+				);
+			}
+			return undefined;
+		}
 	} catch (error) {
 		methodLogger.error(
 			'Error getting cached device authorization info',

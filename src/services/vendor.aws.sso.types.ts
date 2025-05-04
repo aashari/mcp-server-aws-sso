@@ -1,258 +1,413 @@
+import { z } from 'zod';
+
 /**
  * AWS SSO type definitions
  */
 
 /**
- * AWS SSO configuration
+ * Zod schema for AWS SSO configuration
  */
-export interface AwsSsoConfig {
+export const AwsSsoConfigSchema = z.object({
 	/**
 	 * The SSO start URL
 	 */
-	startUrl: string;
+	startUrl: z.string(),
 
 	/**
 	 * The AWS region
 	 */
-	region: string;
-}
+	region: z.string(),
+});
 
 /**
- * SSO token data
+ * AWS SSO configuration type inferred from Zod schema
  */
-export interface SsoToken {
+export type AwsSsoConfig = z.infer<typeof AwsSsoConfigSchema>;
+
+/**
+ * Zod schema for SSO token data
+ */
+export const SsoTokenSchema = z.object({
 	/**
 	 * The access token for SSO
 	 */
-	accessToken: string;
+	accessToken: z.string(),
 
 	/**
 	 * The expiration time in seconds
 	 */
-	expiresIn: number;
+	expiresIn: z.number(),
 
 	/**
 	 * The refresh token for SSO
 	 */
-	refreshToken: string;
+	refreshToken: z.string(),
 
 	/**
 	 * The token type
 	 */
-	tokenType: string;
+	tokenType: z.string(),
 
 	/**
 	 * The time the token was retrieved
 	 */
-	retrievedAt: number;
+	retrievedAt: z.number(),
 
 	/**
 	 * The time the token expires
 	 */
-	expiresAt: number;
+	expiresAt: z.number(),
 
 	/**
 	 * The AWS region for the token
 	 */
-	region?: string;
-}
+	region: z.string().optional(),
+});
 
 /**
- * AWS SSO auth result
+ * SSO token data type inferred from Zod schema
  */
-export interface AwsSsoAuthResult {
+export type SsoToken = z.infer<typeof SsoTokenSchema>;
+
+/**
+ * Zod schema for AWS SSO auth result
+ */
+export const AwsSsoAuthResultSchema = z.object({
 	/**
 	 * The access token for SSO
 	 */
-	accessToken: string;
+	accessToken: z.string(),
 
 	/**
 	 * The time the token expires
 	 */
-	expiresAt: number;
+	expiresAt: z.number(),
 
 	/**
 	 * The AWS region for the token
 	 */
-	region?: string;
-}
+	region: z.string().optional(),
+});
 
 /**
- * AWS SSO Role
+ * AWS SSO auth result type inferred from Zod schema
  */
-export interface AwsSsoRole {
+export type AwsSsoAuthResult = z.infer<typeof AwsSsoAuthResultSchema>;
+
+/**
+ * Zod schema for AWS SSO Role
+ */
+export const AwsSsoRoleSchema = z.object({
 	/**
 	 * The name of the role
 	 */
-	roleName: string;
+	roleName: z.string(),
 
 	/**
 	 * The ARN of the role
 	 */
-	roleArn: string;
+	roleArn: z.string(),
 
 	/**
 	 * The account ID the role belongs to
 	 */
-	accountId: string;
-}
+	accountId: z.string(),
+});
 
 /**
- * AWS SSO Account
+ * AWS SSO Role type inferred from Zod schema
  */
-export interface AwsSsoAccount {
+export type AwsSsoRole = z.infer<typeof AwsSsoRoleSchema>;
+
+/**
+ * Zod schema for AWS SSO Account
+ */
+export const AwsSsoAccountSchema = z.object({
 	/**
 	 * The account ID
 	 */
-	accountId: string;
+	accountId: z.string(),
 
 	/**
 	 * The account name
 	 */
-	accountName: string;
+	accountName: z.string(),
 
 	/**
 	 * The account email
 	 */
-	accountEmail?: string;
-}
+	accountEmail: z.string().optional(),
+});
 
 /**
- * AWS SSO Account with roles
+ * AWS SSO Account type inferred from Zod schema
  */
-export interface AwsSsoAccountWithRoles extends AwsSsoAccount {
+export type AwsSsoAccount = z.infer<typeof AwsSsoAccountSchema>;
+
+/**
+ * Zod schema for AWS SSO Account with roles
+ */
+export const AwsSsoAccountWithRolesSchema = AwsSsoAccountSchema.extend({
 	/**
 	 * The roles in the account
 	 */
-	roles: AwsSsoRole[];
-}
+	roles: z.array(AwsSsoRoleSchema),
+});
 
 /**
- * AWS credentials
+ * AWS SSO Account with roles type inferred from Zod schema
  */
-export interface AwsCredentials {
+export type AwsSsoAccountWithRoles = z.infer<
+	typeof AwsSsoAccountWithRolesSchema
+>;
+
+/**
+ * Zod schema for AWS credentials
+ */
+export const AwsCredentialsSchema = z.object({
 	/**
 	 * The access key ID
 	 */
-	accessKeyId: string;
+	accessKeyId: z.string(),
 
 	/**
 	 * The secret access key
 	 */
-	secretAccessKey: string;
+	secretAccessKey: z.string(),
 
 	/**
 	 * The session token
 	 */
-	sessionToken: string;
+	sessionToken: z.string(),
 
 	/**
 	 * The expiration time
 	 */
-	expiration: Date;
+	expiration: z.date().or(z.number().transform((n) => new Date(n * 1000))),
 
 	/**
 	 * Optional region override
 	 */
-	region?: string;
-}
+	region: z.string().optional(),
+});
 
 /**
- * Parameters for getting AWS credentials
+ * AWS credentials type inferred from Zod schema
  */
-export interface GetCredentialsParams {
+export type AwsCredentials = z.infer<typeof AwsCredentialsSchema>;
+
+/**
+ * Zod schema for parameters for getting AWS credentials
+ */
+export const GetCredentialsParamsSchema = z.object({
 	/**
 	 * The account ID to get credentials for
 	 */
-	accountId: string;
+	accountId: z.string(),
 
 	/**
 	 * The role name to assume
 	 */
-	roleName: string;
+	roleName: z.string(),
 
 	/**
 	 * Optional region override
 	 */
-	region?: string;
-}
+	region: z.string().optional(),
+});
 
 /**
- * Parameters for listing AWS SSO accounts
+ * Parameters for getting AWS credentials type inferred from Zod schema
  */
-export interface ListAccountsParams {
+export type GetCredentialsParams = z.infer<typeof GetCredentialsParamsSchema>;
+
+/**
+ * Zod schema for parameters for listing AWS SSO accounts
+ */
+export const ListAccountsParamsSchema = z.object({
 	/**
 	 * Optional maximum number of accounts to return
 	 */
-	maxResults?: number;
+	maxResults: z.number().optional(),
 
 	/**
 	 * Optional pagination token
 	 */
-	nextToken?: string;
-}
+	nextToken: z.string().optional(),
+});
 
 /**
- * Response for listing AWS SSO accounts
+ * Parameters for listing AWS SSO accounts type inferred from Zod schema
  */
-export interface ListAccountsResponse {
+export type ListAccountsParams = z.infer<typeof ListAccountsParamsSchema>;
+
+/**
+ * Zod schema for AWS SSO account info from SDK
+ */
+export const AccountInfoSchema = z.object({
+	/**
+	 * The account ID
+	 */
+	accountId: z.string().optional(),
+
+	/**
+	 * The account name
+	 */
+	accountName: z.string().optional(),
+
+	/**
+	 * The account email
+	 */
+	emailAddress: z.string().optional(),
+});
+
+/**
+ * AWS SSO account info from SDK type inferred from Zod schema
+ */
+export type AccountInfo = z.infer<typeof AccountInfoSchema>;
+
+/**
+ * Zod schema for response for listing AWS SSO accounts
+ */
+export const ListAccountsResponseSchema = z.object({
 	/**
 	 * The accounts returned
 	 */
-	accountList: AwsSsoAccount[];
+	accountList: z.array(AccountInfoSchema),
 
 	/**
 	 * Token for paginated results, if more are available
 	 */
-	nextToken?: string;
-}
+	nextToken: z.string().optional(),
+});
 
 /**
- * Parameters for listing account roles
+ * Response for listing AWS SSO accounts type inferred from Zod schema
  */
-export interface ListAccountRolesParams {
+export type ListAccountsResponse = z.infer<typeof ListAccountsResponseSchema>;
+
+/**
+ * Zod schema for parameters for listing account roles
+ */
+export const ListAccountRolesParamsSchema = z.object({
 	/**
 	 * The account ID to list roles for
 	 */
-	accountId: string;
+	accountId: z.string(),
 
 	/**
 	 * Optional maximum number of roles to return
 	 */
-	maxResults?: number;
+	maxResults: z.number().optional(),
 
 	/**
 	 * Optional pagination token
 	 */
-	nextToken?: string;
-}
+	nextToken: z.string().optional(),
+});
 
 /**
- * Role information from AWS SSO API
+ * Parameters for listing account roles type inferred from Zod schema
  */
-export interface RoleInfo {
+export type ListAccountRolesParams = z.infer<
+	typeof ListAccountRolesParamsSchema
+>;
+
+/**
+ * Zod schema for role information from AWS SSO API
+ */
+export const RoleInfoSchema = z.object({
 	/**
 	 * The name of the role
 	 */
-	roleName?: string;
+	roleName: z.string().optional(),
 
 	/**
 	 * The ARN of the role (might not be present in all responses)
 	 */
-	roleArn?: string;
-}
+	roleArn: z.string().optional(),
+});
 
 /**
- * Response for listing account roles
+ * Role information from AWS SSO API type inferred from Zod schema
  */
-export interface ListAccountRolesResponse {
+export type RoleInfo = z.infer<typeof RoleInfoSchema>;
+
+/**
+ * Zod schema for response for listing account roles
+ */
+export const ListAccountRolesResponseSchema = z.object({
 	/**
 	 * The roles returned
 	 */
-	roleList: RoleInfo[];
+	roleList: z.array(RoleInfoSchema),
 
 	/**
 	 * Token for paginated results, if more are available
 	 */
-	nextToken?: string;
-}
+	nextToken: z.string().optional(),
+});
+
+/**
+ * Response for listing account roles type inferred from Zod schema
+ */
+export type ListAccountRolesResponse = z.infer<
+	typeof ListAccountRolesResponseSchema
+>;
+
+/**
+ * Zod schema for device authorization information
+ */
+export const DeviceAuthorizationInfoSchema = z.object({
+	/**
+	 * The client ID for SSO
+	 */
+	clientId: z.string(),
+
+	/**
+	 * The client secret for SSO
+	 */
+	clientSecret: z.string(),
+
+	/**
+	 * The device code for SSO
+	 */
+	deviceCode: z.string(),
+
+	/**
+	 * The verification URI
+	 */
+	verificationUri: z.string().optional(),
+
+	/**
+	 * The complete verification URI including user code
+	 */
+	verificationUriComplete: z.string().optional(),
+
+	/**
+	 * The user code
+	 */
+	userCode: z.string().optional(),
+
+	/**
+	 * The expiration time in seconds
+	 */
+	expiresIn: z.number(),
+
+	/**
+	 * The polling interval in seconds
+	 */
+	interval: z.number().optional(),
+
+	/**
+	 * The AWS region for SSO
+	 */
+	region: z.string(),
+});
+
+/**
+ * Device authorization information type inferred from Zod schema
+ */
+export type DeviceAuthorizationInfo = z.infer<
+	typeof DeviceAuthorizationInfoSchema
+>;

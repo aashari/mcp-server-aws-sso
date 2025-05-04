@@ -11,14 +11,19 @@ import {
 } from '../utils/aws.sso.cache.util.js';
 import {
 	AwsSsoAccountWithRoles,
+	AwsSsoAccountWithRolesSchema,
 	AwsCredentials,
 	GetCredentialsParams,
 	ListAccountsParams,
 	ListAccountsResponse,
+	ListAccountsResponseSchema,
 	ListAccountRolesParams,
 	ListAccountRolesResponse,
-	AwsSsoAccount,
+	ListAccountRolesResponseSchema,
 	AwsSsoRole,
+	AccountInfoSchema,
+	RoleInfoSchema,
+	AwsSsoAccountSchema,
 } from './vendor.aws.sso.types.js';
 import { AwsSsoAccountRole } from './aws.sso.types.js';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.service.js';
@@ -29,6 +34,7 @@ import {
 	ListAccountsCommand,
 } from '@aws-sdk/client-sso';
 import { withRetry } from '../utils/retry.util.js';
+import { z } from 'zod';
 
 const logger = Logger.forContext('services/vendor.aws.sso.accounts.service.ts');
 
@@ -86,27 +92,39 @@ async function listSsoAccounts(
 			backoffFactor: 2.0,
 		});
 
-		// Convert response to expected format with type handling
-		const accountList: AwsSsoAccount[] = (response.accountList || []).map(
-			(account) => ({
-				accountId: account.accountId || '',
-				accountName: account.accountName || '',
-				accountEmail: account.emailAddress,
-			}),
-		);
+		// Validate accounts with Zod schema
+		try {
+			// First validate that each account matches the AccountInfo schema
+			if (response.accountList) {
+				for (const account of response.accountList) {
+					AccountInfoSchema.parse(account);
+				}
+			}
 
-		const result: ListAccountsResponse = {
-			accountList,
-			nextToken: response.nextToken,
-		};
+			// Then validate the overall response
+			const result = ListAccountsResponseSchema.parse({
+				accountList: response.accountList || [],
+				nextToken: response.nextToken,
+			});
 
-		methodLogger.debug(
-			`Retrieved ${result.accountList.length} accounts${
-				result.nextToken ? ' with pagination token' : ''
-			}`,
-		);
+			methodLogger.debug(
+				`Retrieved ${result.accountList.length} accounts${
+					result.nextToken ? ' with pagination token' : ''
+				}`,
+			);
 
-		return result;
+			return result;
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				methodLogger.error('Invalid accounts response format', error);
+				throw createApiError(
+					`Invalid response format from AWS SSO: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					undefined,
+					error,
+				);
+			}
+			throw error;
+		}
 	} catch (error) {
 		methodLogger.error('Failed to list accounts', error);
 		throw createApiError(
@@ -178,19 +196,39 @@ async function listAccountRoles(
 			backoffFactor: 2.0,
 		});
 
-		// Convert response to expected format
-		const result: ListAccountRolesResponse = {
-			roleList: response.roleList || [],
-			nextToken: response.nextToken,
-		};
+		// Validate roles with Zod schema
+		try {
+			// First validate that each role matches the RoleInfo schema
+			if (response.roleList) {
+				for (const role of response.roleList) {
+					RoleInfoSchema.parse(role);
+				}
+			}
 
-		methodLogger.debug(
-			`Retrieved ${result.roleList.length} roles for account ${params.accountId}${
-				result.nextToken ? ' with pagination token' : ''
-			}`,
-		);
+			// Then validate the overall response
+			const result = ListAccountRolesResponseSchema.parse({
+				roleList: response.roleList || [],
+				nextToken: response.nextToken,
+			});
 
-		return result;
+			methodLogger.debug(
+				`Retrieved ${result.roleList.length} roles for account ${params.accountId}${
+					result.nextToken ? ' with pagination token' : ''
+				}`,
+			);
+
+			return result;
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				methodLogger.error('Invalid roles response format', error);
+				throw createApiError(
+					`Invalid response format from AWS SSO: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					undefined,
+					error,
+				);
+			}
+			throw error;
+		}
 	} catch (error) {
 		methodLogger.error('Failed to list roles', error);
 		throw createApiError(
@@ -358,32 +396,50 @@ async function getAllAccountsWithRoles(): Promise<AwsSsoAccountWithRoles[]> {
 		);
 
 		for (const account of accounts) {
+			// Ensure the account has required fields
+			const validatedAccount = {
+				accountId: account.accountId || '',
+				accountName: account.accountName || '',
+				// Map emailAddress to accountEmail for consistency
+				accountEmail: account.emailAddress,
+			};
+
 			try {
+				// Validate the account structure
+				AwsSsoAccountSchema.parse(validatedAccount);
+
 				// --- Check Cache First (Uses AwsSsoAccountRole[]) ---
 				const rolesFromCache: AwsSsoAccountRole[] =
-					await getCachedAccountRoles(account.accountId);
+					await getCachedAccountRoles(validatedAccount.accountId);
 				if (rolesFromCache && rolesFromCache.length > 0) {
 					methodLogger.debug(
-						`Using cached roles for account ${account.accountId}`,
+						`Using cached roles for account ${validatedAccount.accountId}`,
 					);
 					// Map cached roles (AwsSsoAccountRole[]) to the expected AwsSsoRole[]
 					const mappedCachedRoles: AwsSsoRole[] = rolesFromCache.map(
 						(role) => ({
-							accountId: account.accountId,
+							accountId: validatedAccount.accountId,
 							roleName: role.roleName,
 							roleArn:
 								role.roleArn ||
-								`arn:aws:iam::${account.accountId}:role/${role.roleName}`,
+								`arn:aws:iam::${validatedAccount.accountId}:role/${role.roleName}`,
 						}),
 					);
-					allAccountsWithRoles.push({
-						...account,
+
+					// Create and validate the account with roles
+					const accountWithRoles = {
+						...validatedAccount,
 						roles: mappedCachedRoles,
-					});
+					};
+
+					// Validate the structure
+					AwsSsoAccountWithRolesSchema.parse(accountWithRoles);
+
+					allAccountsWithRoles.push(accountWithRoles);
 					continue;
 				} else {
 					methodLogger.debug(
-						`No valid cached roles found for account ${account.accountId}, fetching...`,
+						`No valid cached roles found for account ${validatedAccount.accountId}, fetching...`,
 					);
 				}
 				// --- End Cache Check ---
@@ -396,7 +452,7 @@ async function getAllAccountsWithRoles(): Promise<AwsSsoAccountWithRoles[]> {
 
 				do {
 					const rolesResponse = await listAccountRoles({
-						accountId: account.accountId,
+						accountId: validatedAccount.accountId,
 						nextToken: rolesNextToken,
 					});
 					allRolesForAccountApi = allRolesForAccountApi.concat(
@@ -404,25 +460,31 @@ async function getAllAccountsWithRoles(): Promise<AwsSsoAccountWithRoles[]> {
 					);
 					rolesNextToken = rolesResponse.nextToken;
 					methodLogger.debug(
-						`Fetched page of roles for account ${account.accountId}. Next token: ${rolesNextToken ? 'Yes' : 'No'}`,
+						`Fetched page of roles for account ${validatedAccount.accountId}. Next token: ${rolesNextToken ? 'Yes' : 'No'}`,
 					);
 				} while (rolesNextToken);
 
 				// Map fetched roles (RoleInfo[]) to AwsSsoRole[] for the return type
 				const formattedRoles: AwsSsoRole[] = allRolesForAccountApi.map(
 					(role) => ({
-						accountId: account.accountId,
+						accountId: validatedAccount.accountId,
 						roleName: role.roleName || '',
 						roleArn:
 							role.roleArn ||
-							`arn:aws:iam::${account.accountId}:role/${role.roleName || ''}`,
+							`arn:aws:iam::${validatedAccount.accountId}:role/${role.roleName || ''}`,
 					}),
 				);
 
-				allAccountsWithRoles.push({
-					...account,
+				// Create and validate the account with roles
+				const accountWithRoles = {
+					...validatedAccount,
 					roles: formattedRoles,
-				});
+				};
+
+				// Validate the structure
+				AwsSsoAccountWithRolesSchema.parse(accountWithRoles);
+
+				allAccountsWithRoles.push(accountWithRoles);
 
 				// --- Save Fetched Roles to Cache ---
 				// Map formattedRoles (AwsSsoRole[]) back to AwsSsoAccountRole[]
@@ -433,18 +495,31 @@ async function getAllAccountsWithRoles(): Promise<AwsSsoAccountWithRoles[]> {
 						roleArn: role.roleArn,
 					}),
 				);
-				await saveAccountRoles(account, rolesToCache);
+				await saveAccountRoles(validatedAccount, rolesToCache);
 				// --- End Save Cache ---
 			} catch (error) {
 				methodLogger.warn(
-					`Error getting roles for account ${account.accountId}, including account with empty roles list.`,
+					`Error processing account ${validatedAccount.accountId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
 					error,
 				);
 				// Include account even if role fetching fails, but with empty roles
-				allAccountsWithRoles.push({
-					...account,
-					roles: [],
-				});
+				try {
+					// Create an account with empty roles
+					const accountWithEmptyRoles = {
+						...validatedAccount,
+						roles: [],
+					};
+
+					// Validate the structure
+					AwsSsoAccountWithRolesSchema.parse(accountWithEmptyRoles);
+
+					allAccountsWithRoles.push(accountWithEmptyRoles);
+				} catch (validationError) {
+					methodLogger.error(
+						`Failed to add account with empty roles: ${validationError instanceof Error ? validationError.message : 'Unknown error'}`,
+					);
+					// Skip this account if it doesn't even validate with empty roles
+				}
 			}
 		}
 	} while (accountsNextToken);
