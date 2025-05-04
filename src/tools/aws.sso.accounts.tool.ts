@@ -1,9 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-// Imports removed as they are no longer used
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
-import { z } from 'zod';
+import {
+	ListAccountsArgsType,
+	ListAccountsArgsSchema,
+} from './aws.sso.types.js';
 
 /**
  * AWS SSO Accounts Tool Module
@@ -22,9 +24,10 @@ toolLogger.debug('AWS SSO accounts tool module initialized');
 /**
  * Handles the AWS SSO list accounts tool
  * Lists all available AWS accounts and their roles
+ * @param _args Tool arguments (currently none, prefixed with _ to denote unused)
  * @returns MCP response with accounts and roles
  */
-async function handleListAccounts() {
+async function handleListAccounts(_args: ListAccountsArgsType) {
 	const listAccountsLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'handleListAccounts',
@@ -57,21 +60,17 @@ async function handleListAccounts() {
  * Register AWS SSO accounts tools with the MCP server
  * @param server MCP server instance
  */
-function registerTools(server: McpServer): void {
+export function registerTools(server: McpServer): void {
 	const registerLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'registerTools',
 	);
 	registerLogger.debug('Registering AWS SSO accounts tools');
 
-	// Define schema - Now empty as no arguments are needed
-	const ListAccountsArgsSchema = z.object({});
-
-	// Register the AWS SSO list accounts tool
+	// Register the list accounts tool
 	server.tool(
-		'aws_sso_ls_accounts',
-		// Update description to remove query filter
-		`Lists ALL AWS accounts and associated roles accessible via AWS SSO. Fetches the complete list, handling pagination internally. \n- Returns a Markdown list of all accessible accounts.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
+		'aws_sso_list_accounts',
+		'Lists all AWS accounts and associated roles accessible via AWS SSO. Requires prior authentication via the `aws_sso_login` tool. Returns a Markdown formatted list of accounts and roles.',
 		ListAccountsArgsSchema.shape,
 		handleListAccounts,
 	);
