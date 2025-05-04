@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.8.1...v1.8.2) (2025-05-04)
+
+
+### Bug Fixes
+
+* update AwsCredentialsSchema to handle string format expiration dates ([02fae67](https://github.com/aashari/mcp-server-aws-sso/commit/02fae679b3bc373561faea2f5d3b7e06108b399e))
+
 ## [1.8.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.8.0...v1.8.1) (2025-05-04)
 
 
