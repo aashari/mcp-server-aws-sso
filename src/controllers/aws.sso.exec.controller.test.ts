@@ -3,6 +3,7 @@ import { config } from '../utils/config.util';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
 import { getAllAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller';
+import { formatAuthRequired } from '../controllers/aws.sso.auth.formatter';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -75,17 +76,100 @@ describe('AWS SSO Exec Controller', () => {
 		expect(result.content).toBeDefined();
 		expect(typeof result.content).toBe('string');
 
-		// Content should be Markdown formatted output
-		expect(result.content).toContain('Command Result: `aws --version`');
-		expect(result.content).toContain('Exit Code');
+		// Content should be Markdown formatted output with the new structure
+		expect(result.content).toContain('# AWS CLI Command Output');
+		expect(result.content).toMatch(/\*\*Executed At\*\*:.*/);
+		expect(result.content).toContain(`**Account**: ${accountId}`);
+		expect(result.content).toContain(`**Role**: ${roleName}`);
 
-		// The output should contain "aws-cli" somewhere
+		// The output should still contain aws-cli somewhere
 		expect(result.content).toContain('aws-cli');
 
-		// The implementation doesn't currently return metadata
-		// This is a reminder that metadata could be added in the future
-		// expect(result.metadata).toBeDefined();
-		// expect(result.metadata?.command).toBeDefined();
-		// expect(result.metadata?.exitCode).toBe(0); // Command should succeed
+		// Check for metadata
+		expect(result.metadata).toBeDefined();
+		expect(result.metadata?.accountId).toBe(accountId);
+		expect(result.metadata?.roleName).toBe(roleName);
+		expect(result.metadata?.exitCode).toBe(0); // Command should succeed
+	});
+
+	// Test error handling for unauthenticated users
+	test('executeCommand should handle unauthenticated status', async () => {
+		// Mock the checkSsoAuthStatus to simulate unauthenticated state
+		const originalCheckSsoAuthStatus = jest.spyOn(
+			awsSsoExecController,
+			'executeCommand',
+		);
+		originalCheckSsoAuthStatus.mockImplementationOnce(async () => {
+			return {
+				content: formatAuthRequired(),
+			};
+		});
+
+		const result = await awsSsoExecController.executeCommand({
+			accountId: '123456789012',
+			roleName: 'TestRole',
+			command: 'aws s3 ls',
+		});
+
+		expect(result).toBeDefined();
+		expect(result.content).toBeDefined();
+		expect(result.content).toContain('# AWS SSO Authentication Required');
+		expect(result.content).toContain('How to Authenticate');
+
+		// Restore original implementation
+		originalCheckSsoAuthStatus.mockRestore();
+	});
+
+	// Test handling of errors from AWS CLI commands
+	test('executeCommand should format error output correctly', async () => {
+		if (await skipIfNoValidSsoSession()) return;
+
+		// First get a list of accounts to find a valid account/role combination
+		const accounts = await getAllAccountsWithRoles();
+		if (!accounts || accounts.length === 0) {
+			console.warn('SKIPPING TEST: No AWS accounts available.');
+			return;
+		}
+
+		// Find an account that has at least one role
+		const accountWithRole = accounts.find(
+			(account: any) => account.roles && account.roles.length > 0,
+		);
+		if (!accountWithRole) {
+			console.warn(
+				'SKIPPING TEST: No AWS accounts with roles available.',
+			);
+			return;
+		}
+
+		const accountId = accountWithRole.accountId;
+		const roleName = accountWithRole.roles[0].roleName;
+
+		// Run a command that should fail - invalid s3 bucket
+		const result = await awsSsoExecController.executeCommand({
+			accountId,
+			roleName,
+			command:
+				'aws s3 ls s3://nonexistent-bucket-name-that-does-not-exist',
+		});
+
+		expect(result).toBeDefined();
+		expect(result.content).toBeDefined();
+		expect(typeof result.content).toBe('string');
+
+		// Check error formatting
+		expect(result.content).toContain('# AWS CLI Command Output');
+		expect(result.content).toMatch(/\*\*Executed At\*\*:.*/);
+		expect(result.content).toContain('## Error');
+		expect(result.content).toContain('**Exit Code**:');
+
+		// Should contain error message about bucket not existing or access denied
+		expect(result.content).toMatch(
+			/(NoSuchBucket|AccessDenied|not found|not exist|NoSuchKey)/i,
+		);
+
+		// Check metadata has error info
+		expect(result.metadata).toBeDefined();
+		expect(result.metadata?.exitCode).not.toBe(0); // Command should fail
 	});
 });

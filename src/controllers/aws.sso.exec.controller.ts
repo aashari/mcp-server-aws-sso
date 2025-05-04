@@ -4,8 +4,11 @@ import { ControllerResponse } from '../types/common.types.js';
 import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 import { formatAuthRequired } from './aws.sso.auth.formatter.js';
 import { executeCommand as executeServiceCommand } from '../services/vendor.aws.sso.exec.service.js';
+import { listAccountRoles } from '../services/vendor.aws.sso.accounts.service.js';
 import { ExecCommandToolArgsType } from '../tools/aws.sso.types.js';
 import { formatCommandResult } from './aws.sso.exec.formatter.js';
+import { RoleInfo } from '../services/vendor.aws.sso.types.js';
+import { CommandExecutionResult } from './aws.sso.exec.types.js';
 
 /**
  * AWS SSO Execution Controller Module
@@ -93,21 +96,116 @@ async function executeCommand(
 			},
 		});
 
-		const result = await executeServiceCommand(
-			options.accountId,
-			options.roleName,
-			options.command,
-			options.region,
-		);
+		let result: CommandExecutionResult;
+		let suggestedRoles: RoleInfo[] | undefined;
 
-		execCommandLogger.debug('Command execution completed', {
-			exitCode: result.exitCode,
-			stdoutLength: result.stdout.length,
-			stderrLength: result.stderr.length,
+		try {
+			// Execute the command via the service
+			result = await executeServiceCommand(
+				options.accountId,
+				options.roleName,
+				options.command,
+				options.region,
+			);
+
+			execCommandLogger.debug('Command execution completed by service', {
+				exitCode: result.exitCode,
+				stdoutLength: result.stdout.length,
+				stderrLength: result.stderr.length,
+			});
+
+			// Explicitly check for non-zero exit code even if service doesn't throw
+			if (result.exitCode !== 0) {
+				// Check for permission error indicators in stderr or stdout
+				const errorOutput =
+					(result.stderr || '') + (result.stdout || ''); // Combine outputs as errors can be in stdout
+				const isPermissionError =
+					/AccessDenied|UnauthorizedOperation|permission|denied/i.test(
+						errorOutput,
+					);
+
+				if (isPermissionError) {
+					execCommandLogger.debug(
+						'Potential permission error detected based on output/exit code.',
+						{
+							accountId: options.accountId,
+							exitCode: result.exitCode,
+							errorOutputSnippet: errorOutput.substring(0, 100),
+						},
+					);
+					try {
+						// Attempt to fetch roles for this account
+						const rolesResponse = await listAccountRoles({
+							accountId: options.accountId,
+						});
+						suggestedRoles = rolesResponse.roleList;
+						execCommandLogger.debug(
+							`Found ${suggestedRoles?.length ?? 0} alternative roles for account ${options.accountId}.`,
+						);
+					} catch (roleError) {
+						execCommandLogger.warn(
+							'Failed to fetch alternative roles after permission error',
+							roleError,
+						);
+						// Continue without suggested roles
+						suggestedRoles = []; // Indicate that we tried but failed
+					}
+				}
+				// Note: We don't throw here; the formatter will handle displaying the error
+			}
+		} catch (error) {
+			// Handle errors thrown by executeServiceCommand itself
+			execCommandLogger.error(
+				'Error during command execution service call',
+				error,
+			);
+			// Check if this underlying error is a permission error
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			const isPermissionError =
+				/AccessDenied|UnauthorizedOperation|permission|denied/i.test(
+					errorMessage,
+				);
+
+			if (isPermissionError) {
+				execCommandLogger.debug(
+					'Potential permission error detected from service error.',
+					{ accountId: options.accountId },
+				);
+				try {
+					const rolesResponse = await listAccountRoles({
+						accountId: options.accountId,
+					});
+					suggestedRoles = rolesResponse.roleList;
+					execCommandLogger.debug(
+						`Found ${suggestedRoles?.length ?? 0} alternative roles for account ${options.accountId}.`,
+					);
+				} catch (roleError) {
+					execCommandLogger.warn(
+						'Failed to fetch alternative roles after permission service error',
+						roleError,
+					);
+					suggestedRoles = [];
+				}
+				// Construct a result object similar to what executeServiceCommand would return on failure
+				result = {
+					stdout: '',
+					stderr: errorMessage,
+					exitCode: 1, // Assume exit code 1 for service errors
+				};
+			} else {
+				// If it's not a permission error caught here, re-throw for general handling
+				throw error;
+			}
+		}
+
+		// Format the result, passing suggestedRoles if available
+		const formattedContent = formatCommandResult(options.command, result, {
+			accountId: options.accountId,
+			roleName: options.roleName,
+			region: options.region,
+			suggestedRoles: suggestedRoles,
 		});
-
-		// Format the result
-		const formattedContent = formatCommandResult(options.command, result);
 
 		return {
 			content: formattedContent,
