@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.9.0...v1.10.0) (2025-05-04)
+
+
+### Features
+
+* standardize CLI output format with header/context/footer ([544c85d](https://github.com/aashari/mcp-server-aws-sso/commit/544c85d5cf25aba04c024a8538e0fa2a009b206b))
+
 # [1.9.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.8.2...v1.9.0) (2025-05-04)
 
 
