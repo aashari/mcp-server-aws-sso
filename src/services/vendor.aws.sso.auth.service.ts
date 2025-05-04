@@ -99,7 +99,7 @@ async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
 const ClientRegistrationResponseSchema = z.object({
 	clientId: z.string(),
 	clientSecret: z.string(),
-	expiresAt: z.string(),
+	expiresAt: z.string().optional(),
 });
 
 /**
@@ -120,8 +120,8 @@ const DeviceAuthorizationResponseSchema = z.object({
 const TokenResponseSchema = z.object({
 	accessToken: z.string().optional(),
 	access_token: z.string().optional(),
-	refreshToken: z.string().optional(),
-	refresh_token: z.string().optional(),
+	refreshToken: z.string().optional().nullable(),
+	refresh_token: z.string().optional().nullable(),
 	tokenType: z.string().optional(),
 	token_type: z.string().optional(),
 	expires_in: z.number().optional(),

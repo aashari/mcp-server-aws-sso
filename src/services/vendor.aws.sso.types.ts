@@ -41,7 +41,7 @@ export const SsoTokenSchema = z.object({
 	/**
 	 * The refresh token for SSO
 	 */
-	refreshToken: z.string(),
+	refreshToken: z.string().optional().default(''),
 
 	/**
 	 * The token type
