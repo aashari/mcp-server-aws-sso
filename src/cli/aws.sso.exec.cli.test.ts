@@ -233,7 +233,7 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 			// Check for auth required message
 			const expectedPatterns = [
-				'# AWS SSO Authentication Required',
+				'# AWS SSO: Authentication Required',
 				'How to Authenticate',
 				'mcp-aws-sso login',
 			];
