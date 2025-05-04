@@ -1,3 +1,12 @@
+# [1.8.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.9...v1.8.0) (2025-05-04)
+
+
+### Features
+
+* refactor controller parameter types to use Zod-inferred types ([d6c11a1](https://github.com/aashari/mcp-server-aws-sso/commit/d6c11a12b05727c80071946c7bd72a3cfcec7875))
+* refactor service response types using Zod schemas ([d9c1ea3](https://github.com/aashari/mcp-server-aws-sso/commit/d9c1ea39826249da86abdec3f44476a7d4f329c9))
+* refactor tool argument types using Zod schemas ([1d4ee44](https://github.com/aashari/mcp-server-aws-sso/commit/1d4ee440f098168670b981c961082fbf96858d39))
+
 ## [1.7.9](https://github.com/aashari/mcp-server-aws-sso/compare/v1.7.8...v1.7.9) (2025-05-04)
 
 
