@@ -77,8 +77,7 @@ describe('AWS SSO Exec Controller', () => {
 		expect(typeof result.content).toBe('string');
 
 		// Content should be Markdown formatted output with the new structure
-		expect(result.content).toContain('# AWS CLI Command Output');
-		expect(result.content).toMatch(/\*\*Executed At\*\*:.*/);
+		expect(result.content).toContain('# AWS SSO: Command Output');
 		expect(result.content).toContain(`**Account**: ${accountId}`);
 		expect(result.content).toContain(`**Role**: ${roleName}`);
 
@@ -113,7 +112,7 @@ describe('AWS SSO Exec Controller', () => {
 
 		expect(result).toBeDefined();
 		expect(result.content).toBeDefined();
-		expect(result.content).toContain('# AWS SSO Authentication Required');
+		expect(result.content).toContain('# AWS SSO: Authentication Required');
 		expect(result.content).toContain('How to Authenticate');
 
 		// Restore original implementation
@@ -158,8 +157,7 @@ describe('AWS SSO Exec Controller', () => {
 		expect(typeof result.content).toBe('string');
 
 		// Check error formatting
-		expect(result.content).toContain('# AWS CLI Command Output');
-		expect(result.content).toMatch(/\*\*Executed At\*\*:.*/);
+		expect(result.content).toContain('# AWS SSO: Command Output');
 		expect(result.content).toContain('## Error');
 		expect(result.content).toContain('**Exit Code**:');
 

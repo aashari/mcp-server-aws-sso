@@ -77,7 +77,7 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO exec command tool
 	server.tool(
 		'aws_sso_exec_command',
-		`Executes an AWS CLI command using temporary credentials obtained via AWS SSO for a specific account (\`accountId\`) and role (\`roleName\`).\n- Provide the full command string (starting with 'aws') in the \`command\` parameter. Quotes within the command are handled.\n- Optionally specify the AWS \`region\`.\nUse to interact with AWS resources programmatically via the CLI.\n**Note:** Requires prior successful authentication using \`aws_sso_login\` and requires AWS CLI to be installed on the host system where the server is running.\nReturns formatted stdout, stderr, and exit code of the executed command.`,
+		`Executes an AWS CLI command using temporary credentials obtained via AWS SSO for a specific account (\`accountId\`) and role (\`roleName\`). Provide the full command string (starting with 'aws') in the \`command\` parameter. Quotes within the command are handled. Optionally specify the AWS \`region\`. Use to interact with AWS resources programmatically via the CLI. **Note:** Requires prior successful authentication using \`aws_sso_login\` and requires AWS CLI to be installed on the host system where the server is running. Requires AWS SSO to be configured in the environment. Returns formatted stdout, stderr, and exit code of the executed command.`,
 		ExecCommandToolArgs.shape,
 		handleExecCommand,
 	);

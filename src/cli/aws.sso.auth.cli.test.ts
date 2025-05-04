@@ -69,16 +69,17 @@ describe('AWS SSO Auth CLI Commands', () => {
 			}
 
 			// Check for the new format elements for already authenticated users
-			CliTestUtil.validateOutputContains(stdout, [
-				'# AWS SSO Session Active',
-				'Session Details',
-				'Expiration',
+			const expectedPatterns = [
+				'# AWS SSO: Session Active',
+				'## Session Details',
+				'**Expiration**:',
 				'Duration',
 				'Valid for ',
 				'Available Actions',
 				'mcp-aws-sso ls-accounts',
 				'mcp-aws-sso exec-command',
-			]);
+			];
+			CliTestUtil.validateOutputContains(stdout, expectedPatterns);
 		}, 30000);
 
 		it('should handle help flag correctly', async () => {

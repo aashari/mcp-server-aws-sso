@@ -1,11 +1,15 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
-import { config } from '../utils/config.util';
+import { config } from '../utils/config.util.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller';
 import {
+	// formatAccountsAndRoles, // Unused
 	formatNoAccounts,
-	formatAuthRequired,
+	// formatAccountRoles, // Unused
 } from '../controllers/aws.sso.accounts.formatter';
+import { formatAuthRequired } from './aws.sso.auth.formatter.js';
+// import { McpError } from '../utils/error.util.js'; // Unused
+// import { formatSeparator, formatDate } from '../utils/formatter.util.js'; // Unused
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -77,7 +81,7 @@ describe('AWS SSO Accounts Controller', () => {
 		expect(typeof result.content).toBe('string');
 
 		// Check for new format elements
-		expect(result.content).toContain('# AWS SSO Accounts and Roles');
+		expect(result.content).toContain('# AWS SSO: Accounts and Roles');
 
 		// Should include session validity with duration
 		expect(result.content).toContain('Session Status');
@@ -118,7 +122,7 @@ describe('AWS SSO Accounts Controller', () => {
 
 		expect(result).toBeDefined();
 		expect(typeof result).toBe('string');
-		expect(result).toContain('# AWS SSO Accounts and Roles');
+		expect(result).toContain('# AWS SSO: Accounts and Roles');
 		expect(result).toContain('## No Accounts Found');
 		expect(result).toContain('Possible Causes');
 		expect(result).toContain('Suggested Actions');
@@ -130,7 +134,7 @@ describe('AWS SSO Accounts Controller', () => {
 
 		expect(result).toBeDefined();
 		expect(typeof result).toBe('string');
-		expect(result).toContain('# AWS SSO Authentication Required');
+		expect(result).toContain('# AWS SSO: Authentication Required');
 		expect(result).toContain('How to Authenticate');
 		expect(result).toContain('mcp-aws-sso login');
 	});

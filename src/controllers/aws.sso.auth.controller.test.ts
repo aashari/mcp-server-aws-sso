@@ -53,7 +53,7 @@ describe('AWS SSO Auth Controller', () => {
 		expect(result.content).toBeDefined();
 
 		// Check for new format elements
-		expect(result.content).toContain('# AWS SSO Session Active');
+		expect(result.content).toContain('# AWS SSO: Session Active');
 		expect(result.content).toContain('Session Details');
 		expect(result.content).toContain('Expiration');
 		expect(result.content).toContain('Duration');
@@ -89,7 +89,7 @@ describe('AWS SSO Auth Controller', () => {
 
 		expect(result).toBeDefined();
 		expect(typeof result).toBe('string');
-		expect(result).toContain('# AWS SSO Authentication Required');
+		expect(result).toContain('# AWS SSO: Authentication Required');
 		expect(result).toContain('How to Authenticate');
 		expect(result).toContain('mcp-aws-sso login');
 	});

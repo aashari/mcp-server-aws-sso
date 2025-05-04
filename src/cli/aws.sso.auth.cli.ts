@@ -7,6 +7,7 @@ import {
 	formatAuthRequired,
 } from '../controllers/aws.sso.auth.formatter.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
+import { formatDate } from '../utils/formatter.util.js';
 
 /**
  * AWS SSO Authentication CLI Module
@@ -58,7 +59,8 @@ function register(program: Command): void {
 					let expiresDate = 'Unknown';
 					try {
 						const expirationDate = new Date(token.expiresAt * 1000);
-						expiresDate = expirationDate.toLocaleString();
+						// Use standard formatter
+						expiresDate = formatDate(expirationDate);
 					} catch (error) {
 						actionLogger.error(
 							'Error formatting expiration date',
@@ -69,6 +71,7 @@ function register(program: Command): void {
 				} else {
 					formattedContent = formatAuthRequired();
 				}
+				// Print the formatted content (already includes header/footer)
 				console.log(formattedContent);
 			} catch (error) {
 				handleCliError(error);
@@ -111,6 +114,7 @@ function registerLoginCommand(program: Command): void {
 					launchBrowser: options.launchBrowser !== false,
 					autoPoll: options.autoPoll !== false,
 				});
+				// Print the formatted content (already includes header/footer)
 				console.log(result.content);
 			} catch (error) {
 				loginLogger.error('Login command failed', error);

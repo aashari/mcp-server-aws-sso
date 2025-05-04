@@ -2,6 +2,13 @@ import {
 	AwsSsoAccountWithRoles,
 	RoleInfo,
 } from '../services/vendor.aws.sso.types.js';
+import {
+	formatDate,
+	formatHeading,
+	formatCodeBlock,
+	formatBulletList,
+	formatSeparator,
+} from '../utils/formatter.util.js';
 
 /**
  * Calculate the approximate duration from now until the expiration time
@@ -32,18 +39,11 @@ function calculateDuration(expirationDate: Date): string {
  * Format accounts and roles information
  * @param expiresDate Formatted expiration date
  * @param accountsWithRoles List of accounts with roles
- * @param pagination Optional pagination info for footer hints (total, limit, startAt)
  * @returns Formatted markdown content
  */
 export function formatAccountsAndRoles(
 	expiresDate: string,
 	accountsWithRoles: AwsSsoAccountWithRoles[],
-	pagination?: {
-		total?: number;
-		limit?: number;
-		startAt?: number;
-		hasMore?: boolean;
-	},
 ): string {
 	// Parse the expiration date to calculate the duration
 	let durationText = 'unknown duration';
@@ -54,72 +54,70 @@ export function formatAccountsAndRoles(
 		// Keep the default text if parsing fails
 	}
 
-	const header = `# AWS SSO Accounts and Roles\n\n**Session Status**: Valid until ${expiresDate} (${durationText} remaining)`;
+	const headerLines = [
+		formatHeading('AWS SSO: Accounts and Roles', 1),
+		'',
+		`**Session Status**: Valid until ${expiresDate} (${durationText} remaining)`,
+	];
 
 	if (accountsWithRoles.length === 0) {
 		return formatNoAccounts(true);
 	}
 
-	let content = header + '\n\n## Available Accounts\n';
+	const accountLines: string[] = [];
+	accountLines.push(formatHeading('Available Accounts', 2));
 
-	// Simplified account list with roles
 	accountsWithRoles.forEach((account) => {
-		// Account information with ID and name
-		content += `\n### Account: ${account.accountName || 'Unnamed Account'} (${account.accountId})`;
-		if (account.accountEmail) {
-			content += `\n- **Email**: ${account.accountEmail}`;
-		}
+		accountLines.push('');
+		accountLines.push(
+			formatHeading(
+				`Account: ${account.accountName || 'Unnamed Account'} (${account.accountId})`,
+				3,
+			),
+		);
 
-		// List roles in a bullet format
+		const accountDetails: Record<string, unknown> = {};
+		if (account.accountEmail) {
+			accountDetails['Email'] = account.accountEmail;
+		}
+		// Add other potential details here if needed
+
+		accountLines.push(formatBulletList(accountDetails));
+
 		if (account.roles.length === 0) {
-			content += '\n- **Roles**: No roles available';
+			accountLines.push('- **Roles**: No roles available');
 		} else {
-			content += '\n- **Roles**:';
+			accountLines.push('- **Roles**:');
 			account.roles.forEach((role) => {
-				content += `\n  - ${role.roleName}`;
+				accountLines.push(`  - ${role.roleName}`);
 			});
 		}
-
-		content += '\n';
 	});
 
-	// Add a usage example at the end
-	content += `\n## Next Steps
-To execute a command in an account, run:
-\`\`\`bash
-mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"
-\`\`\`
+	const usageLines = [
+		'',
+		formatHeading('Next Steps', 2),
+		'To execute a command in an account, run:',
+		formatCodeBlock(
+			'mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --command "aws s3 ls"',
+			'bash',
+		),
+		'',
+		'**Tip**: Use `mcp-aws-sso login` if you need to re-authenticate.',
+	];
 
-**Tip**: Use \`mcp-aws-sso login\` if you need to re-authenticate.`;
+	const footerLines = [
+		'',
+		formatSeparator(),
+		`*Information retrieved at: ${formatDate(new Date())}*`,
+	];
 
-	// --- Footer ---
-	const footerLines: string[] = [];
-	footerLines.push('---');
-
-	const displayedCount = accountsWithRoles.length;
-	if (pagination?.total !== undefined) {
-		footerLines.push(
-			`*Showing ${displayedCount} of ${pagination.total} accounts*`,
-		);
-	}
-	// Check hasMore using limit and startAt if total isn't precise or available
-	const potentiallyMore =
-		pagination?.hasMore ??
-		(pagination?.limit &&
-			pagination?.startAt !== undefined &&
-			displayedCount >= pagination.limit);
-
-	if (potentiallyMore) {
-		const nextStartAt =
-			(pagination?.startAt ?? 0) + (pagination?.limit ?? displayedCount);
-		footerLines.push(`*Use --start-at ${nextStartAt} to view more.*`); // Assuming start-at for AWS accounts, adjust if needed
-	}
-
-	footerLines.push(
-		`*Information retrieved at: ${new Date().toLocaleString()}*`,
-	);
-
-	return content + '\n\n' + footerLines.join('\n');
+	return [
+		...headerLines,
+		...accountLines,
+		...usageLines,
+		...footerLines,
+	].join('\n');
 }
 
 /**
@@ -127,27 +125,32 @@ mcp-aws-sso exec-command --account-id <ACCOUNT_ID> --role-name <ROLE_NAME> --com
  * @param addFooter Flag to indicate if the standard footer should be added
  * @returns Formatted markdown content
  */
-export function formatNoAccounts(addFooter: boolean = false): string {
-	const baseContent = `# AWS SSO Accounts and Roles
+export function formatNoAccounts(addFooter: boolean = true): string {
+	const lines = [
+		formatHeading('AWS SSO: Accounts and Roles', 1),
+		'',
+		formatHeading('No Accounts Found', 2),
+		'',
+		'Your AWS SSO user has no assigned accounts.',
+		'',
+		formatHeading('Possible Causes', 3),
+		'* Your user lacks account assignments in AWS IAM Identity Center.',
+		'* Your SSO permissions are restricted.',
+		'* There may be a configuration issue with your AWS SSO setup.',
+		'',
+		formatHeading('Suggested Actions', 3),
+		'1. Contact your AWS administrator to verify account assignments.',
+		'2. Re-authenticate to refresh your session:',
+		formatCodeBlock('mcp-aws-sso login', 'bash'),
+	];
 
-## No Accounts Found
+	if (addFooter) {
+		lines.push('');
+		lines.push(formatSeparator());
+		lines.push(`*Information retrieved at: ${formatDate(new Date())}*`);
+	}
 
-Your AWS SSO user has no assigned accounts.
-
-### Possible Causes
-- Your user lacks account assignments in AWS IAM Identity Center.
-- Your SSO permissions are restricted.
-- There may be a configuration issue with your AWS SSO setup.
-
-### Suggested Actions
-1. Contact your AWS administrator to verify account assignments.
-2. Re-authenticate to refresh your session:
-   \`\`\`bash
-   mcp-aws-sso login
-   \`\`\`
-
----\n*Information retrieved at: ${new Date().toLocaleString()}*`;
-	return addFooter ? baseContent : baseContent;
+	return lines.join('\n');
 }
 
 /**
@@ -155,19 +158,21 @@ Your AWS SSO user has no assigned accounts.
  * @returns Formatted markdown content
  */
 export function formatAuthRequired(): string {
-	return `# AWS SSO Authentication Required
-
-You need to authenticate with AWS SSO to view accounts and roles.
-
-## How to Authenticate
-Run the following command to start the login process:
-\`\`\`bash
-mcp-aws-sso login
-\`\`\`
-
-This will open a browser window for AWS SSO authentication. Follow the prompts to complete the process.
-
----\n*Information retrieved at: ${new Date().toLocaleString()}*`;
+	const lines = [
+		formatHeading('AWS SSO Authentication Required', 1),
+		'',
+		'You need to authenticate with AWS SSO to view accounts and roles.',
+		'',
+		formatHeading('How to Authenticate', 2),
+		'Run the following command to start the login process:',
+		formatCodeBlock('mcp-aws-sso login', 'bash'),
+		'',
+		'This will open a browser window for AWS SSO authentication. Follow the prompts to complete the process.',
+		'',
+		formatSeparator(),
+		`*Information retrieved at: ${formatDate(new Date())}*`,
+	];
+	return lines.join('\n');
 }
 
 /**
@@ -190,17 +195,21 @@ export function formatAccountRoles(
 					)
 					.join('\n');
 
-	const content = `# Roles for Account ${accountId}
-
-## Available Roles
-${rolesList}
-
-## Usage Example
-To use a role for executing AWS CLI commands:
-\`\`\`bash
-mcp-aws-sso exec-command --account-id ${accountId} --role-name <ROLE_NAME> --command "aws s3 ls"
-\`\`\`
-
----\n*Information retrieved at: ${new Date().toLocaleString()}*`;
-	return content;
+	const lines = [
+		formatHeading(`AWS SSO: Roles for Account ${accountId}`, 1),
+		'',
+		formatHeading('Available Roles', 2),
+		rolesList,
+		'',
+		formatHeading('Usage Example', 2),
+		'To use a role for executing AWS CLI commands:',
+		formatCodeBlock(
+			`mcp-aws-sso exec-command --account-id ${accountId} --role-name <ROLE_NAME> --command "aws s3 ls"`,
+			'bash',
+		),
+		'',
+		formatSeparator(),
+		`*Information retrieved at: ${formatDate(new Date())}*`,
+	];
+	return lines.join('\n');
 }

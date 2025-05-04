@@ -219,8 +219,8 @@ async function executeCommand(
 			},
 		};
 	} catch (error) {
-		// Handle errors using standard pattern
-		return handleControllerError(error, {
+		// Use throw instead of return
+		throw handleControllerError(error, {
 			entityType: 'AWS Command',
 			operation: 'executing',
 			source: 'controllers/aws.sso.exec.controller.ts@executeCommand',

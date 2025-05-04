@@ -1,5 +1,11 @@
 import { CommandExecutionResult } from './aws.sso.exec.types.js';
-import { formatHeading, formatCodeBlock } from '../utils/formatter.util.js';
+import {
+	formatHeading,
+	formatCodeBlock,
+	formatBulletList,
+	formatSeparator,
+	formatDate,
+} from '../utils/formatter.util.js';
 import { RoleInfo } from '../services/vendor.aws.sso.types.js';
 
 /**
@@ -21,70 +27,74 @@ export function formatCommandResult(
 	},
 ): string {
 	const lines: string[] = [];
-	const executedAt = new Date();
 
-	// Main heading
-	lines.push(formatHeading('AWS CLI Command Output', 1));
+	lines.push(formatHeading('AWS SSO: Command Output', 1));
 	lines.push('');
 
-	// Add timestamp
-	lines.push(`**Executed At**: ${executedAt.toLocaleString()}`);
+	// Context Block
+	const contextProps: Record<string, unknown> = {};
+	if (options?.accountId) contextProps['Account'] = options.accountId;
+	if (options?.roleName) contextProps['Role'] = options.roleName;
+	if (options?.region) contextProps['Region'] = options.region;
+	else if (options?.accountId) contextProps['Region'] = 'default';
 
-	// Add account/role/region context if provided
-	if (options?.accountId) {
-		lines.push(`**Account**: ${options.accountId}`);
-	}
-	if (options?.roleName) {
-		lines.push(`**Role**: ${options.roleName}`);
-	}
-	if (options?.region) {
-		lines.push(`**Region**: ${options.region}`);
-	} else if (options?.accountId) {
-		// If we have an account but no region, indicate default
-		lines.push('**Region**: default');
+	if (Object.keys(contextProps).length > 0) {
+		lines.push(formatHeading('Execution Context', 2));
+		lines.push(formatBulletList(contextProps));
+		lines.push('');
 	}
 
-	lines.push('');
-
-	// For successful commands, show the output directly without exit code
-	if (result.exitCode === 0 && result.stdout) {
-		if (result.stdout.trim()) {
-			// For non-empty stdout, format as a code block
+	// Success Case
+	if (result.exitCode === 0) {
+		lines.push(formatHeading('Standard Output', 2));
+		if (result.stdout && result.stdout.trim()) {
 			lines.push(formatCodeBlock(result.stdout));
 		} else {
-			// For empty stdout, show a success message
 			lines.push('*Command completed successfully with no output.*');
 		}
+		// Show stderr as warnings if present, even on success
+		if (result.stderr && result.stderr.trim()) {
+			lines.push('');
+			lines.push(formatHeading('Warnings (stderr)', 2));
+			lines.push(formatCodeBlock(result.stderr));
+		}
 	}
-	// For errors, format differently
-	else if (result.exitCode !== 0) {
-		// Check if it's a permission error and roles are suggested
+	// Error Case
+	else {
 		const isPermissionError =
 			options?.suggestedRoles && options.suggestedRoles.length > 0;
 
 		if (isPermissionError) {
-			lines.push(formatHeading('Permission Denied', 2));
+			lines.push(formatHeading('Error: Permission Denied', 2));
 			lines.push(
 				`The command failed due to insufficient permissions for the role \`${options.roleName}\` in account \`${options.accountId}\`.`,
 			);
-			lines.push('');
-			lines.push(`**Exit Code**: ${result.exitCode ?? 'Unknown'}`);
-			lines.push('');
+		} else {
+			lines.push(formatHeading('Error', 2));
+			lines.push('The command failed to execute.');
+		}
 
-			// Show error output if available
-			if (result.stderr && result.stderr.trim()) {
-				lines.push(formatCodeBlock(result.stderr));
-			} else if (result.stdout && result.stdout.trim()) {
-				lines.push(formatCodeBlock(result.stdout));
-			} else {
-				lines.push('*Command failed with no specific error output.*');
-			}
-			lines.push('');
+		lines.push('');
+		lines.push(`**Exit Code**: ${result.exitCode ?? 'Unknown'}`);
+		lines.push('');
 
-			// Add suggested roles section
+		lines.push(formatHeading('Standard Error (stderr)', 3));
+		if (result.stderr && result.stderr.trim()) {
+			lines.push(formatCodeBlock(result.stderr));
+		} else if (result.stdout && result.stdout.trim()) {
+			// Sometimes errors go to stdout
+			lines.push('*(Error details potentially in stdout)*');
+			lines.push(formatCodeBlock(result.stdout));
+		} else {
+			lines.push('*Command failed with no specific error output.*');
+		}
+		lines.push('');
+
+		// Add suggested roles section only on permission error
+		if (isPermissionError) {
 			lines.push(
 				formatHeading(
-					`Available Roles for Account ${options.accountId}`,
+					`Available Roles for Account ${options.accountId || 'Unknown'}`,
 					3,
 				),
 			);
@@ -97,42 +107,17 @@ export function formatCommandResult(
 					'Try executing the command again using one of the roles listed above.',
 				);
 			} else {
-				// This case might occur if role listing failed, but we still detected a permission error
 				lines.push(
 					'Could not retrieve alternative roles for this account.',
 				);
 			}
-		} else {
-			// Generic error formatting
-			lines.push(formatHeading('Error', 2));
-			lines.push(`**Exit Code**: ${result.exitCode ?? 'Unknown'}`);
-			lines.push('');
-
-			// Show error output if available
-			if (result.stderr && result.stderr.trim()) {
-				lines.push(formatCodeBlock(result.stderr));
-			} else if (result.stdout && result.stdout.trim()) {
-				// Some AWS commands put error messages in stdout
-				lines.push(formatCodeBlock(result.stdout));
-			} else {
-				lines.push('*Command failed with no error output.*');
-			}
 		}
 	}
-	// For unusual cases like exit code 0 but stderr present
-	else if (result.stderr && result.stderr.trim()) {
-		lines.push(formatHeading('Output', 2));
-		if (result.stdout && result.stdout.trim()) {
-			lines.push(formatCodeBlock(result.stdout));
-			lines.push('');
-		}
 
-		lines.push(formatHeading('Warnings', 2));
-		lines.push(formatCodeBlock(result.stderr));
-	}
+	// Add standard footer with timestamp
+	lines.push('');
+	lines.push(formatSeparator());
+	lines.push(`*Information retrieved at: ${formatDate(new Date())}*`);
 
-	// --- Footer --- (Added standard footer)
-	const footer = `\n\n---\n*Information retrieved at: ${new Date().toLocaleString()}*`;
-
-	return lines.join('\n') + footer;
+	return lines.join('\n');
 }

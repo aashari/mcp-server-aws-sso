@@ -1,6 +1,9 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
-import { ControllerResponse } from '../types/common.types.js';
+import {
+	ControllerResponse,
+	ResponsePagination,
+} from '../types/common.types.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
 import {
 	listAccountRoles,
@@ -121,28 +124,28 @@ async function listAccounts(): Promise<ControllerResponse> {
 				};
 			}
 
-			// Prepare pagination object for the formatter (even if not paginated)
-			const paginationForFormatter = {
+			// Prepare pagination object for metadata (even though not paginated)
+			const paginationForMetadata: ResponsePagination = {
+				count: totalAccountsFetched,
+				hasMore: false,
 				total: totalAccountsFetched,
-				limit: totalAccountsFetched, // Show all
-				startAt: 0,
-				hasMore: false, // No more pages as we fetched all
 			};
 
-			// Format the full list, passing pagination info
+			// Format the full list (remove pagination arg)
 			const formattedContent = formatAccountsAndRoles(
 				expiresDate,
 				allAccountsData,
-				paginationForFormatter, // Pass the info
+				// paginationForFormatter, // Removed pagination argument
 			);
 
-			// Return content WITHOUT pagination object (as this command fetches all)
+			// Return content WITHOUT pagination object in response root
 			return {
-				content: formattedContent,
+				content: formattedContent, // Includes timestamp footer
 				metadata: {
 					authenticated: true,
 					totalAccountsFetched,
 					accountsDisplayed: allAccountsData.length,
+					pagination: paginationForMetadata, // Add pagination to metadata
 				},
 			};
 		} catch (error) {
@@ -166,9 +169,7 @@ async function listAccounts(): Promise<ControllerResponse> {
 		}
 	} catch (error) {
 		// Handle broader errors
-		const processedError =
-			error instanceof Error ? error : new Error(String(error));
-		return handleControllerError(processedError, {
+		throw handleControllerError(error, {
 			entityType: 'AWS SSO Accounts',
 			operation: 'listing all',
 			source: 'controllers/aws.sso.accounts.controller.ts@listAccounts',
@@ -215,7 +216,7 @@ async function listRoles(
 			},
 		};
 	} catch (error) {
-		return handleControllerError(error, {
+		throw handleControllerError(error, {
 			entityType: 'AWS Account Roles',
 			entityId: params.accountId,
 			operation: 'listing',

@@ -89,8 +89,8 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 			// Verify the new output format for successful commands
 			const expectedPatterns = [
-				'# AWS CLI Command Output',
-				/\*\*Executed At\*\*:.*/,
+				'# AWS SSO: Command Output',
+				'## Execution Context',
 				`**Account**: ${testAccount.accountId}`,
 				`**Role**: ${testAccount.roleName}`,
 				'aws-cli', // Should contain version info
@@ -124,10 +124,10 @@ describe('AWS SSO Exec CLI Commands', () => {
 
 			// Verify the new output format for error commands
 			const expectedPatterns = [
-				'# AWS CLI Command Output',
-				/\*\*Executed At\*\*:.*/, // Check for timestamp
-				`**Account**: ${testAccount.accountId}`, // Use testAccount variable
-				`**Role**: ${testAccount.roleName}`, // Use testAccount variable
+				'# AWS SSO: Command Output',
+				'## Execution Context',
+				`**Account**: ${testAccount.accountId}`,
+				`**Role**: ${testAccount.roleName}`,
 				/\*\*Exit Code\*\*: \d+/, // Check for Exit Code line using RegExp object
 				'usage: aws', // Check for usage string
 			];

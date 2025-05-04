@@ -44,8 +44,8 @@ describe('AWS SSO Accounts CLI Commands', () => {
 
 			// Check for new format elements
 			CliTestUtil.validateOutputContains(stdout, [
-				'# AWS SSO Accounts and Roles',
-				'Session Status',
+				'# AWS SSO: Accounts and Roles',
+				'**Session Status**:',
 				'Valid until',
 				'remaining',
 				'## Available Accounts',

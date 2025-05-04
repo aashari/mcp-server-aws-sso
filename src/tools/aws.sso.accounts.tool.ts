@@ -70,8 +70,7 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_sso_ls_accounts',
-		// Update description to remove query filter
-		`Lists ALL AWS accounts and associated roles accessible via AWS SSO. Fetches the complete list, handling pagination internally. \n- Returns a Markdown list of all accessible accounts.\n**Note:** Requires prior successful authentication using \`aws_sso_login\`.`,
+		`Lists ALL AWS accounts and associated roles accessible via AWS SSO. Fetches the complete list, handling pagination internally. Returns a Markdown list of all accessible accounts including their ID, name, email, and available roles. Requires prior successful authentication using \`aws_sso_login\`. Requires AWS SSO to be configured in the environment.`,
 		ListAccountsArgsSchema.shape,
 		handleListAccounts,
 	);

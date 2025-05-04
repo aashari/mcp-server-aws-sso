@@ -19,6 +19,7 @@ import {
 	formatCredentials,
 } from './aws.sso.auth.formatter.js';
 import { LoginToolArgsType } from '../tools/aws.sso.types.js';
+import { formatDate } from '../utils/formatter.util.js';
 
 /**
  * AWS SSO Authentication Controller Module
@@ -259,7 +260,7 @@ async function startLogin(
 			};
 		}
 	} catch (error) {
-		return handleControllerError(error, {
+		throw handleControllerError(error, {
 			entityType: 'AWS SSO',
 			operation: 'login and authentication',
 			source: 'controllers/aws.sso.auth.controller.ts@startLogin',
@@ -351,11 +352,19 @@ async function getCredentials(params: {
 				roleName: params.roleName,
 				// Safely access region from a separate property or use empty string
 				region: credentials?.region || '',
-				expiration: credentials.expiration,
+				expiration: credentials.expiration
+					? formatDate(
+							new Date(
+								typeof credentials.expiration === 'number'
+									? credentials.expiration * 1000
+									: credentials.expiration,
+							),
+						)
+					: undefined,
 			},
 		};
 	} catch (error) {
-		return handleControllerError(error, {
+		throw handleControllerError(error, {
 			entityType: 'AWS Credentials',
 			entityId: `${params.accountId}/${params.roleName}`,
 			operation: 'retrieving',
