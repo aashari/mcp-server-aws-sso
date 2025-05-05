@@ -1,3 +1,10 @@
+## [1.11.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.5...v1.11.6) (2025-05-05)
+
+
+### Bug Fixes
+
+* improve signal handling for npx support ([6a56c04](https://github.com/aashari/mcp-server-aws-sso/commit/6a56c04f78f66b57054f4cf8d2f3890df9baa700))
+
 ## [1.11.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.4...v1.11.5) (2025-05-05)
 
 
