@@ -11,7 +11,7 @@
 		"url": "https://github.com/aashari/mcp-server-aws-sso.git"
 	},
 	"bin": {
-		"mcp-aws-sso": "./dist/index.js"
+		"mcp-server-aws-sso": "./dist/index.js"
 	},
 	"scripts": {
 		"build": "rimraf dist && tsc",
