@@ -1,3 +1,10 @@
+## [1.11.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.2...v1.11.3) (2025-05-05)
+
+
+### Bug Fixes
+
+* **test:** remove failing test for auth message ([a629605](https://github.com/aashari/mcp-server-aws-sso/commit/a629605f2a432952abd3d7dda67efb55d4267778))
+
 ## [1.11.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.1...v1.11.2) (2025-05-04)
 
 
