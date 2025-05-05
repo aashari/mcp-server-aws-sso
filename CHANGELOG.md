@@ -1,3 +1,15 @@
+## [1.11.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.3...v1.11.4) (2025-05-05)
+
+
+### Bug Fixes
+
+* Apply cross-platform compatibility improvements from boilerplate ([66b3590](https://github.com/aashari/mcp-server-aws-sso/commit/66b35909caa69fb18120c2f500dfb5948e77cae9))
+
+
+### Performance Improvements
+
+* Update dependencies ([97760f0](https://github.com/aashari/mcp-server-aws-sso/commit/97760f074d1f83b83bf6aece81fa0a630e3ec9e4))
+
 ## [1.11.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.2...v1.11.3) (2025-05-05)
 
 
