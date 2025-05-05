@@ -1,3 +1,10 @@
+## [1.11.7](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.6...v1.11.7) (2025-05-05)
+
+
+### Bug Fixes
+
+* revert to working server version that stays running ([f68bc7a](https://github.com/aashari/mcp-server-aws-sso/commit/f68bc7a5c56ceb52fe760010c89b8fce519a3cea))
+
 ## [1.11.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.5...v1.11.6) (2025-05-05)
 
 
