@@ -1,3 +1,10 @@
+## [1.11.8](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.7...v1.11.8) (2025-05-05)
+
+
+### Bug Fixes
+
+* standardize binary name in package.json to match package name ([c213c78](https://github.com/aashari/mcp-server-aws-sso/commit/c213c7840bc503159c0ab8b47fa75ee9e7de63d9))
+
 ## [1.11.7](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.6...v1.11.7) (2025-05-05)
 
 
