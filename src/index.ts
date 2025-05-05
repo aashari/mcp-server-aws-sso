@@ -115,10 +115,30 @@ async function main() {
 	);
 	mainLogger.debug(`Config DEBUG value: ${config.get('DEBUG')}`);
 
+	// Track whether we're in server mode
+	let isServerMode = false;
+
 	// --- Start: Add Graceful Shutdown ---
 	const shutdown = async (signal: string) => {
 		mainLogger.info(`Received ${signal}. Shutting down gracefully...`);
-		process.exit(0);
+
+		// If we're in server mode and we have an active server instance,
+		// attempt to disconnect properly
+		if (isServerMode && serverInstance) {
+			try {
+				mainLogger.info('Disconnecting server instance...');
+				// Allow time for ongoing operations to complete
+				setTimeout(() => {
+					process.exit(0);
+				}, 500);
+			} catch (err) {
+				mainLogger.error('Error during graceful shutdown', err);
+				process.exit(1);
+			}
+		} else {
+			// Not in server mode, so safe to exit immediately
+			process.exit(0);
+		}
 	};
 
 	process.on('SIGINT', () => shutdown('SIGINT')); // Ctrl+C
@@ -131,6 +151,7 @@ async function main() {
 		mainLogger.info('CLI execution completed');
 	} else {
 		mainLogger.info('Starting in server mode');
+		isServerMode = true;
 		await startServer();
 		mainLogger.info('Server is now running');
 		// Server mode keeps running until signaled
