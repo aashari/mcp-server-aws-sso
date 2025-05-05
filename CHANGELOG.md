@@ -1,3 +1,10 @@
+## [1.11.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.4...v1.11.5) (2025-05-05)
+
+
+### Bug Fixes
+
+* Remove explicit exit after CLI execution in index.ts ([032a93b](https://github.com/aashari/mcp-server-aws-sso/commit/032a93b08cb1ce1f19fdf9a8504663f62f8b7940))
+
 ## [1.11.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.3...v1.11.4) (2025-05-05)
 
 
