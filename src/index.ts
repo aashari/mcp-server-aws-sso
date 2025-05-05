@@ -129,8 +129,6 @@ async function main() {
 		mainLogger.info('Starting in CLI mode');
 		await runCli(process.argv.slice(2));
 		mainLogger.info('CLI execution completed');
-		// Explicitly exit after CLI runs to ensure process termination
-		process.exit(0);
 	} else {
 		mainLogger.info('Starting in server mode');
 		await startServer();
