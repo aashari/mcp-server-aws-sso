@@ -129,11 +129,7 @@ async function main() {
 }
 
 // If this file is being executed directly (not imported), run the main function
-const isMainModule =
-	require.main === module ||
-	(process.argv[1] && process.argv[1].endsWith('index.js')) ||
-	(process.argv[1] && process.argv[1].endsWith('mcp-server-aws-sso'));
-if (isMainModule) {
+if (require.main === module) {
 	main().catch((err) => {
 		indexLogger.error('Unhandled error in main process', err);
 		process.exit(1);
