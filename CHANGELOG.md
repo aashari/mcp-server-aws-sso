@@ -1,3 +1,10 @@
+## [1.11.9](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.8...v1.11.9) (2025-05-06)
+
+
+### Bug Fixes
+
+* improve main module detection for npx compatibility ([fe3a700](https://github.com/aashari/mcp-server-aws-sso/commit/fe3a700f3cb121a6acaacfe654c29886b0c87b41))
+
 ## [1.11.8](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.7...v1.11.8) (2025-05-05)
 
 
