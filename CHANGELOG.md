@@ -1,3 +1,10 @@
+## [1.11.10](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.9...v1.11.10) (2025-05-06)
+
+
+### Bug Fixes
+
+* Revert back the index.ts and package.json ([fb16868](https://github.com/aashari/mcp-server-aws-sso/commit/fb168687e5cb1a966eeec4192da0084a82ddcb12))
+
 ## [1.11.9](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.8...v1.11.9) (2025-05-06)
 
 
