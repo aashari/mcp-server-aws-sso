@@ -110,7 +110,14 @@ This section covers the MCP tools available when using this server with an AI as
 
 ## `aws_sso_login`
 
-Authenticate with AWS SSO via browser.
+Initiates the AWS SSO device authorization flow to authenticate the user via browser interaction.
+
+**Parameters:**
+
+- `launchBrowser` (boolean, optional): Whether to launch the browser automatically. Default: `true`
+- `autoPoll` (boolean, optional): Whether to automatically poll for authentication completion. Default: `true`
+
+**Example:**
 
 ```json
 {}
@@ -119,16 +126,25 @@ Authenticate with AWS SSO via browser.
 _or:_
 
 ```json
-{ "launchBrowser": false }
+{
+	"launchBrowser": false,
+	"autoPoll": true
+}
 ```
 
 > "Login to AWS SSO so I can access my resources."
 
 ---
 
-## `aws_ls_accounts`
+## `aws_sso_ls_accounts`
 
-List all AWS accounts and roles available via SSO.
+Lists ALL AWS accounts and associated roles accessible via AWS SSO. Requires prior authentication via `aws_sso_login`.
+
+**Parameters:**
+
+- No parameters required. The tool fetches all accounts and roles accessible to the authenticated user.
+
+**Example:**
 
 ```json
 {}
@@ -138,9 +154,18 @@ List all AWS accounts and roles available via SSO.
 
 ---
 
-## `aws_exec_cmd`
+## `aws_sso_exec_command`
 
-Execute AWS CLI commands using temporary credentials from AWS SSO.
+Executes AWS CLI commands using temporary credentials from AWS SSO for a specific account and role.
+
+**Parameters:**
+
+- `accountId` (string, required): AWS account ID (12-digit number)
+- `roleName` (string, required): AWS role name to assume via SSO
+- `command` (string, required): AWS CLI command to execute (e.g., "aws s3 ls")
+- `region` (string, optional): AWS region to use
+
+**Example:**
 
 ```json
 {
@@ -179,11 +204,14 @@ export AWS_REGION=us-east-1
 # Login to AWS SSO
 npx -y @aashari/mcp-server-aws-sso login
 
+# Check authentication status
+npx -y @aashari/mcp-server-aws-sso status
+
 # List available accounts and roles
 npx -y @aashari/mcp-server-aws-sso ls-accounts
 
 # Execute AWS CLI command with SSO credentials
-npx -y @aashari/mcp-server-aws-sso exec-cmd \
+npx -y @aashari/mcp-server-aws-sso exec-command \
   --account-id 123456789012 \
   --role-name ReadOnly \
   --command "aws s3 ls"
@@ -200,7 +228,53 @@ Then run directly:
 ```bash
 mcp-aws-sso login
 mcp-aws-sso ls-accounts
-mcp-aws-sso exec-cmd --account-id 123456789012 --role-name ReadOnly --command "aws s3 ls"
+mcp-aws-sso exec-command --account-id 123456789012 --role-name ReadOnly --command "aws s3 ls"
+```
+
+## Available Commands
+
+The following CLI commands are available:
+
+### `login`
+
+Authenticate with AWS SSO via browser, automatically polling for completion.
+
+```bash
+mcp-aws-sso login [options]
+
+Options:
+  --no-launch-browser   Disable automatic browser launch for authentication (default: browser launch enabled)
+  --no-auto-poll        Disable automatic polling for token completion (default: polling enabled)
+```
+
+### `status`
+
+Check the current AWS SSO authentication status.
+
+```bash
+mcp-aws-sso status
+```
+
+### `ls-accounts`
+
+List all AWS accounts and associated roles accessible via AWS SSO.
+
+```bash
+mcp-aws-sso ls-accounts
+```
+
+### `exec-command`
+
+Execute an AWS CLI command using temporary credentials from AWS SSO for a specific account/role.
+
+```bash
+mcp-aws-sso exec-command [options]
+
+Options:
+  --account-id <id>    AWS account ID (12-digit number) (required)
+  --role-name <role>   AWS role name to assume via SSO (required)
+  --region <region>    AWS region to use (optional)
+  --command <command>  AWS CLI command to execute (e.g., "aws s3 ls") (required)
 ```
 
 ## Discover More CLI Options
@@ -215,8 +289,9 @@ Or get detailed help for a specific command:
 
 ```bash
 mcp-aws-sso login --help
+mcp-aws-sso status --help
 mcp-aws-sso ls-accounts --help
-mcp-aws-sso exec-cmd --help
+mcp-aws-sso exec-command --help
 ```
 
 ---
