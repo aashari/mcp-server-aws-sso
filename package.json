@@ -65,7 +65,7 @@
 		"@semantic-release/github": "^11.0.2",
 		"@semantic-release/npm": "^12.0.1",
 		"@types/jest": "^29.5.14",
-		"@types/node": "^22.15.12",
+		"@types/node": "^22.15.14",
 		"@types/open": "^6.2.1",
 		"@typescript-eslint/eslint-plugin": "^8.32.0",
 		"@typescript-eslint/parser": "^8.32.0",
@@ -87,8 +87,8 @@
 		"access": "public"
 	},
 	"dependencies": {
-		"@aws-sdk/client-sso": "^3.803.0",
-		"@aws-sdk/client-sso-oidc": "^3.803.0",
+		"@aws-sdk/client-sso": "^3.804.0",
+		"@aws-sdk/client-sso-oidc": "^3.804.0",
 		"@modelcontextprotocol/sdk": "^1.11.0",
 		"commander": "^13.1.0",
 		"dotenv": "^16.5.0",
