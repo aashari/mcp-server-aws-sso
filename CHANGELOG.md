@@ -1,3 +1,10 @@
+## [1.11.15](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.14...v1.11.15) (2025-05-14)
+
+
+### Bug Fixes
+
+* remove Dockerfile and smithery.yaml ([88bb2a6](https://github.com/aashari/mcp-server-aws-sso/commit/88bb2a6900c75a57986142cec49031a55df2edcd))
+
 ## [1.11.14](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.13...v1.11.14) (2025-05-13)
 
 
