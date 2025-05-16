@@ -1,3 +1,10 @@
+## [1.11.16](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.15...v1.11.16) (2025-05-16)
+
+
+### Bug Fixes
+
+* improve AWS SSO credential handling and test resilience ([2945f2f](https://github.com/aashari/mcp-server-aws-sso/commit/2945f2ff1e483d11caeb37783be3b0a69974a1f3))
+
 ## [1.11.15](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.14...v1.11.15) (2025-05-14)
 
 
