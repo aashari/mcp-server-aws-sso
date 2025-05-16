@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.17...v1.12.0) (2025-05-16)
+
+
+### Features
+
+* add aws_sso_status tool to provide functional parity with CLI status command ([7eadfbe](https://github.com/aashari/mcp-server-aws-sso/commit/7eadfbe92b740e6ed8f16b9a7b38d6e823479dde))
+
 ## [1.11.17](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.16...v1.11.17) (2025-05-16)
 
 
