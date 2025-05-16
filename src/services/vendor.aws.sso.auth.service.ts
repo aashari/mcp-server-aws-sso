@@ -43,6 +43,9 @@ const logger = Logger.forContext('services/vendor.aws.sso.auth.service.ts');
  * @returns The JSON response
  */
 async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
+	const methodLogger = logger.forMethod('post');
+	methodLogger.debug(`Making POST request to ${url}`);
+	
 	// Use the retry mechanism for handling potential 429 errors
 	const response = await withRetry(
 		async () => {
@@ -55,16 +58,54 @@ async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
 			});
 
 			if (!fetchResponse.ok) {
-				// Create an error object with status information for our retry logic
-				type FetchErrorWithMetadata = Error & {
+				let errorBody: string | Record<string, unknown> = await fetchResponse.text();
+				
+				// Try to parse the error response as JSON
+				try {
+					errorBody = JSON.parse(errorBody as string);
+					methodLogger.debug('Received error response from API', {
+						status: fetchResponse.status,
+						errorBody
+					});
+				} catch (parseError) {
+					// If parsing fails, keep the text version
+					methodLogger.debug('Received non-JSON error response', {
+						status: fetchResponse.status,
+						errorBody
+					});
+				}
+				
+				// Create an error object with status and detailed information
+				// Include OIDC-specific error fields like 'error' and 'error_description'
+				type OidcErrorWithMetadata = Error & {
 					$metadata: { httpStatusCode: number };
+					error?: string;
+					error_description?: string;
+					originalResponse?: Record<string, unknown> | string;
 				};
 
 				const error = new Error(
-					`Request failed with status ${fetchResponse.status}: ${await fetchResponse.text()}`,
-				) as FetchErrorWithMetadata;
-
+					typeof errorBody === 'object' && errorBody.error_description
+						? String(errorBody.error_description)
+						: `Request failed with status ${fetchResponse.status}`
+				) as OidcErrorWithMetadata;
+				
 				error.$metadata = { httpStatusCode: fetchResponse.status };
+				
+				// Add OIDC-specific error details if available
+				if (typeof errorBody === 'object') {
+					if (errorBody.error) {
+						error.error = String(errorBody.error);
+					}
+					if (errorBody.error_description) {
+						error.error_description = String(errorBody.error_description);
+					}
+				}
+				
+				// Store the original response for more context
+				error.originalResponse = errorBody;
+				
+				methodLogger.error(`API request failed: ${error.message}`, error);
 				throw error;
 			}
 
@@ -84,9 +125,17 @@ async function post<T>(url: string, data: Record<string, unknown>): Promise<T> {
 						};
 						return metadata.httpStatusCode === 429;
 					}
+					
+					// Also retry on slow_down OIDC errors
+					if ('error' in error && error.error === 'slow_down') {
+						return true;
+					}
 				}
 				return false;
 			},
+			// Increase backoff for OIDC slow_down errors
+			initialDelayMs: 2000,
+			maxRetries: 8,
 		},
 	);
 

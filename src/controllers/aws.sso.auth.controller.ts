@@ -1,5 +1,8 @@
 import { Logger } from '../utils/logger.util.js';
-import { handleControllerError } from '../utils/error-handler.util.js';
+import {
+	handleControllerError,
+	buildErrorContext,
+} from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
 import {
 	getCachedSsoToken,
@@ -260,11 +263,19 @@ async function startLogin(
 			};
 		}
 	} catch (error) {
-		throw handleControllerError(error, {
-			entityType: 'AWS SSO',
-			operation: 'login and authentication',
-			source: 'controllers/aws.sso.auth.controller.ts@startLogin',
-		});
+		throw handleControllerError(
+			error,
+			buildErrorContext(
+				'AWS SSO Session',
+				'login and authentication',
+				'controllers/aws.sso.auth.controller.ts@startLogin',
+				undefined,
+				{
+					autoPoll,
+					launchBrowser,
+				},
+			),
+		);
 	}
 }
 
@@ -364,12 +375,19 @@ async function getCredentials(params: {
 			},
 		};
 	} catch (error) {
-		throw handleControllerError(error, {
-			entityType: 'AWS Credentials',
-			entityId: `${params.accountId}/${params.roleName}`,
-			operation: 'retrieving',
-			source: 'controllers/aws.sso.auth.controller.ts@getCredentials',
-		});
+		throw handleControllerError(
+			error,
+			buildErrorContext(
+				'AWS Credentials',
+				'retrieving',
+				'controllers/aws.sso.auth.controller.ts@getCredentials',
+				`${params.accountId}/${params.roleName}`,
+				{
+					accountId: params.accountId,
+					roleName: params.roleName,
+				},
+			),
+		);
 	}
 }
 

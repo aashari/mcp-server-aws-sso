@@ -1,5 +1,8 @@
 import { Logger } from '../utils/logger.util.js';
-import { handleControllerError } from '../utils/error-handler.util.js';
+import {
+	handleControllerError,
+	buildErrorContext,
+} from '../utils/error-handler.util.js';
 import {
 	ControllerResponse,
 	ResponsePagination,
@@ -169,11 +172,18 @@ async function listAccounts(): Promise<ControllerResponse> {
 		}
 	} catch (error) {
 		// Handle broader errors
-		throw handleControllerError(error, {
-			entityType: 'AWS SSO Accounts',
-			operation: 'listing all',
-			source: 'controllers/aws.sso.accounts.controller.ts@listAccounts',
-		});
+		throw handleControllerError(
+			error,
+			buildErrorContext(
+				'AWS SSO Accounts',
+				'listing all',
+				'controllers/aws.sso.accounts.controller.ts@listAccounts',
+				undefined,
+				{
+					hasToken: !!(await getCachedSsoToken()),
+				},
+			),
+		);
 	}
 }
 
@@ -216,12 +226,18 @@ async function listRoles(
 			},
 		};
 	} catch (error) {
-		throw handleControllerError(error, {
-			entityType: 'AWS Account Roles',
-			entityId: params.accountId,
-			operation: 'listing',
-			source: 'controllers/aws.sso.accounts.controller.ts@listRoles',
-		});
+		throw handleControllerError(
+			error,
+			buildErrorContext(
+				'AWS Account Roles',
+				'listing',
+				'controllers/aws.sso.accounts.controller.ts@listRoles',
+				params.accountId,
+				{
+					accountId: params.accountId,
+				},
+			),
+		);
 	}
 }
 
