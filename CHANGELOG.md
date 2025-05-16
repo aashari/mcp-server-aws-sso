@@ -1,3 +1,11 @@
+## [1.11.17](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.16...v1.11.17) (2025-05-16)
+
+
+### Bug Fixes
+
+* improve AWS SSO error handling with proper TypeScript types ([85fe985](https://github.com/aashari/mcp-server-aws-sso/commit/85fe985e48e8a1b6749496d526f040d511755beb))
+* improve error handling for AWS SSO specific errors ([1864709](https://github.com/aashari/mcp-server-aws-sso/commit/1864709de744b8f2236ec707705bea1c6716e131))
+
 ## [1.11.16](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.15...v1.11.16) (2025-05-16)
 
 
