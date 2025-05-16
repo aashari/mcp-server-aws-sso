@@ -1,5 +1,8 @@
 import { Logger } from '../utils/logger.util.js';
-import { handleControllerError, buildErrorContext } from '../utils/error-handler.util.js';
+import {
+	handleControllerError,
+	buildErrorContext,
+} from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
 import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 import { formatAuthRequired } from './aws.sso.auth.formatter.js';
@@ -220,18 +223,21 @@ async function executeCommand(
 		};
 	} catch (error) {
 		// Use throw instead of return
-		throw handleControllerError(error, buildErrorContext(
-			'AWS Command',
-			'executing',
-			'controllers/aws.sso.exec.controller.ts@executeCommand',
-			`${options.accountId}/${options.roleName}`,
-			{
-				accountId: options.accountId,
-				roleName: options.roleName,
-				command: options.command,
-				region: options.region,
-			}
-		));
+		throw handleControllerError(
+			error,
+			buildErrorContext(
+				'AWS Command',
+				'executing',
+				'controllers/aws.sso.exec.controller.ts@executeCommand',
+				`${options.accountId}/${options.roleName}`,
+				{
+					accountId: options.accountId,
+					roleName: options.roleName,
+					command: options.command,
+					region: options.region,
+				},
+			),
+		);
 	}
 }
 

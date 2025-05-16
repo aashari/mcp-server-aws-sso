@@ -97,12 +97,7 @@ export function createNotFoundError(
 	message: string = 'Resource not found',
 	originalError?: unknown,
 ): McpError {
-	return new McpError(
-		message,
-		ErrorType.API_ERROR,
-		404,
-		originalError,
-	);
+	return new McpError(message, ErrorType.API_ERROR, 404, originalError);
 }
 
 /**

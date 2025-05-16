@@ -142,7 +142,12 @@ export function detectErrorType(
 		// AWS SDK Error Detection
 		if (typeof originalError === 'object' && originalError.name) {
 			const awsSdkErrorName = String(originalError.name);
-			const httpStatusCode = originalError.$metadata?.httpStatusCode;
+			const httpStatusCode =
+				originalError.$metadata &&
+				typeof originalError.$metadata === 'object'
+					? (originalError.$metadata as { httpStatusCode?: number })
+							.httpStatusCode
+					: undefined;
 
 			if (
 				awsSdkErrorName === 'UnauthorizedException' ||
