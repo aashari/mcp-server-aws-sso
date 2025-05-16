@@ -27,6 +27,7 @@ interface ExecError extends Error {
  * @param {string} roleName - AWS role name to assume via SSO
  * @param {string} commandString - AWS CLI command as a single string
  * @param {string} [region] - Optional AWS region override
+ * @param {boolean} [forceRefreshCredentials] - Force refresh credentials even if cached
  * @returns {Promise<CommandExecutionResult>} Command execution result with stdout, stderr, and exit code
  * @throws {Error} If credentials cannot be obtained or command execution fails
  */
@@ -35,6 +36,7 @@ async function executeCommand(
 	roleName: string,
 	commandString: string,
 	region?: string,
+	forceRefreshCredentials?: boolean,
 ): Promise<CommandExecutionResult> {
 	const methodLogger = logger.forMethod('executeCommand');
 	methodLogger.debug('Executing AWS CLI command', {
@@ -42,6 +44,7 @@ async function executeCommand(
 		roleName,
 		command: commandString,
 		region,
+		forceRefresh: !!forceRefreshCredentials,
 	});
 
 	// Validate parameters
@@ -59,6 +62,7 @@ async function executeCommand(
 			accountId,
 			roleName,
 			region,
+			forceRefresh: forceRefreshCredentials,
 		});
 
 		methodLogger.debug('Obtained temporary credentials', {
@@ -88,6 +92,39 @@ async function executeCommand(
 			stdoutBytes: result.stdout.length,
 			stderrBytes: result.stderr.length,
 		});
+
+		// Check for credential validation errors
+		if (result.exitCode !== 0 && !forceRefreshCredentials) {
+			const credentialErrorPatterns = [
+				'InvalidClientTokenId',
+				'security token.*invalid',
+				'InvalidToken',
+				'expired',
+				'credential.*verification',
+			];
+
+			const hasCredentialError = credentialErrorPatterns.some((pattern) =>
+				new RegExp(pattern, 'i').test(result.stderr),
+			);
+
+			if (hasCredentialError) {
+				methodLogger.debug(
+					'Detected credential error, retrying with force refresh',
+					{
+						error: result.stderr.substring(0, 100), // Only log first 100 chars
+					},
+				);
+
+				// Retry with forced credential refresh
+				return executeCommand(
+					accountId,
+					roleName,
+					commandString,
+					region,
+					true,
+				);
+			}
+		}
 
 		return result;
 	} catch (error) {

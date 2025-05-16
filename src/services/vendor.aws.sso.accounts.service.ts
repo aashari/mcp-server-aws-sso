@@ -261,16 +261,18 @@ async function listAccountRoles(
  * @param {string} params.accountId - AWS account ID
  * @param {string} params.roleName - Role name to assume
  * @param {string} [params.region] - Optional AWS region override
+ * @param {boolean} [params.forceRefresh] - Force refresh credentials even if cached
  * @returns {Promise<AwsCredentials>} Temporary AWS credentials
  * @throws {Error} If SSO token is missing or API request fails
  */
 async function getAwsCredentials(
-	params: GetCredentialsParams,
+	params: GetCredentialsParams & { forceRefresh?: boolean },
 ): Promise<AwsCredentials> {
 	const methodLogger = logger.forMethod('getAwsCredentials');
 	methodLogger.debug('Getting AWS credentials', {
 		accountId: params.accountId,
 		roleName: params.roleName,
+		forceRefresh: !!params.forceRefresh,
 	});
 
 	// Validate required parameters
@@ -278,37 +280,48 @@ async function getAwsCredentials(
 		throw new Error('Account ID and role name are required');
 	}
 
-	// First, check if we have cached credentials
-	const cachedCreds = await getCachedCredentials(
-		params.accountId,
-		params.roleName,
-	);
-	if (cachedCreds) {
-		const now = new Date();
-		// Allow a 5-minute buffer before expiration
-		const expiration = new Date(cachedCreds.expiration);
-		const bufferMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+	// Check if we should force refresh
+	if (!params.forceRefresh) {
+		// First, check if we have cached credentials
+		const cachedCreds = await getCachedCredentials(
+			params.accountId,
+			params.roleName,
+		);
+		if (cachedCreds) {
+			const now = new Date();
+			// Allow a 5-minute buffer before expiration
+			const expiration = new Date(cachedCreds.expiration);
+			const bufferMs = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-		if (expiration.getTime() - now.getTime() > bufferMs) {
-			methodLogger.debug('Using cached credentials', {
-				accountId: params.accountId,
-				roleName: params.roleName,
-				expiration: expiration.toISOString(),
-			});
+			if (expiration.getTime() - now.getTime() > bufferMs) {
+				methodLogger.debug('Using cached credentials', {
+					accountId: params.accountId,
+					roleName: params.roleName,
+					expiration: expiration.toISOString(),
+				});
 
-			// Ensure we have the right type
-			const credentials: AwsCredentials = {
-				accessKeyId: cachedCreds.accessKeyId,
-				secretAccessKey: cachedCreds.secretAccessKey,
-				sessionToken: cachedCreds.sessionToken,
-				expiration: new Date(cachedCreds.expiration),
-			};
+				// Ensure we have the right type
+				const credentials: AwsCredentials = {
+					accessKeyId: cachedCreds.accessKeyId,
+					secretAccessKey: cachedCreds.secretAccessKey,
+					sessionToken: cachedCreds.sessionToken,
+					expiration: new Date(cachedCreds.expiration),
+				};
 
-			return credentials;
+				return credentials;
+			}
+
+			methodLogger.debug(
+				'Cached credentials are expiring soon, refreshing',
+				{
+					expiration: expiration.toISOString(),
+				},
+			);
 		}
-
-		methodLogger.debug('Cached credentials are expiring soon, refreshing', {
-			expiration: expiration.toISOString(),
+	} else {
+		methodLogger.debug('Force refreshing credentials', {
+			accountId: params.accountId,
+			roleName: params.roleName,
 		});
 	}
 
