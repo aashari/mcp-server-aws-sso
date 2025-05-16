@@ -20,6 +20,7 @@ import {
 	formatLoginWithBrowserLaunch,
 	formatLoginManual,
 	formatCredentials,
+	formatAuthRequired,
 } from './aws.sso.auth.formatter.js';
 import { LoginToolArgsType } from '../tools/aws.sso.types.js';
 import { formatDate } from '../utils/formatter.util.js';
@@ -439,8 +440,73 @@ async function checkSsoAuthStatus(): Promise<{
 	}
 }
 
+/**
+ * Get the current AWS SSO authentication status
+ *
+ * Checks if the user is currently authenticated to AWS SSO
+ * and returns the status information
+ *
+ * @returns {Promise<ControllerResponse>} Response with authentication status
+ */
+async function getAuthStatus(): Promise<ControllerResponse> {
+	const statusLogger = Logger.forContext(
+		'controllers/aws.sso.auth.controller.ts',
+		'getAuthStatus',
+	);
+	statusLogger.debug('Getting authentication status');
+
+	try {
+		// Use existing checkSsoAuthStatus method
+		const status = await checkSsoAuthStatus();
+
+		if (status.isAuthenticated) {
+			// Get token directly to check expiration
+			const token = await getCachedSsoToken();
+
+			// Format expiration date for display
+			let expiresDate = 'Unknown';
+			try {
+				if (token && token.expiresAt) {
+					const expirationDate = new Date(token.expiresAt * 1000);
+					expiresDate = formatDate(expirationDate);
+				}
+			} catch (error) {
+				statusLogger.error('Error formatting expiration date', error);
+			}
+
+			return {
+				content: formatAlreadyLoggedIn(expiresDate),
+				metadata: {
+					isAuthenticated: true,
+					expiresAt: token?.expiresAt,
+				},
+			};
+		} else {
+			return {
+				content: formatAuthRequired(),
+				metadata: {
+					isAuthenticated: false,
+					errorMessage: status.errorMessage,
+				},
+			};
+		}
+	} catch (error) {
+		throw handleControllerError(
+			error,
+			buildErrorContext(
+				'AWS SSO Session',
+				'checking status',
+				'controllers/aws.sso.auth.controller.ts@getAuthStatus',
+				undefined,
+				{},
+			),
+		);
+	}
+}
+
 export default {
 	startLogin,
 	getCredentials,
 	checkSsoAuthStatus,
+	getAuthStatus,
 };

@@ -33,6 +33,16 @@ export const LoginToolArgsSchema = z.object({
 export type LoginToolArgsType = z.infer<typeof LoginToolArgsSchema>;
 
 /**
+ * Schema for the status tool arguments (empty object as it takes no arguments)
+ */
+export const StatusToolArgsSchema = z.object({});
+
+/**
+ * Type definition from the StatusToolArgsSchema Zod schema
+ */
+export type StatusToolArgsType = z.infer<typeof StatusToolArgsSchema>;
+
+/**
  * Schema for the List Accounts tool arguments (empty object as it takes no arguments)
  */
 export const ListAccountsArgsSchema = z.object({});
