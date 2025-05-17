@@ -41,7 +41,7 @@ function registerListAccountsCommand(program: Command): void {
 	program
 		.command('ls-accounts')
 		.description(
-			'List ALL AWS accounts and associated roles accessible via AWS SSO. Fetches all accounts before displaying. Requires prior authentication via the `login` command.',
+			'List all AWS accounts and roles accessible to you through AWS SSO. This command displays each account\'s ID, name, email, and all available roles you can assume. The information is essential for the "exec-command" command. The command handles pagination internally and caches results for better performance. Prerequisites: You must first authenticate using the "login" command.',
 		)
 		.action(async () => {
 			const listLogger = Logger.forContext(

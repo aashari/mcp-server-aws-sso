@@ -39,7 +39,9 @@ function register(program: Command): void {
 	// Register the status command
 	program
 		.command('status')
-		.description('Check the current AWS SSO authentication status.')
+		.description(
+			'Check AWS SSO authentication status. Verifies if a valid cached token exists, displays its expiration time, and provides guidance on next steps. This command does NOT perform authentication - it only checks if you are already authenticated. If no valid token exists, it will instruct you to run the "login" command. Use this before other AWS SSO commands to verify your authentication state.',
+		)
 		.action(async () => {
 			const actionLogger = Logger.forContext(
 				'cli/aws.sso.auth.cli.ts',
@@ -89,15 +91,15 @@ function registerLoginCommand(program: Command): void {
 	program
 		.command('login')
 		.description(
-			'Authenticate with AWS SSO via browser, automatically polling for completion.',
+			'Initiate AWS SSO authentication via device authorization flow. This generates a verification code, opens a browser to the AWS SSO authentication page (if enabled), and caches the resulting token. The cached token (valid for 8-12 hours) is used by other AWS SSO commands. Prerequisites: AWS SSO must be configured with a start URL and region, and you need browser access to complete the flow.',
 		)
 		.option(
 			'--no-launch-browser',
-			'Disable automatic browser launch for authentication (default: browser launch enabled)',
+			'Disable automatic browser launch. When disabled, you must manually open the verification URL and enter the provided code. Useful for remote servers or environments without display access.',
 		)
 		.option(
 			'--no-auto-poll',
-			'Disable automatic polling for token completion (default: polling enabled)',
+			'Disable automatic polling for authentication completion. When disabled, the command starts the login process but does not wait for completion, requiring you to check status separately with the "status" command.',
 		)
 		.action(async (options) => {
 			const loginLogger = Logger.forContext(

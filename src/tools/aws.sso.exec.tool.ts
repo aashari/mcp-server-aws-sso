@@ -77,7 +77,32 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO exec command tool
 	server.tool(
 		'aws_sso_exec_command',
-		`Executes an AWS CLI command using temporary credentials obtained via AWS SSO for a specific account (\`accountId\`) and role (\`roleName\`). Provide the full command string (starting with 'aws') in the \`command\` parameter. Quotes within the command are handled. Optionally specify the AWS \`region\`. Use to interact with AWS resources programmatically via the CLI. **Note:** Requires prior successful authentication using \`aws_sso_login\` and requires AWS CLI to be installed on the host system where the server is running. Requires AWS SSO to be configured in the environment. Returns formatted stdout, stderr, and exit code of the executed command.`,
+		`Executes an AWS CLI command using temporary credentials obtained through AWS SSO. This tool enables you to run AWS CLI commands without manually configuring credentials.
+
+How it works:
+1. Verifies you have a valid AWS SSO authentication token
+2. Obtains temporary credentials for the specified account and role
+3. Sets up the environment with those credentials
+4. Executes the AWS CLI command you specified
+5. Caches credentials for the account/role combination for future use (typically valid for 1 hour)
+
+Critical prerequisites:
+- You MUST first authenticate using \`aws_sso_login\` to obtain a valid token
+- AWS CLI MUST be installed on the system where the MCP server is running
+- AWS SSO must be configured with a start URL and region
+- You must have permissions to assume the specified role in the specified account
+
+Required parameters:
+- \`accountId\`: The 12-digit AWS account ID (get from \`aws_sso_ls_accounts\`)
+- \`roleName\`: The IAM role name to assume (get from \`aws_sso_ls_accounts\`)
+- \`command\`: The full AWS CLI command to execute (e.g., "aws s3 ls")
+
+Optional parameters:
+- \`region\`: AWS region to use for the command (defaults to configured region)
+
+For complex commands with quoting, ensure proper escaping (e.g., "aws ec2 describe-instances --filters 'Name=tag:Name,Values=MyInstance'").
+
+Returns Markdown output with the command's stdout, stderr, and exit code.`,
 		ExecCommandToolArgs.shape,
 		handleExecCommand,
 	);

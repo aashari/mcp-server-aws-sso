@@ -41,14 +41,23 @@ function registerExecCommand(program: Command): void {
 	program
 		.command('exec-command')
 		.description(
-			'Execute an AWS CLI command using temporary credentials from AWS SSO for a specific account/role.',
+			'Execute an AWS CLI command using temporary credentials obtained through AWS SSO. This command obtains temporary credentials for the specified account and role, then uses them to execute your AWS CLI command. The credentials are cached for future commands (typically valid for 1 hour). Prerequisites: You must first authenticate using the "login" command, and AWS CLI must be installed on the system.',
 		)
-		.requiredOption('--account-id <id>', 'AWS account ID (12-digit number)')
-		.requiredOption('--role-name <role>', 'AWS role name to assume via SSO')
-		.option('--region <region>', 'AWS region to use (optional)')
+		.requiredOption(
+			'--account-id <id>',
+			'AWS account ID (12-digit number) accessible through your AWS SSO permissions',
+		)
+		.requiredOption(
+			'--role-name <role>',
+			'IAM role name to assume (not the full ARN, just the name)',
+		)
+		.option(
+			'--region <region>',
+			'AWS region to use (uses default region if not specified)',
+		)
 		.requiredOption(
 			'--command <command>',
-			'AWS CLI command to execute (e.g., "aws s3 ls")',
+			'Full AWS CLI command to execute, with proper quoting if needed',
 		)
 		.action(async (options) => {
 			const execLogger = Logger.forContext(

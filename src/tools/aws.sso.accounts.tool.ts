@@ -70,7 +70,26 @@ function registerTools(server: McpServer): void {
 	// Register the AWS SSO list accounts tool
 	server.tool(
 		'aws_sso_ls_accounts',
-		`Lists ALL AWS accounts and associated roles accessible via AWS SSO. Fetches the complete list, handling pagination internally. Returns a Markdown list of all accessible accounts including their ID, name, email, and available roles. Requires prior successful authentication using \`aws_sso_login\`. Requires AWS SSO to be configured in the environment.`,
+		`Lists all AWS accounts and roles accessible to you through AWS SSO. This tool provides essential information needed for the \`aws_sso_exec_command\` tool.
+
+The tool handles the following:
+- Verifies you have a valid AWS SSO authentication token
+- Fetches all accessible accounts with their IDs, names, and email addresses
+- Retrieves all available roles for each account that you can assume
+- Handles pagination internally to return the complete list in a single call
+- Caches account and role information for better performance
+
+The information returned includes:
+- Account ID (12-digit number required for \`aws_sso_exec_command\`)
+- Account name and email
+- Available role names (required for \`aws_sso_exec_command\`)
+
+Prerequisites:
+- You MUST first authenticate successfully using \`aws_sso_login\`
+- AWS SSO must be configured with a start URL and region
+- Your AWS SSO permissions determine which accounts and roles are visible
+
+No parameters are required. Returns a comprehensive Markdown list of all accounts and roles accessible to you through AWS SSO.`,
 		ListAccountsArgsSchema.shape,
 		handleListAccounts,
 	);
