@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.12.0...v1.13.0) (2025-05-17)
+
+
+### Features
+
+* enhance CLI and tool documentation for clarity and consistency ([d6b2e59](https://github.com/aashari/mcp-server-aws-sso/commit/d6b2e59cc10c35f98c498956ddb09c665aa2e6c1))
+
 # [1.12.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.11.17...v1.12.0) (2025-05-16)
 
 
