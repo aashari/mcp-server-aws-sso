@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.14.0...v1.15.0) (2025-05-18)
+
+
+### Features
+
+* refactor ControllerResponse to only include content field ([7374827](https://github.com/aashari/mcp-server-aws-sso/commit/73748278da0fcccdec7faaba6195d6a55124869e))
+
 # [1.14.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.13.0...v1.14.0) (2025-05-18)
 
 
