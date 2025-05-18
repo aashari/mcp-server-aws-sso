@@ -36,17 +36,7 @@ export interface ResponsePagination {
 export interface ControllerResponse {
 	/**
 	 * Content string (usually Markdown) for display to the user
+	 * Contains all information including previously separate metadata
 	 */
 	content: string;
-
-	/**
-	 * Optional metadata to include in the response
-	 * This can be used to pass additional information to tools
-	 */
-	metadata?: Record<string, unknown>;
-
-	/**
-	 * Optional pagination information
-	 */
-	pagination?: ResponsePagination;
 }

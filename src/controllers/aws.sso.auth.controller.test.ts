@@ -62,10 +62,6 @@ describe('AWS SSO Auth Controller', () => {
 		expect(result.content).toMatch(
 			/Valid for (approximately \d+ hours|less than an hour|approximately 1 hour)/,
 		);
-
-		expect(result.metadata).toBeDefined();
-		expect(result.metadata?.alreadyLoggedIn).toBe(true);
-		expect(result.metadata?.authenticated).toBe(true);
 	});
 
 	test('checkAuthStatus should return authentication status', async () => {

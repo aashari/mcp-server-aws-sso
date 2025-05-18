@@ -10,7 +10,6 @@ import {
 	getCachedSsoToken,
 	startSsoLogin,
 	pollForSsoToken,
-	getCachedDeviceAuthorizationInfo,
 } from '../services/vendor.aws.sso.auth.service.js';
 import {
 	getAwsCredentials,
@@ -114,20 +113,12 @@ async function startLogin(
 			// Don't try to list accounts, which might fail - just show that we're already logged in
 			return {
 				content: formatAlreadyLoggedIn(expiresDate),
-				metadata: {
-					alreadyLoggedIn: true,
-					authenticated: true,
-					accessToken: cachedToken.accessToken,
-				},
 			};
 		}
 
 		// Start the login flow
 		loginLogger.debug('No valid token found, initiating new login flow');
 		const deviceAuth = await startSsoLogin();
-
-		// Get the cached device info to retrieve additional properties
-		const cachedDeviceInfo = await getCachedDeviceAuthorizationInfo();
 
 		// Launch browser if enabled
 		let browserLaunched = false;
@@ -203,28 +194,19 @@ async function startLogin(
 				"You can then use 'list-accounts' to verify authentication and view available accounts.",
 			);
 
+			// Add device info to the content for clarity
+			const deviceInfoContent = `
+## Authentication Details
+- Verification Code: **${deviceAuth.userCode}**
+- Browser ${browserLaunched ? 'Launched' : 'Not Launched'}: ${browserLaunched ? 'Yes' : 'No'}
+- Verification URL: ${deviceAuth.verificationUri}
+- Code Expires In: ${Math.floor(deviceAuth.expiresIn / 60)} minutes
+
+Complete the authentication in your browser. You can then use 'list-accounts' to verify authentication and view available accounts.`;
+
 			// Return instructions without automatic polling
 			return {
-				content:
-					initialContent +
-					'\n\nComplete the authentication in your browser. ' +
-					"You can then use 'list-accounts' to verify authentication and view available accounts.",
-				metadata: {
-					deviceAuth: {
-						deviceCode: deviceAuth.deviceCode,
-						userCode: deviceAuth.userCode,
-						interval: deviceAuth.interval,
-						expiresIn: deviceAuth.expiresIn,
-						browserLaunched: browserLaunched,
-						// Include clientId and clientSecret if available from cached device info
-						...(cachedDeviceInfo
-							? {
-									clientId: cachedDeviceInfo.clientId,
-									clientSecret: cachedDeviceInfo.clientSecret,
-								}
-							: {}),
-					},
-				},
+				content: initialContent + deviceInfoContent,
 			};
 		}
 
@@ -260,10 +242,6 @@ async function startLogin(
 			// Return success response
 			return {
 				content: formatLoginSuccess(expiresDate),
-				metadata: {
-					authenticated: true,
-					accessToken: authResult.accessToken,
-				},
 			};
 		} catch (error) {
 			// Implement self-healing authentication
@@ -447,25 +425,6 @@ async function getCredentials(params: {
 				params.roleName,
 				convertedCredentials,
 			),
-			metadata: {
-				fromCache,
-				// Do not include the actual credentials in the response metadata
-				// for security reasons, only return status
-				credentialsRetrieved: true,
-				accountId: params.accountId,
-				roleName: params.roleName,
-				// Safely access region from a separate property or use empty string
-				region: credentials?.region || '',
-				expiration: credentials.expiration
-					? formatDate(
-							new Date(
-								typeof credentials.expiration === 'number'
-									? credentials.expiration * 1000
-									: credentials.expiration,
-							),
-						)
-					: undefined,
-			},
 		};
 	} catch (error) {
 		throw handleControllerError(
@@ -568,18 +527,10 @@ async function getAuthStatus(): Promise<ControllerResponse> {
 
 			return {
 				content: formatAlreadyLoggedIn(expiresDate),
-				metadata: {
-					isAuthenticated: true,
-					expiresAt: token?.expiresAt,
-				},
 			};
 		} else {
 			return {
 				content: formatAuthRequired(),
-				metadata: {
-					isAuthenticated: false,
-					errorMessage: status.errorMessage,
-				},
 			};
 		}
 	} catch (error) {

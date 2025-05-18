@@ -45,10 +45,6 @@ async function handleListAccounts(args: ListAccountsArgsType) {
 					text: response.content,
 				},
 			],
-			metadata: {
-				// No pagination or query info to return
-				...(response.metadata || {}),
-			},
 		};
 	} catch (error) {
 		listAccountsLogger.error('List accounts failed', error);
@@ -79,17 +75,17 @@ The tool handles the following:
 - Handles pagination internally to return the complete list in a single call
 - Caches account and role information for better performance
 
-The information returned includes:
-- Account ID (12-digit number required for \`aws_sso_exec_command\`)
-- Account name and email
-- Available role names (required for \`aws_sso_exec_command\`)
-
 Prerequisites:
 - You MUST first authenticate successfully using \`aws_sso_login\`
 - AWS SSO must be configured with a start URL and region
 - Your AWS SSO permissions determine which accounts and roles are visible
 
-No parameters are required. Returns a comprehensive Markdown list of all accounts and roles accessible to you through AWS SSO.`,
+Returns Markdown containing:
+- Authentication session status and expiration
+- Complete list of available accounts with their IDs, names, and emails
+- Available roles for each account
+- Usage instructions for executing commands with these accounts/roles
+- Message if no accounts are found, with troubleshooting guidance`,
 		ListAccountsArgsSchema.shape,
 		handleListAccounts,
 	);

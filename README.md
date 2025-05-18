@@ -190,6 +190,48 @@ _or:_
 
 ---
 
+# Tool Response Format
+
+All AWS SSO MCP tools return their responses as formatted Markdown text within the tool's content field. This ensures a consistent and comprehensive user experience. Each tool's response includes all necessary information in the text itself:
+
+## `aws_sso_login` Responses
+
+The response includes:
+- Authentication status (already logged in, authentication started, or success)
+- Session details (expiration time and duration if authenticated)
+- Verification code and URL (if authentication is started)
+- Browser launch status (if authentication is started)
+- Instructions for next steps
+
+## `aws_sso_status` Responses
+
+The response includes:
+- Current authentication status (authenticated or not)
+- Session details (expiration time and duration if authenticated)
+- Instructions for next steps based on the status
+
+## `aws_sso_ls_accounts` Responses
+
+The response includes:
+- Authentication session status and expiration
+- Complete list of available accounts with their IDs, names, and emails
+- Available roles for each account
+- Usage instructions for executing commands with these accounts/roles
+- Message if no accounts are found, with troubleshooting guidance
+
+## `aws_sso_exec_command` Responses
+
+The response includes:
+- Execution context (account, role, region)
+- Command output (stdout)
+- Error messages if any (stderr)
+- Exit code (0 for success, non-zero for failure)
+- Suggested alternative roles if permission errors occur
+
+The AI assistant can parse this formatted text to extract the specific information needed for subsequent interactions.
+
+---
+
 # Command-Line Interface (CLI)
 
 The CLI uses kebab-case for commands (e.g., `login`) and options (e.g., `--account-id`).

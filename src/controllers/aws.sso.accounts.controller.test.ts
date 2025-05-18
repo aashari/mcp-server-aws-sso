@@ -39,21 +39,6 @@ const skipIfNoValidSsoSession = async (): Promise<boolean> => {
 	return false;
 };
 
-// Define the interface for the account structure to type-check properly
-interface AccountWithRoles {
-	accountId: string;
-	accountName: string;
-	accountEmail?: string;
-	roles: Array<{ roleName: string; [key: string]: any }>;
-}
-
-// Define the expected metadata structure
-interface ResponseMetadata {
-	authenticated?: boolean;
-	accounts?: AccountWithRoles[];
-	[key: string]: any;
-}
-
 // Mock the dynamic import with a simpler approach
 jest.mock('../utils/aws.sso.cache.util.js', () => {
 	return {
@@ -98,22 +83,6 @@ describe('AWS SSO Accounts Controller', () => {
 		// Should include next steps section
 		expect(result.content).toContain('## Next Steps');
 		expect(result.content).toContain('mcp-aws-sso exec-command');
-
-		// Metadata should include accounts data
-		expect(result.metadata).toBeDefined();
-
-		// Cast the metadata to our interface to help TypeScript understand the structure
-		const metadata = result.metadata as ResponseMetadata;
-		expect(metadata.accounts).toBeDefined();
-		expect(Array.isArray(metadata.accounts)).toBe(true);
-
-		// If there are accounts, check their structure
-		if (metadata.accounts && metadata.accounts.length > 0) {
-			const firstAccount = metadata.accounts[0];
-			expect(firstAccount.accountId).toBeDefined();
-			expect(firstAccount.accountName).toBeDefined();
-			expect(Array.isArray(firstAccount.roles)).toBe(true);
-		}
 	});
 
 	// Test the no accounts message format

@@ -212,14 +212,6 @@ async function executeCommand(
 
 		return {
 			content: formattedContent,
-			metadata: {
-				stdout: result.stdout,
-				stderr: result.stderr,
-				exitCode: result.exitCode ?? -1,
-				accountId: options.accountId,
-				roleName: options.roleName,
-				region: options.region,
-			},
 		};
 	} catch (error) {
 		// Use throw instead of return

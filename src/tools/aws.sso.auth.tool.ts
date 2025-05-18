@@ -40,7 +40,7 @@ async function handleLogin(args: LoginToolArgsType) {
 			launchBrowser: args.launchBrowser, // Pass the arg from the tool call
 		});
 
-		// Return the response in the MCP format
+		// Return the response in the MCP format without metadata
 		return {
 			content: [
 				{
@@ -48,7 +48,6 @@ async function handleLogin(args: LoginToolArgsType) {
 					text: response.content,
 				},
 			],
-			metadata: response.metadata,
 		};
 	} catch (error) {
 		loginLogger.error('Login failed', error);
@@ -71,7 +70,7 @@ async function handleStatus() {
 		// Call controller to get auth status
 		const response = await awsSsoAuthController.getAuthStatus();
 
-		// Return the response in the MCP format
+		// Return the response in the MCP format without metadata
 		return {
 			content: [
 				{
@@ -79,7 +78,6 @@ async function handleStatus() {
 					text: response.content,
 				},
 			],
-			metadata: response.metadata,
 		};
 	} catch (error) {
 		statusLogger.error('Status check failed', error);
@@ -117,7 +115,12 @@ Prerequisites:
 - Browser access is required to complete the authentication flow
 - You must have an AWS SSO account with appropriate permissions
 
-Returns Markdown with login instructions or a success confirmation with cached token details.`,
+Returns Markdown containing:
+- Authentication status (already logged in, authentication started, or success)
+- Session details (expiration time and duration if authenticated)
+- Verification code and URL (if authentication is started)
+- Browser launch status (if authentication is started)
+- Next steps and usage guidance`,
 		LoginToolArgsSchema.shape,
 		handleLogin,
 	);
@@ -139,7 +142,10 @@ The tool checks:
 Prerequisites:
 - AWS SSO must be configured with a start URL and region (via AWS config file or environment variables)
 
-This tool takes no parameters and returns Markdown with the current authentication status and next steps.`,
+Returns Markdown containing:
+- Authentication status (authenticated or not)
+- Session details (expiration time and duration if authenticated)
+- Instructions for next steps based on the status`,
 		StatusToolArgsSchema.shape,
 		handleStatus,
 	);

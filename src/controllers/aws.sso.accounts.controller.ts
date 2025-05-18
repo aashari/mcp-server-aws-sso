@@ -3,10 +3,7 @@ import {
 	handleControllerError,
 	buildErrorContext,
 } from '../utils/error-handler.util.js';
-import {
-	ControllerResponse,
-	ResponsePagination,
-} from '../types/common.types.js';
+import { ControllerResponse } from '../types/common.types.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
 import {
 	listAccountRoles,
@@ -52,7 +49,7 @@ controllerLogger.debug('AWS SSO accounts controller initialized');
  * can assume in each account via AWS SSO. Handles pagination internally.
  *
  * @async
- * @returns {Promise<ControllerResponse>} Response with comprehensive formatted list of accounts and roles (no pagination info).
+ * @returns {Promise<ControllerResponse>} Response with comprehensive formatted list of accounts and roles.
  * @throws {Error} If account listing fails or authentication is required
  */
 async function listAccounts(): Promise<ControllerResponse> {
@@ -68,7 +65,6 @@ async function listAccounts(): Promise<ControllerResponse> {
 		if (!cachedToken) {
 			return {
 				content: formatAuthRequired(),
-				metadata: { authenticated: false },
 			};
 		}
 		if (!cachedToken.accessToken || cachedToken.accessToken.trim() === '') {
@@ -79,7 +75,6 @@ async function listAccounts(): Promise<ControllerResponse> {
 			}
 			return {
 				content: formatAuthRequired(),
-				metadata: { authenticated: false },
 			};
 		}
 		const now = Math.floor(Date.now() / 1000);
@@ -91,7 +86,6 @@ async function listAccounts(): Promise<ControllerResponse> {
 			}
 			return {
 				content: formatAuthRequired(),
-				metadata: { authenticated: false },
 			};
 		}
 		let expiresDate = 'Unknown';
@@ -119,37 +113,18 @@ async function listAccounts(): Promise<ControllerResponse> {
 				listLogger.debug('No accounts found after fetching.');
 				return {
 					content: formatNoAccounts(true),
-					metadata: {
-						authenticated: true,
-						accounts: [],
-						totalAccountsFetched,
-					},
 				};
 			}
 
-			// Prepare pagination object for metadata (even though not paginated)
-			const paginationForMetadata: ResponsePagination = {
-				count: totalAccountsFetched,
-				hasMore: false,
-				total: totalAccountsFetched,
-			};
-
-			// Format the full list (remove pagination arg)
+			// Format the accounts with roles
 			const formattedContent = formatAccountsAndRoles(
 				expiresDate,
 				allAccountsData,
-				// paginationForFormatter, // Removed pagination argument
 			);
 
-			// Return content WITHOUT pagination object in response root
+			// Return the content only
 			return {
-				content: formattedContent, // Includes timestamp footer
-				metadata: {
-					authenticated: true,
-					totalAccountsFetched,
-					accountsDisplayed: allAccountsData.length,
-					pagination: paginationForMetadata, // Add pagination to metadata
-				},
+				content: formattedContent,
 			};
 		} catch (error) {
 			// Handle API errors during account fetching (authentication check still applies)
@@ -165,7 +140,6 @@ async function listAccounts(): Promise<ControllerResponse> {
 				);
 				return {
 					content: formatAuthRequired(),
-					metadata: { authenticated: false },
 				};
 			}
 			throw error; // Rethrow other API errors
@@ -221,9 +195,6 @@ async function listRoles(
 
 		return {
 			content: formatAccountRoles(params.accountId, roles.roleList),
-			metadata: {
-				roles: roles.roleList,
-			},
 		};
 	} catch (error) {
 		throw handleControllerError(

@@ -36,9 +36,6 @@ async function handleExecCommand(args: ExecCommandToolArgsType) {
 	execCommandLogger.debug('Handling exec command request', args);
 
 	try {
-		// Parse the command string properly instead of simple split
-		// const commandParts = parseCommand(args.command); // Removed parsing
-
 		// Call the controller with proper args
 		const result = await awsSsoExecController.executeCommand({
 			accountId: args.accountId,
@@ -47,7 +44,7 @@ async function handleExecCommand(args: ExecCommandToolArgsType) {
 			command: args.command, // Pass raw string
 		});
 
-		// Return the response in MCP format
+		// Return the response in MCP format without metadata
 		return {
 			content: [
 				{
@@ -55,7 +52,6 @@ async function handleExecCommand(args: ExecCommandToolArgsType) {
 					text: result.content,
 				},
 			],
-			metadata: result.metadata,
 		};
 	} catch (error) {
 		execCommandLogger.error('Exec failed', error);
@@ -102,7 +98,12 @@ Optional parameters:
 
 For complex commands with quoting, ensure proper escaping (e.g., "aws ec2 describe-instances --filters 'Name=tag:Name,Values=MyInstance'").
 
-Returns Markdown output with the command's stdout, stderr, and exit code.`,
+Returns comprehensive Markdown output that includes:
+- Execution context (account, role, region)
+- Command output (stdout)
+- Error messages if any (stderr)
+- Exit code (0 for success, non-zero for failure)
+- Suggested alternative roles if permission errors occur`,
 		ExecCommandToolArgs.shape,
 		handleExecCommand,
 	);

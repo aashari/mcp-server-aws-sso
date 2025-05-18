@@ -90,12 +90,6 @@ describe('AWS SSO Exec Controller', () => {
 
 		// The output should still contain aws-cli somewhere
 		expect(result.content).toContain('aws-cli');
-
-		// Check for metadata
-		expect(result.metadata).toBeDefined();
-		expect(result.metadata?.accountId).toBe(accountId);
-		expect(result.metadata?.roleName).toBe(roleName);
-		expect(result.metadata?.exitCode).toBe(0); // Command should succeed
 	});
 
 	// Test error handling for unauthenticated users
@@ -173,9 +167,5 @@ describe('AWS SSO Exec Controller', () => {
 		expect(result.content).toMatch(
 			/(NoSuchBucket|AccessDenied|not found|not exist|NoSuchKey|InvalidToken|invalid token|InvalidClient|security token.*invalid)/i,
 		);
-
-		// Check metadata has error info
-		expect(result.metadata).toBeDefined();
-		expect(result.metadata?.exitCode).not.toBe(0); // Command should fail
 	});
 });
