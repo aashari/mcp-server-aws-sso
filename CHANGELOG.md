@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.13.0...v1.14.0) (2025-05-18)
+
+
+### Features
+
+* implement self-healing AWS SSO authentication flow ([68ed992](https://github.com/aashari/mcp-server-aws-sso/commit/68ed9920f343adf3da14a13b8a3fec9ae484ab14))
+
 # [1.13.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.12.0...v1.13.0) (2025-05-17)
 
 
