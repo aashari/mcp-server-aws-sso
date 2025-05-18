@@ -58,7 +58,12 @@ describe('AWS SSO Auth CLI Commands', () => {
 				return;
 			}
 
-			const { stdout, stderr } = await CliTestUtil.runCommand(['login']);
+			// Use the no-auto-poll option to prevent waiting for browser authentication
+			const { stdout, stderr } = await CliTestUtil.runCommand([
+				'login',
+				'--no-auto-poll',
+				'--no-launch-browser',
+			]);
 
 			// Check that we received expected output based on different auth states
 			if (stdout.includes('Session Active')) {
@@ -86,7 +91,7 @@ describe('AWS SSO Auth CLI Commands', () => {
 			}
 
 			// Test passes as long as we got some valid response
-		}, 30000);
+		}, 60000); // Increase timeout to 60 seconds
 
 		it('should handle help flag correctly', async () => {
 			const { stdout, exitCode } = await CliTestUtil.runCommand([

@@ -4,14 +4,15 @@ import {
 	createAuthMissingError,
 	createAuthTimeoutError,
 	createApiError,
+	createAuthSlowDownError,
+	createAuthDeniedError,
+	createAuthInvalidError,
 } from '../utils/error.util.js';
 import * as ssoCache from '../utils/aws.sso.cache.util.js';
 import {
 	AwsSsoConfig,
 	AwsSsoConfigSchema,
 	AwsSsoAuthResult,
-	SsoToken,
-	SsoTokenSchema,
 	DeviceAuthorizationInfo,
 	DeviceAuthorizationInfoSchema,
 } from './vendor.aws.sso.types.js';
@@ -349,159 +350,225 @@ export async function startSsoLogin(): Promise<
 /**
  * Poll for SSO token completion
  *
- * Polls the AWS SSO token endpoint to check if the user has completed authentication.
- * Returns the SSO token if successful.
+ * Continuously polls the SSO token endpoint until authentication is complete or times out.
+ * Automatically applies appropriate backoff between retries based on the device authorization interval.
  *
- * @returns {Promise<AwsSsoAuthResult>} SSO token data
- * @throws {Error} If polling fails or user hasn't completed authentication yet
+ * @returns {Promise<AwsSsoAuthResult>} AWS SSO auth result with access token
+ * @throws {Error} If polling times out or auth is denied
  */
 export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 	const methodLogger = logger.forMethod('pollForSsoToken');
-	methodLogger.debug('Polling for AWS SSO token');
+	methodLogger.debug('Starting polling for SSO token');
 
-	// Get device authorization info from cache
-	const deviceInfo = await ssoCache.getCachedDeviceAuthorizationInfo();
+	// Get the device authorization info for polling
+	const deviceInfo = await getCachedDeviceAuthorizationInfo();
 	if (!deviceInfo) {
 		const error = createAuthMissingError(
-			'No pending SSO authorization. Please start a new login.',
+			'No device authorization information found for polling',
 		);
-		methodLogger.error('No device authorization info found', error);
+		methodLogger.error('Device authorization info missing', error);
 		throw error;
 	}
 
-	// Extract required info
-	const {
-		clientId,
-		clientSecret,
-		deviceCode,
-		interval = 5, // Default to 5 seconds if not specified
-		expiresIn,
-		region,
-	} = deviceInfo;
+	// Create a timestamp for when the auth flow expires
+	const startTime = Math.floor(Date.now() / 1000);
+	const expiresAt = startTime + deviceInfo.expiresIn;
 
-	// Calculate token expiration time
-	const startTime = Date.now();
-	const expirationTime = startTime + expiresIn * 1000;
+	// Use the interval from the device auth flow or default to 5 seconds
+	// This is the recommended polling interval from AWS SSO
+	const pollingIntervalSeconds = deviceInfo.interval || 5;
 
-	// Token endpoint
-	const tokenEndpoint = getSsoOidcEndpoint(region, '/token');
+	methodLogger.debug('Poll settings', {
+		clientId: deviceInfo.clientId,
+		startTime,
+		expiresAt,
+		expiresIn: deviceInfo.expiresIn,
+		pollingInterval: pollingIntervalSeconds,
+	});
 
-	// Polling loop
-	let lastPollTime = 0;
-	while (Date.now() < expirationTime) {
-		// Enforce minimum polling interval
-		const timeSinceLastPoll = Date.now() - lastPollTime;
-		if (timeSinceLastPoll < interval * 1000) {
-			// Wait for remainder of interval
-			const waitTime = interval * 1000 - timeSinceLastPoll;
-			methodLogger.debug(
-				`Waiting ${waitTime}ms before next poll attempt`,
+	// Prepare the token request parameters
+	const ssoConfig = await getAwsSsoConfig();
+	const oidcEndpoint = getSsoOidcEndpoint(ssoConfig.region, '/token');
+
+	// Poll until successful or timeout
+	let consecutiveSlowDownErrors = 0;
+	let currentPollingInterval = pollingIntervalSeconds;
+	let lastErrorReceived:
+		| Error
+		| { error?: string; error_description?: string }
+		| Record<string, unknown>
+		| undefined = undefined;
+
+	while (true) {
+		const now = Math.floor(Date.now() / 1000);
+
+		// Check if we've exceeded the expiration time
+		if (now > expiresAt) {
+			const error = createAuthTimeoutError(
+				'Device authorization timed out. Please try again.',
 			);
-			await new Promise((resolve) => setTimeout(resolve, waitTime));
+			methodLogger.error('Device authorization timed out', error);
+			throw error;
 		}
 
-		lastPollTime = Date.now();
-		methodLogger.debug('Polling token endpoint');
-
 		try {
-			// Try to get the token
-			const tokenResponseData = await post<Record<string, unknown>>(
-				tokenEndpoint,
-				{
-					clientId,
-					clientSecret,
-					deviceCode,
-					grantType: 'urn:ietf:params:oauth:grant-type:device_code',
-				},
-			);
+			methodLogger.debug('Polling for token...');
 
-			// Validate with Zod schema
+			// Make the token request
+			const tokenResponse = await post(`${oidcEndpoint}`, {
+				clientId: deviceInfo.clientId,
+				clientSecret: deviceInfo.clientSecret,
+				deviceCode: deviceInfo.deviceCode,
+				grantType: 'urn:ietf:params:oauth:grant-type:device_code',
+			});
+
+			// Validate the response
 			try {
-				const tokenResponse =
-					TokenResponseSchema.parse(tokenResponseData);
+				const parsed = TokenResponseSchema.parse(tokenResponse);
 
-				// Process token response - handle both camelCase and snake_case responses
-				// AWS seems to return a mix of these formats across different services
-				const accessToken =
-					tokenResponse.accessToken || tokenResponse.access_token;
+				// Extract the access token - different APIs use different property names
+				const accessToken = parsed.accessToken || parsed.access_token;
 				const refreshToken =
-					tokenResponse.refreshToken || tokenResponse.refresh_token;
-				const tokenType =
-					tokenResponse.tokenType || tokenResponse.token_type;
-				const expiresIn =
-					tokenResponse.expiresIn || tokenResponse.expires_in;
+					parsed.refreshToken || parsed.refresh_token;
+				const tokenType = parsed.tokenType || parsed.token_type;
+				const expiresIn = parsed.expiresIn || parsed.expires_in;
 
 				if (!accessToken) {
-					throw new Error('No access token in response');
+					throw new Error('Access token is missing from response');
 				}
 
-				// Create token expiration time
-				const expiresAt =
-					Math.floor(Date.now() / 1000) + (expiresIn as number);
+				// Calculate expiration
+				const tokenExpiresAt =
+					Math.floor(Date.now() / 1000) + (expiresIn ?? 28800); // Default to 8 hours
 
-				// Create standardized token object
-				const ssoToken: SsoToken = {
-					accessToken: accessToken as string,
-					expiresAt,
-					region,
+				// Create the auth result
+				const authResult: AwsSsoAuthResult = {
+					accessToken,
+					expiresAt: tokenExpiresAt,
+					region: ssoConfig.region,
+				};
+
+				// Save the token to cache
+				await ssoCache.saveSsoToken({
+					accessToken,
+					expiresAt: tokenExpiresAt,
+					region: ssoConfig.region,
 					refreshToken: (refreshToken as string) || '',
 					tokenType: (tokenType as string) || 'Bearer',
 					expiresIn: expiresIn as number,
 					retrievedAt: Math.floor(Date.now() / 1000),
-				};
+				});
 
-				// Validate with Zod schema
-				SsoTokenSchema.parse(ssoToken);
+				methodLogger.debug('Successfully retrieved SSO token', {
+					tokenType,
+					expiresIn,
+					expiresAt: tokenExpiresAt,
+				});
 
-				// Create auth result object
-				const authResult: AwsSsoAuthResult = {
-					accessToken: accessToken as string,
-					expiresAt,
-					region,
-				};
-
-				// Cache the token
-				await ssoCache.saveSsoToken(ssoToken);
-
-				methodLogger.debug('Successfully obtained SSO token');
 				return authResult;
-			} catch (error) {
-				if (error instanceof z.ZodError) {
-					methodLogger.error('Invalid token response', error);
-					throw createApiError(
-						`Invalid response from AWS SSO token endpoint: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
-						undefined,
+			} catch (validationError) {
+				methodLogger.error(
+					'Error validating token response',
+					validationError,
+				);
+				throw createApiError(
+					'Invalid token response received',
+					undefined,
+					validationError,
+				);
+			}
+		} catch (error) {
+			// Track the error for backoff logic
+			lastErrorReceived = error as
+				| Error
+				| { error?: string; error_description?: string }
+				| Record<string, unknown>;
+
+			// Handle specific error types for polling
+			if (error && typeof error === 'object') {
+				// Handle authorization_pending - this is normal during polling
+				if (
+					'error' in error &&
+					error.error === 'authorization_pending'
+				) {
+					methodLogger.debug('Authorization is still pending...');
+					// This is expected - continue polling
+				}
+				// Handle slow_down errors by increasing the interval
+				else if ('error' in error && error.error === 'slow_down') {
+					consecutiveSlowDownErrors++;
+					// Increase polling interval on slow_down responses
+					currentPollingInterval = Math.min(
+						currentPollingInterval * 2,
+						30,
+					);
+					methodLogger.debug(
+						`Received slow_down error (${consecutiveSlowDownErrors}), increasing polling interval`,
+						{ newInterval: currentPollingInterval },
+					);
+
+					// If we get too many consecutive slow_down errors, throw a typed error
+					if (consecutiveSlowDownErrors >= 3) {
+						throw createAuthSlowDownError(
+							'Authentication is being rate limited. The server has requested to slow down polling.',
+							error,
+						);
+					}
+				}
+				// Handle access_denied - user denied the authorization
+				else if ('error' in error && error.error === 'access_denied') {
+					throw createAuthDeniedError(
+						'Authentication was denied by the user or system',
 						error,
 					);
 				}
+				// Handle expired_token - the device code has expired
+				else if ('error' in error && error.error === 'expired_token') {
+					throw createAuthTimeoutError(
+						'Authentication session has expired. Please restart the login process.',
+						error,
+					);
+				}
+				// Handle other OIDC errors with more context
+				else if ('error' in error && 'error_description' in error) {
+					methodLogger.error('OIDC error during polling', error);
+					throw createAuthInvalidError(
+						`Authentication error: ${error.error_description || error.error}`,
+						error,
+					);
+				}
+				// Handle unexpected errors during polling
+				else {
+					methodLogger.error(
+						'Unexpected error during polling',
+						error,
+					);
+					throw error;
+				}
+			} else {
+				// Handle non-object errors
+				methodLogger.error('Unexpected error during polling', error);
 				throw error;
 			}
-		} catch (error: unknown) {
-			// Check for "authorization pending" error
-			// This is normal and expected until the user completes the flow
-			if (
-				error instanceof Error &&
-				error.message &&
-				error.message.includes('authorization_pending')
-			) {
-				methodLogger.debug(
-					'Authorization still pending, will retry after interval',
-				);
-				continue;
-			}
-
-			// For any other error, log and throw
-			methodLogger.error('Error polling for token', error);
-			throw error;
 		}
-	}
 
-	// If we reach here, the auth flow timed out
-	const timeoutError = createAuthTimeoutError(
-		'SSO authentication flow timed out. Please try again.',
-	);
-	methodLogger.error('Authentication flow timed out', timeoutError);
-	throw timeoutError;
+		// If we're here, we need to continue polling
+		// Reset consecutive slow_down counter if we didn't get that error
+		if (
+			lastErrorReceived === undefined ||
+			lastErrorReceived?.error !== 'slow_down'
+		) {
+			consecutiveSlowDownErrors = 0;
+		}
+
+		// Wait for the polling interval before trying again
+		methodLogger.debug(
+			`Waiting ${currentPollingInterval}s before next poll...`,
+		);
+		await new Promise((resolve) =>
+			setTimeout(resolve, currentPollingInterval * 1000),
+		);
+	}
 }
 
 /**

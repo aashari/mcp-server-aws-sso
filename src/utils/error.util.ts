@@ -11,6 +11,19 @@ export enum ErrorType {
 }
 
 /**
+ * Extend the Error interface to include the errorType property
+ */
+declare global {
+	interface Error {
+		errorType?: string;
+		$metadata?: Record<string, unknown>;
+		error?: string;
+		error_description?: string;
+		originalResponse?: Record<string, unknown> | string;
+	}
+}
+
+/**
  * Custom error class with type classification
  */
 export class McpError extends Error {
@@ -20,88 +33,157 @@ export class McpError extends Error {
 
 	constructor(
 		message: string,
-		type: ErrorType,
+		typeOrOptions: ErrorType | { cause?: Error | unknown },
 		statusCode?: number,
 		originalError?: unknown,
 	) {
-		super(message);
-		this.name = 'McpError';
-		this.type = type;
-		this.statusCode = statusCode;
-		this.originalError = originalError;
+		if (typeof typeOrOptions === 'object') {
+			// New constructor style with options
+			super(message);
+			this.name = 'McpError';
+			this.type = ErrorType.UNEXPECTED_ERROR; // Default type
+			this.originalError = typeOrOptions.cause;
+		} else {
+			// Original constructor style
+			super(message);
+			this.name = 'McpError';
+			this.type = typeOrOptions;
+			this.statusCode = statusCode;
+			this.originalError = originalError;
+		}
+
+		// Ensure prototype chain is properly maintained
+		Object.setPrototypeOf(this, McpError.prototype);
 	}
 }
 
 /**
+ * Create a standardized McpError with additional properties
+ * @param message Error message
+ * @param options Additional error options including cause and error type
+ * @returns McpError instance
+ */
+export function createMcpError(
+	message: string,
+	options?: {
+		cause?: Error | unknown;
+		errorType?: string;
+		metadata?: Record<string, unknown>;
+	},
+): McpError {
+	const error = new McpError(message, { cause: options?.cause });
+	if (options?.errorType) {
+		error.errorType = options.errorType;
+	}
+	if (options?.metadata) {
+		error.$metadata = options.metadata;
+	}
+	return error;
+}
+
+/**
  * Create an authentication missing error
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with authentication missing details
  */
 export function createAuthMissingError(
-	message: string = 'Authentication credentials are missing',
+	message: string,
+	cause?: Error | unknown,
 ): McpError {
-	return new McpError(message, ErrorType.AUTH_MISSING);
+	const error = new McpError(message, { cause });
+	error.errorType = 'AUTHENTICATION_MISSING';
+	return error;
 }
 
 /**
  * Create an authentication invalid error
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with authentication invalid details
  */
 export function createAuthInvalidError(
 	message: string = 'Authentication credentials are invalid',
+	cause?: Error | unknown,
 ): McpError {
-	return new McpError(message, ErrorType.AUTH_INVALID, 401);
+	const error = new McpError(message, { cause });
+	error.errorType = 'AUTHENTICATION_INVALID';
+	error.statusCode = 401;
+	return error;
 }
 
 /**
  * Create an authentication timeout error
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with authentication timeout details
  */
 export function createAuthTimeoutError(
-	message: string = 'Authentication timed out',
+	message: string,
+	cause?: Error | unknown,
 ): McpError {
-	return new McpError(message, ErrorType.AUTH_INVALID, 408);
+	const error = new McpError(message, { cause });
+	error.errorType = 'AUTHENTICATION_TIMEOUT';
+	return error;
 }
 
 /**
  * Create an API error
+ * @param message Error message
+ * @param statusCode Optional HTTP status code
+ * @param cause Optional cause of the error
+ * @returns McpError with API error details
  */
 export function createApiError(
 	message: string,
 	statusCode?: number,
-	originalError?: unknown,
+	cause?: Error | unknown,
 ): McpError {
-	return new McpError(
-		message,
-		ErrorType.API_ERROR,
-		statusCode,
-		originalError,
-	);
+	const error = new McpError(message, { cause });
+	error.errorType = 'API_ERROR';
+	if (statusCode) {
+		error.$metadata = {
+			httpStatusCode: statusCode,
+		};
+	}
+	return error;
 }
 
 /**
  * Create an unexpected error
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with unexpected error details
  */
 export function createUnexpectedError(
-	message: string = 'An unexpected error occurred',
-	originalError?: unknown,
+	message: string,
+	cause?: Error | unknown,
 ): McpError {
-	return new McpError(
-		message,
-		ErrorType.UNEXPECTED_ERROR,
-		undefined,
-		originalError,
-	);
+	const error = new McpError(message, { cause });
+	error.errorType = 'UNEXPECTED_ERROR';
+	return error;
 }
 
 /**
  * Create a not found error
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with not found details
  */
 export function createNotFoundError(
 	message: string = 'Resource not found',
-	originalError?: unknown,
+	cause?: Error | unknown,
 ): McpError {
-	return new McpError(message, ErrorType.API_ERROR, 404, originalError);
+	const error = new McpError(message, { cause });
+	error.errorType = 'RESOURCE_NOT_FOUND';
+	error.statusCode = 404;
+	return error;
 }
 
 /**
  * Ensure an error is an McpError
+ * @param error The error to convert to an McpError
+ * @returns An McpError instance
  */
 export function ensureMcpError(error: unknown): McpError {
 	if (error instanceof McpError) {
@@ -109,10 +191,13 @@ export function ensureMcpError(error: unknown): McpError {
 	}
 
 	if (error instanceof Error) {
-		return createUnexpectedError(error.message, error);
+		return createMcpError(error.message, {
+			cause: error,
+			errorType: error.errorType || 'UNEXPECTED_ERROR',
+		});
 	}
 
-	return createUnexpectedError(String(error));
+	return createMcpError(String(error), { errorType: 'UNEXPECTED_ERROR' });
 }
 
 /**
@@ -249,3 +334,57 @@ export function handleCliError(error: unknown): never {
 
 	process.exit(1);
 }
+
+/**
+ * Create an authentication error related to AWS SSO authorization pending
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with authorization pending details
+ */
+export function createAuthPendingError(
+	message: string = 'Authentication is pending, please complete the browser flow',
+	cause?: Error | unknown,
+): McpError {
+	const error = new McpError(message, { cause });
+	error.errorType = 'AWS_SSO_AUTH_PENDING';
+	error.statusCode = 202;
+	return error;
+}
+
+/**
+ * Create an authentication error related to AWS SSO authorization denied
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with authorization denied details
+ */
+export function createAuthDeniedError(
+	message: string = 'Authentication was denied or rejected',
+	cause?: Error | unknown,
+): McpError {
+	const error = new McpError(message, { cause });
+	error.errorType = 'AWS_SSO_AUTH_DENIED';
+	error.statusCode = 403;
+	return error;
+}
+
+/**
+ * Create an authentication error for slow down requests
+ * @param message Error message
+ * @param cause Optional cause of the error
+ * @returns McpError with rate limit details
+ */
+export function createAuthSlowDownError(
+	message: string = 'Authentication is being rate limited, please slow down requests',
+	cause?: Error | unknown,
+): McpError {
+	const error = new McpError(message, { cause });
+	error.errorType = 'AWS_SSO_SLOW_DOWN';
+	error.statusCode = 429;
+	return error;
+}
+
+/**
+ * Format a user-friendly error message for MCP tool output based on an error
+ * @param error The error to format
+ * @returns Formatted tool response with error information
+ */

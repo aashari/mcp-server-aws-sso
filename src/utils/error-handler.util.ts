@@ -101,17 +101,11 @@ export function detectErrorType(
 			: undefined;
 
 	// AWS SSO OIDC API Error Detection
-	// Check for specific OIDC error codes in originalError
-	if (
-		error instanceof Error &&
-		'originalError' in error &&
-		error.originalError
-	) {
-		const originalError = error.originalError as Record<string, unknown>;
-
-		// OIDC-specific errors
-		if (typeof originalError === 'object' && originalError.error) {
-			const oidcErrorCode = String(originalError.error);
+	// Check for specific OIDC error codes in error or originalError
+	if (error instanceof Error) {
+		// Check for OIDC errors directly in the error object
+		if ('error' in error && typeof error.error === 'string') {
+			const oidcErrorCode = error.error;
 
 			if (oidcErrorCode === 'authorization_pending') {
 				return {
@@ -122,7 +116,11 @@ export function detectErrorType(
 			if (oidcErrorCode === 'access_denied') {
 				return { code: ErrorCode.AWS_SSO_AUTH_DENIED, statusCode: 403 };
 			}
-			if (oidcErrorCode === 'expired_token') {
+			if (
+				oidcErrorCode === 'expired_token' ||
+				oidcErrorCode === 'invalid_token' ||
+				oidcErrorCode === 'invalid_grant'
+			) {
 				return {
 					code: ErrorCode.AWS_SSO_TOKEN_EXPIRED,
 					statusCode: 401,
@@ -131,59 +129,178 @@ export function detectErrorType(
 			if (oidcErrorCode === 'slow_down') {
 				return { code: ErrorCode.RATE_LIMIT_ERROR, statusCode: 429 };
 			}
+		}
+
+		// Check error message for auth-related patterns
+		if (typeof errorMessage === 'string') {
 			if (
-				oidcErrorCode === 'invalid_grant' ||
-				oidcErrorCode === 'invalid_request'
+				errorMessage.includes('expired') &&
+				(errorMessage.includes('token') ||
+					errorMessage.includes('credential'))
 			) {
-				return { code: ErrorCode.VALIDATION_ERROR, statusCode: 400 };
+				return {
+					code: ErrorCode.AWS_SSO_TOKEN_EXPIRED,
+					statusCode: 401,
+				};
+			}
+
+			if (
+				errorMessage.includes('authentication') &&
+				(errorMessage.includes('pending') ||
+					errorMessage.includes('not complete'))
+			) {
+				return {
+					code: ErrorCode.AWS_SSO_AUTH_PENDING,
+					statusCode: 202,
+				};
+			}
+
+			if (
+				errorMessage.includes('authentication') &&
+				(errorMessage.includes('denied') ||
+					errorMessage.includes('rejected'))
+			) {
+				return {
+					code: ErrorCode.AWS_SSO_AUTH_DENIED,
+					statusCode: 403,
+				};
 			}
 		}
 
-		// AWS SDK Error Detection
-		if (typeof originalError === 'object' && originalError.name) {
-			const awsSdkErrorName = String(originalError.name);
-			const httpStatusCode =
-				originalError.$metadata &&
-				typeof originalError.$metadata === 'object'
-					? (originalError.$metadata as { httpStatusCode?: number })
-							.httpStatusCode
-					: undefined;
+		// Check for OIDC error codes in originalError
+		if ('originalError' in error && error.originalError) {
+			const originalError = error.originalError as Record<
+				string,
+				unknown
+			>;
 
-			if (
-				awsSdkErrorName === 'UnauthorizedException' ||
-				awsSdkErrorName.includes('Unauthorized')
-			) {
-				return {
-					code: ErrorCode.AWS_SDK_PERMISSION_DENIED,
-					statusCode: httpStatusCode || 403,
-				};
-			}
-			if (
-				awsSdkErrorName === 'ResourceNotFoundException' ||
-				awsSdkErrorName.includes('NotFound')
-			) {
-				return {
-					code: ErrorCode.AWS_SDK_RESOURCE_NOT_FOUND,
-					statusCode: httpStatusCode || 404,
-				};
-			}
-			if (
-				awsSdkErrorName === 'TooManyRequestsException' ||
-				awsSdkErrorName.includes('Throttling')
-			) {
-				return {
-					code: ErrorCode.AWS_SDK_THROTTLING,
-					statusCode: httpStatusCode || 429,
-				};
-			}
-			if (
-				awsSdkErrorName === 'InvalidRequestException' ||
-				awsSdkErrorName.includes('Invalid')
-			) {
-				return {
-					code: ErrorCode.AWS_SDK_INVALID_REQUEST,
-					statusCode: httpStatusCode || 400,
-				};
+			// OIDC-specific errors in originalError
+			if (typeof originalError === 'object') {
+				// Check for error code directly in originalError
+				if (
+					originalError.error &&
+					typeof originalError.error === 'string'
+				) {
+					const oidcErrorCode = originalError.error;
+
+					if (oidcErrorCode === 'authorization_pending') {
+						return {
+							code: ErrorCode.AWS_SSO_AUTH_PENDING,
+							statusCode: 202,
+						};
+					}
+					if (oidcErrorCode === 'access_denied') {
+						return {
+							code: ErrorCode.AWS_SSO_AUTH_DENIED,
+							statusCode: 403,
+						};
+					}
+					if (
+						oidcErrorCode === 'expired_token' ||
+						oidcErrorCode === 'invalid_token' ||
+						oidcErrorCode === 'invalid_grant'
+					) {
+						return {
+							code: ErrorCode.AWS_SSO_TOKEN_EXPIRED,
+							statusCode: 401,
+						};
+					}
+					if (oidcErrorCode === 'slow_down') {
+						return {
+							code: ErrorCode.RATE_LIMIT_ERROR,
+							statusCode: 429,
+						};
+					}
+					if (oidcErrorCode === 'invalid_request') {
+						return {
+							code: ErrorCode.VALIDATION_ERROR,
+							statusCode: 400,
+						};
+					}
+				}
+
+				// Check for error_description in originalError for more context
+				if (
+					originalError.error_description &&
+					typeof originalError.error_description === 'string'
+				) {
+					const errorDesc = originalError.error_description;
+
+					if (
+						errorDesc.includes('expired') ||
+						errorDesc.includes('invalid token')
+					) {
+						return {
+							code: ErrorCode.AWS_SSO_TOKEN_EXPIRED,
+							statusCode: 401,
+						};
+					}
+
+					if (
+						errorDesc.includes('authorization') &&
+						(errorDesc.includes('pending') ||
+							errorDesc.includes('not complete'))
+					) {
+						return {
+							code: ErrorCode.AWS_SSO_AUTH_PENDING,
+							statusCode: 202,
+						};
+					}
+				}
+
+				// AWS SDK Error Detection
+				if (
+					originalError.name &&
+					typeof originalError.name === 'string'
+				) {
+					const awsSdkErrorName = originalError.name;
+					const httpStatusCode =
+						originalError.$metadata &&
+						typeof originalError.$metadata === 'object'
+							? (
+									originalError.$metadata as {
+										httpStatusCode?: number;
+									}
+								).httpStatusCode
+							: undefined;
+
+					if (
+						awsSdkErrorName === 'UnauthorizedException' ||
+						awsSdkErrorName.includes('Unauthorized')
+					) {
+						return {
+							code: ErrorCode.AWS_SDK_PERMISSION_DENIED,
+							statusCode: httpStatusCode || 403,
+						};
+					}
+					if (
+						awsSdkErrorName === 'ResourceNotFoundException' ||
+						awsSdkErrorName.includes('NotFound')
+					) {
+						return {
+							code: ErrorCode.AWS_SDK_RESOURCE_NOT_FOUND,
+							statusCode: httpStatusCode || 404,
+						};
+					}
+					if (
+						awsSdkErrorName === 'TooManyRequestsException' ||
+						awsSdkErrorName.includes('Throttling')
+					) {
+						return {
+							code: ErrorCode.AWS_SDK_THROTTLING,
+							statusCode: httpStatusCode || 429,
+						};
+					}
+					if (
+						awsSdkErrorName === 'InvalidRequestException' ||
+						awsSdkErrorName.includes('Invalid')
+					) {
+						return {
+							code: ErrorCode.AWS_SDK_INVALID_REQUEST,
+							statusCode: httpStatusCode || 400,
+						};
+					}
+				}
 			}
 		}
 	}
