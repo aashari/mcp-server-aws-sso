@@ -208,6 +208,45 @@ _or:_
 
 ---
 
+## `aws_sso_ec2_exec_command`
+
+Executes shell commands on EC2 instances via AWS Systems Manager (SSM) using temporary credentials from AWS SSO.
+
+**Parameters:**
+
+- `instanceId` (string, required): EC2 instance ID (e.g., "i-1234567890abcdef0")
+- `accountId` (string, required): AWS account ID (12-digit number)
+- `roleName` (string, required): AWS role name to assume via SSO
+- `command` (string, required): Shell command to execute on the instance (e.g., "ls -l", "df -h")
+- `region` (string, optional): AWS region where the EC2 instance is located
+
+**Example:**
+
+```json
+{
+	"instanceId": "i-0a69e80761897dcce",
+	"accountId": "123456789012",
+	"roleName": "InfraOps",
+	"command": "uptime && df -h"
+}
+```
+
+_or:_
+
+```json
+{
+	"instanceId": "i-0a69e80761897dcce",
+	"accountId": "123456789012",
+	"roleName": "AdminRole",
+	"command": "ps aux | grep java",
+	"region": "us-west-2"
+}
+```
+
+> "Check disk space on EC2 instance i-0a69e80761897dcce in account 123456789012 using the InfraOps role."
+
+---
+
 # Tool Response Format
 
 All AWS SSO MCP tools return their responses as formatted Markdown text within the tool's content field. This ensures a consistent and comprehensive user experience. Each tool's response includes all necessary information in the text itself:
@@ -374,6 +413,13 @@ npx -y @aashari/mcp-server-aws-sso exec-command \
   --account-id 123456789012 \
   --role-name ReadOnly \
   --command "aws s3 ls"
+  
+# Execute a shell command on an EC2 instance via SSM
+npx -y @aashari/mcp-server-aws-sso ec2-exec-command \
+  --instance-id i-0a69e80761897dcce \
+  --account-id 123456789012 \
+  --role-name InfraOps \
+  --command "uptime && df -h"
 ```
 
 ## Install Globally
@@ -388,6 +434,7 @@ Then run directly:
 mcp-aws-sso login
 mcp-aws-sso ls-accounts
 mcp-aws-sso exec-command --account-id 123456789012 --role-name ReadOnly --command "aws s3 ls"
+mcp-aws-sso ec2-exec-command --instance-id i-0a69e80761897dcce --account-id 123456789012 --role-name InfraOps --command "df -h"
 ```
 
 ## Available Commands
@@ -436,6 +483,21 @@ Options:
   --command <command>  AWS CLI command to execute (e.g., "aws s3 ls") (required)
 ```
 
+### `ec2-exec-command`
+
+Execute a shell command on an EC2 instance via AWS Systems Manager (SSM) using temporary credentials from AWS SSO.
+
+```bash
+mcp-aws-sso ec2-exec-command [options]
+
+Options:
+  --instance-id <id>    EC2 instance ID (e.g., i-1234567890abcdef0) (required)
+  --account-id <id>     AWS account ID (12-digit number) (required)
+  --role-name <role>    AWS role name to assume via SSO (required)
+  --region <region>     AWS region where the EC2 instance is located (optional)
+  --command <command>   Shell command to execute on the EC2 instance (required)
+```
+
 ## Discover More CLI Options
 
 Use `--help` to see flags and usage for all available commands:
@@ -451,6 +513,7 @@ mcp-aws-sso login --help
 mcp-aws-sso status --help
 mcp-aws-sso ls-accounts --help
 mcp-aws-sso exec-command --help
+mcp-aws-sso ec2-exec-command --help
 ```
 
 ---
