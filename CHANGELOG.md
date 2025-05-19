@@ -1,3 +1,10 @@
+## [1.19.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.1...v1.19.2) (2025-05-19)
+
+
+### Performance Improvements
+
+* split vendor.aws.sso.auth.service.ts into modular components for better maintainability ([34ef5d8](https://github.com/aashari/mcp-server-aws-sso/commit/34ef5d863db35565fdab3b2367e6e24c94a5f928))
+
 ## [1.19.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.0...v1.19.1) (2025-05-19)
 
 
