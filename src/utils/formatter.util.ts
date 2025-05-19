@@ -138,6 +138,7 @@ function formatValue(value: unknown): string {
  * @param contextProps Properties to display in the context section
  * @param outputSections Array of sections to add (each with heading and content)
  * @param footerInfo Additional footer information before the timestamp
+ * @param identityInfo Optional identity and region information
  * @returns Formatted Markdown string
  */
 export function baseCommandFormatter(
@@ -151,6 +152,14 @@ export function baseCommandFormatter(
 		language?: string;
 	}>,
 	footerInfo?: string | string[],
+	identityInfo?: {
+		defaultRegion?: string;
+		selectedRegion?: string;
+		identity?: {
+			accountId?: string;
+			roleName?: string;
+		};
+	},
 ): string {
 	const lines: string[] = [];
 
@@ -184,6 +193,41 @@ export function baseCommandFormatter(
 
 	// Footer
 	lines.push(formatSeparator());
+
+	// Add identity info
+	if (identityInfo) {
+		const infoLines = [];
+
+		if (
+			identityInfo.identity?.accountId ||
+			identityInfo.identity?.roleName
+		) {
+			infoLines.push(
+				'*Identity:* ' +
+					`${identityInfo.identity.accountId || '[No Account]'}` +
+					`/${identityInfo.identity.roleName || '[No Role]'}`,
+			);
+		}
+
+		if (identityInfo.defaultRegion || identityInfo.selectedRegion) {
+			infoLines.push(
+				'*Region:* ' +
+					(identityInfo.selectedRegion
+						? `${identityInfo.selectedRegion}` +
+							(identityInfo.defaultRegion &&
+							identityInfo.defaultRegion !==
+								identityInfo.selectedRegion
+								? ` (Default: ${identityInfo.defaultRegion})`
+								: '')
+						: `${identityInfo.defaultRegion || 'Unknown'} (Default)`),
+			);
+		}
+
+		if (infoLines.length > 0) {
+			lines.push(...infoLines);
+			lines.push('');
+		}
+	}
 
 	if (footerInfo) {
 		if (typeof footerInfo === 'string') {

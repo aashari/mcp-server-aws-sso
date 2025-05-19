@@ -138,10 +138,21 @@ export function formatEc2CommandResult(
 	// Add footer with command ID
 	const footerInfo = [`*Command ID: ${result.commandId}*`];
 
+	// Add identity and region information
+	const identityInfo = {
+		defaultRegion: process.env.AWS_REGION || 'ap-southeast-1',
+		selectedRegion: context.region,
+		identity: {
+			accountId: context.accountId,
+			roleName: context.roleName,
+		},
+	};
+
 	return baseCommandFormatter(
 		'AWS SSO: EC2 Command Output',
 		contextProps,
 		outputSections,
 		footerInfo,
+		identityInfo,
 	);
 }

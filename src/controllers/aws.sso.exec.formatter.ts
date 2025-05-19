@@ -116,9 +116,21 @@ export function formatCommandResult(
 		}
 	}
 
+	// Add identity and region information
+	const identityInfo = {
+		defaultRegion: process.env.AWS_REGION || 'ap-southeast-1',
+		selectedRegion: options?.region,
+		identity: {
+			accountId: options?.accountId,
+			roleName: options?.roleName,
+		},
+	};
+
 	return baseCommandFormatter(
 		'AWS SSO: Command Output',
 		contextProps,
 		outputSections,
+		undefined, // No additional footer info
+		identityInfo,
 	);
 }
