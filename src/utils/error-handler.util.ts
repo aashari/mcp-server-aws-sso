@@ -682,7 +682,7 @@ export function formatCliError(
 	let defaultRegion;
 	try {
 		defaultRegion = getDefaultAwsRegion();
-	} catch (e) {
+	} catch {
 		// Fallback to environment variables
 		defaultRegion =
 			process.env.AWS_REGION ||
