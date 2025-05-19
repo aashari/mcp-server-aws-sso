@@ -5,9 +5,7 @@ import {
 import {
 	formatHeading,
 	formatCodeBlock,
-	formatBulletList,
-	formatSeparator,
-	formatDate,
+	baseCommandFormatter,
 } from '../utils/formatter.util.js';
 
 /**
@@ -23,125 +21,127 @@ export function formatEc2CommandResult(
 	result: Ec2CommandExecutionResult,
 	context: Ec2CommandContext,
 ): string {
-	const lines: string[] = [];
+	// Build context properties
+	const contextProps: Record<string, unknown> = {
+		'Instance ID': context.instanceId,
+		Account: context.accountId,
+		Role: context.roleName,
+		Region: context.region || 'default',
+	};
 
-	lines.push(formatHeading('AWS SSO: EC2 Command Output', 1));
-	lines.push('');
+	// Generate output sections based on command result
+	const outputSections = [];
 
-	// Context Block
-	const contextProps: Record<string, unknown> = {};
-	contextProps['Instance ID'] = context.instanceId;
-	contextProps['Account'] = context.accountId;
-	contextProps['Role'] = context.roleName;
-	if (context.region) contextProps['Region'] = context.region;
-	else contextProps['Region'] = 'default';
+	// Always add the command that was executed
+	outputSections.push({
+		heading: 'Command',
+		content: command,
+		isCodeBlock: true,
+		language: 'bash',
+	});
 
-	lines.push(formatHeading('Execution Context', 2));
-	lines.push(formatBulletList(contextProps));
-	lines.push('');
-
-	// Command that was executed
-	lines.push(formatHeading('Command', 2));
-	lines.push(formatCodeBlock(command, 'bash'));
-	lines.push('');
-
-	// Success Case
+	// Success or Error output
 	if (
 		result.status === 'Success' &&
 		(!result.responseCode || result.responseCode === 0)
 	) {
-		lines.push(formatHeading('Output', 2));
-		if (result.output && result.output.trim()) {
-			lines.push(formatCodeBlock(result.output));
-		} else {
-			lines.push('*Command completed successfully with no output.*');
-		}
-	}
-	// Error Case
-	else {
+		// Success case
+		outputSections.push({
+			heading: 'Output',
+			content:
+				result.output && result.output.trim()
+					? result.output
+					: '*Command completed successfully with no output.*',
+			isCodeBlock: !!(result.output && result.output.trim()),
+		});
+	} else {
+		// Error case
 		const isPermissionError =
 			context.suggestedRoles && context.suggestedRoles.length > 0;
 
 		if (isPermissionError) {
-			lines.push(formatHeading('Error: Permission Denied', 2));
-			lines.push(
-				`The command failed due to insufficient permissions for the role \`${context.roleName}\` in account \`${context.accountId}\`.`,
-			);
+			outputSections.push({
+				heading: 'Error: Permission Denied',
+				content: `The command failed due to insufficient permissions for the role \`${context.roleName}\` in account \`${context.accountId}\`.`,
+			});
 		} else {
-			lines.push(formatHeading('Error', 2));
-			lines.push(
-				`The command failed to execute. Status: ${result.status}`,
-			);
+			outputSections.push({
+				heading: 'Error',
+				content: `The command failed to execute. Status: ${result.status}`,
+			});
 		}
 
-		lines.push('');
+		// Add response code if available
+		const errorDetails = [];
 		if (result.responseCode !== undefined && result.responseCode !== null) {
-			lines.push(`**Response Code**: ${result.responseCode}`);
-			lines.push('');
+			errorDetails.push(`**Response Code**: ${result.responseCode}`);
+			errorDetails.push('');
 		}
 
-		lines.push(formatHeading('Output', 3));
+		// Add command output if any
+		errorDetails.push(formatHeading('Output', 3));
 		if (result.output && result.output.trim()) {
-			lines.push(formatCodeBlock(result.output));
+			errorDetails.push(formatCodeBlock(result.output));
 		} else {
-			lines.push('*Command failed with no specific output.*');
+			errorDetails.push('*Command failed with no specific output.*');
 		}
-		lines.push('');
 
-		// Add instructions for SSM Agent troubleshooting
+		outputSections.push({
+			heading: 'Error Details',
+			level: 3,
+			content: errorDetails,
+		});
+
+		// Add troubleshooting section for specific failures
 		if (
 			result.status === 'Failed' ||
 			result.status === 'DeliveryTimedOut'
 		) {
-			lines.push(formatHeading('Troubleshooting', 3));
-			lines.push('Possible issues:');
-			lines.push(
-				'- SSM Agent is not installed or running on the instance',
-			);
-			lines.push(
-				'- Instance does not have an IAM role with SSM permissions',
-			);
-			lines.push('- Instance is not in a running state');
-			lines.push('');
-			lines.push('To check the SSM Agent status on the instance:');
-			lines.push(
-				formatCodeBlock(
-					'sudo systemctl status amazon-ssm-agent',
-					'bash',
-				),
-			);
-			lines.push('');
+			outputSections.push({
+				heading: 'Troubleshooting',
+				level: 3,
+				content: [
+					'Possible issues:',
+					'- SSM Agent is not installed or running on the instance',
+					'- Instance does not have an IAM role with SSM permissions',
+					'- Instance is not in a running state',
+					'',
+					'To check the SSM Agent status on the instance:',
+					formatCodeBlock(
+						'sudo systemctl status amazon-ssm-agent',
+						'bash',
+					),
+				],
+			});
 		}
 
 		// Add suggested roles section only on permission error
-		if (isPermissionError) {
-			lines.push(
-				formatHeading(
-					`Available Roles for Account ${context.accountId}`,
-					3,
-				),
-			);
-			if (context.suggestedRoles && context.suggestedRoles.length > 0) {
-				context.suggestedRoles.forEach((role) => {
-					lines.push(`- ${role.roleName}`);
-				});
-				lines.push('');
-				lines.push(
-					'Try executing the command again using one of the roles listed above.',
-				);
-			} else {
-				lines.push(
-					'Could not retrieve alternative roles for this account.',
-				);
-			}
+		if (
+			isPermissionError &&
+			context.suggestedRoles &&
+			context.suggestedRoles.length > 0
+		) {
+			const roleContent = [
+				...context.suggestedRoles.map((role) => `- ${role.roleName}`),
+				'',
+				'Try executing the command again using one of the roles listed above.',
+			];
+
+			outputSections.push({
+				heading: `Available Roles for Account ${context.accountId}`,
+				level: 3,
+				content: roleContent,
+			});
 		}
 	}
 
-	// Add standard footer with timestamp
-	lines.push('');
-	lines.push(formatSeparator());
-	lines.push(`*Command ID: ${result.commandId}*`);
-	lines.push(`*Information retrieved at: ${formatDate(new Date())}*`);
+	// Add footer with command ID
+	const footerInfo = [`*Command ID: ${result.commandId}*`];
 
-	return lines.join('\n');
+	return baseCommandFormatter(
+		'AWS SSO: EC2 Command Output',
+		contextProps,
+		outputSections,
+		footerInfo,
+	);
 }

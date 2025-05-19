@@ -129,3 +129,71 @@ function formatValue(value: unknown): string {
 	}
 	return String(value);
 }
+
+/**
+ * Base formatter for command execution results
+ * Creates a standard Markdown format for command output
+ *
+ * @param title Title for the output (e.g., "AWS SSO: Command Output")
+ * @param contextProps Properties to display in the context section
+ * @param outputSections Array of sections to add (each with heading and content)
+ * @param footerInfo Additional footer information before the timestamp
+ * @returns Formatted Markdown string
+ */
+export function baseCommandFormatter(
+	title: string,
+	contextProps: Record<string, unknown>,
+	outputSections: Array<{
+		heading: string;
+		level?: number;
+		content: string | string[];
+		isCodeBlock?: boolean;
+		language?: string;
+	}>,
+	footerInfo?: string | string[],
+): string {
+	const lines: string[] = [];
+
+	// Title
+	lines.push(formatHeading(title, 1));
+	lines.push('');
+
+	// Context section
+	if (Object.keys(contextProps).length > 0) {
+		lines.push(formatHeading('Execution Context', 2));
+		lines.push(formatBulletList(contextProps));
+		lines.push('');
+	}
+
+	// Output sections
+	for (const section of outputSections) {
+		lines.push(formatHeading(section.heading, section.level || 2));
+
+		if (typeof section.content === 'string') {
+			if (section.isCodeBlock) {
+				lines.push(formatCodeBlock(section.content, section.language));
+			} else {
+				lines.push(section.content);
+			}
+		} else if (Array.isArray(section.content)) {
+			lines.push(...section.content);
+		}
+
+		lines.push('');
+	}
+
+	// Footer
+	lines.push(formatSeparator());
+
+	if (footerInfo) {
+		if (typeof footerInfo === 'string') {
+			lines.push(footerInfo);
+		} else if (Array.isArray(footerInfo)) {
+			lines.push(...footerInfo);
+		}
+	}
+
+	lines.push(`*Information retrieved at: ${formatDate(new Date())}*`);
+
+	return lines.join('\n');
+}
