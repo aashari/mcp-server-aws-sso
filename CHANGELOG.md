@@ -1,3 +1,10 @@
+## [1.19.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.3...v1.19.4) (2025-05-19)
+
+
+### Bug Fixes
+
+* remove re-export code for better direct imports ([1abacfd](https://github.com/aashari/mcp-server-aws-sso/commit/1abacfd653f3b1caa43a51024b6f1778fcf85cbf))
+
 ## [1.19.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.2...v1.19.3) (2025-05-19)
 
 
