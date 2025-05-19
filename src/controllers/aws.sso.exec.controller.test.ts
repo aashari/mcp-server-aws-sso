@@ -92,32 +92,17 @@ describe('AWS SSO Exec Controller', () => {
 		expect(result.content).toContain('aws-cli');
 	});
 
-	// Test error handling for unauthenticated users
-	test('executeCommand should handle unauthenticated status', async () => {
-		// Mock the checkSsoAuthStatus to simulate unauthenticated state
-		const originalCheckSsoAuthStatus = jest.spyOn(
-			awsSsoExecController,
-			'executeCommand',
+	// Test format of authentication required message
+	test('formatAuthRequired should return properly formatted message', async () => {
+		// Test the formatting function directly instead of mocking
+		const authRequiredMessage = formatAuthRequired();
+
+		expect(authRequiredMessage).toBeDefined();
+		expect(authRequiredMessage).toContain(
+			'# AWS SSO: Authentication Required',
 		);
-		originalCheckSsoAuthStatus.mockImplementationOnce(async () => {
-			return {
-				content: formatAuthRequired(),
-			};
-		});
-
-		const result = await awsSsoExecController.executeCommand({
-			accountId: '123456789012',
-			roleName: 'TestRole',
-			command: 'aws s3 ls',
-		});
-
-		expect(result).toBeDefined();
-		expect(result.content).toBeDefined();
-		expect(result.content).toContain('# AWS SSO: Authentication Required');
-		expect(result.content).toContain('How to Authenticate');
-
-		// Restore original implementation
-		originalCheckSsoAuthStatus.mockRestore();
+		expect(authRequiredMessage).toContain('How to Authenticate');
+		expect(authRequiredMessage).toContain('mcp-aws-sso login');
 	});
 
 	// Test handling of errors from AWS CLI commands
