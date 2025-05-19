@@ -5,6 +5,7 @@ import {
 	baseCommandFormatter,
 } from '../utils/formatter.util.js';
 import { RoleInfo } from '../services/vendor.aws.sso.types.js';
+import { getDefaultAwsRegion } from '../utils/aws.sso.util.js';
 
 /**
  * Formats the result of an executed command into Markdown
@@ -118,7 +119,7 @@ export function formatCommandResult(
 
 	// Add identity and region information
 	const identityInfo = {
-		defaultRegion: process.env.AWS_REGION || 'ap-southeast-1',
+		defaultRegion: getDefaultAwsRegion(),
 		selectedRegion: options?.region,
 		identity: {
 			accountId: options?.accountId,

@@ -7,6 +7,7 @@ import {
 	formatCodeBlock,
 	baseCommandFormatter,
 } from '../utils/formatter.util.js';
+import { getDefaultAwsRegion } from '../utils/aws.sso.util.js';
 
 /**
  * Formats the result of an executed EC2 command into Markdown
@@ -140,7 +141,7 @@ export function formatEc2CommandResult(
 
 	// Add identity and region information
 	const identityInfo = {
-		defaultRegion: process.env.AWS_REGION || 'ap-southeast-1',
+		defaultRegion: getDefaultAwsRegion(),
 		selectedRegion: context.region,
 		identity: {
 			accountId: context.accountId,
