@@ -392,6 +392,7 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 
 	// Poll until successful or timeout
 	let consecutiveSlowDownErrors = 0;
+	let consecutiveAuthPendingErrors = 0;
 	let currentPollingInterval = pollingIntervalSeconds;
 	let lastErrorReceived:
 		| Error
@@ -408,6 +409,20 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 				'Device authorization timed out. Please try again.',
 			);
 			methodLogger.error('Device authorization timed out', error);
+
+			// Clear any pending device authorization data
+			try {
+				await ssoCache.clearDeviceAuthorizationInfo();
+				methodLogger.debug(
+					'Cleared stale device authorization data due to timeout',
+				);
+			} catch (clearError) {
+				methodLogger.error(
+					'Error clearing device auth data on timeout',
+					clearError,
+				);
+			}
+
 			throw error;
 		}
 
@@ -491,7 +506,41 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 					'error' in error &&
 					error.error === 'authorization_pending'
 				) {
-					methodLogger.debug('Authorization is still pending...');
+					consecutiveAuthPendingErrors++;
+					methodLogger.debug(
+						`Authorization is still pending... (${consecutiveAuthPendingErrors})`,
+					);
+
+					// If we've been getting authorization_pending for a while (e.g., 30 seconds),
+					// the authentication flow might be stale
+					if (consecutiveAuthPendingErrors >= 30) {
+						methodLogger.warn(
+							`Authorization pending for too long (${consecutiveAuthPendingErrors} consecutive errors). Clearing device authorization data.`,
+						);
+
+						// Clear any pending device authorization data
+						try {
+							await ssoCache.clearDeviceAuthorizationInfo();
+							methodLogger.debug(
+								'Cleared stale device authorization data',
+							);
+
+							// Also consider clearing the token
+							await ssoCache.clearSsoToken();
+							methodLogger.debug('Cleared SSO token cache');
+
+							throw createAuthTimeoutError(
+								'Authorization pending for too long. Device authorization data has been cleared. Please try again.',
+								error,
+							);
+						} catch (clearError) {
+							methodLogger.error(
+								'Error clearing authorization data',
+								clearError,
+							);
+							// Continue polling even if cleanup fails
+						}
+					}
 					// This is expected - continue polling
 				}
 				// Handle slow_down errors by increasing the interval
@@ -509,6 +558,19 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 
 					// If we get too many consecutive slow_down errors, throw a typed error
 					if (consecutiveSlowDownErrors >= 3) {
+						// Clear device authorization data on too many slow_down errors
+						try {
+							await ssoCache.clearDeviceAuthorizationInfo();
+							methodLogger.debug(
+								'Cleared device authorization data due to rate limiting',
+							);
+						} catch (clearError) {
+							methodLogger.error(
+								'Error clearing device auth data on rate limit',
+								clearError,
+							);
+						}
+
 						throw createAuthSlowDownError(
 							'Authentication is being rate limited. The server has requested to slow down polling.',
 							error,
@@ -517,6 +579,19 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 				}
 				// Handle access_denied - user denied the authorization
 				else if ('error' in error && error.error === 'access_denied') {
+					// Clean up device authorization data
+					try {
+						await ssoCache.clearDeviceAuthorizationInfo();
+						methodLogger.debug(
+							'Cleared device authorization data after access_denied',
+						);
+					} catch (clearError) {
+						methodLogger.error(
+							'Error clearing device auth data after access_denied',
+							clearError,
+						);
+					}
+
 					throw createAuthDeniedError(
 						'Authentication was denied by the user or system',
 						error,
@@ -524,6 +599,19 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 				}
 				// Handle expired_token - the device code has expired
 				else if ('error' in error && error.error === 'expired_token') {
+					// Clean up device authorization data
+					try {
+						await ssoCache.clearDeviceAuthorizationInfo();
+						methodLogger.debug(
+							'Cleared device authorization data after token expiration',
+						);
+					} catch (clearError) {
+						methodLogger.error(
+							'Error clearing device auth data after token expiration',
+							clearError,
+						);
+					}
+
 					throw createAuthTimeoutError(
 						'Authentication session has expired. Please restart the login process.',
 						error,
@@ -532,6 +620,20 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 				// Handle other OIDC errors with more context
 				else if ('error' in error && 'error_description' in error) {
 					methodLogger.error('OIDC error during polling', error);
+
+					// Clean up device authorization data for any OIDC error
+					try {
+						await ssoCache.clearDeviceAuthorizationInfo();
+						methodLogger.debug(
+							'Cleared device authorization data due to OIDC error',
+						);
+					} catch (clearError) {
+						methodLogger.error(
+							'Error clearing device auth data on OIDC error',
+							clearError,
+						);
+					}
+
 					throw createAuthInvalidError(
 						`Authentication error: ${error.error_description || error.error}`,
 						error,
@@ -559,6 +661,14 @@ export async function pollForSsoToken(): Promise<AwsSsoAuthResult> {
 			lastErrorReceived?.error !== 'slow_down'
 		) {
 			consecutiveSlowDownErrors = 0;
+		}
+
+		// Reset consecutive auth_pending counter if we didn't get that error
+		if (
+			lastErrorReceived === undefined ||
+			lastErrorReceived?.error !== 'authorization_pending'
+		) {
+			consecutiveAuthPendingErrors = 0;
 		}
 
 		// Wait for the polling interval before trying again

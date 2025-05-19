@@ -75,6 +75,23 @@ async function startLogin(
 	const launchBrowser = params?.launchBrowser ?? true;
 
 	try {
+		// Forcibly clear any existing authorization data to ensure a fresh start
+		loginLogger.debug('Clearing any existing device authorization data');
+		try {
+			// Import the cache utility to directly clear the auth data
+			const ssoCache = await import('../utils/aws.sso.cache.util.js');
+			await ssoCache.clearDeviceAuthorizationInfo();
+			loginLogger.debug(
+				'Successfully cleared device authorization cache',
+			);
+		} catch (clearError) {
+			loginLogger.warn(
+				'Error clearing device authorization data',
+				clearError,
+			);
+			// Continue even if clearing fails
+		}
+
 		// Check if we already have a valid token
 		const cachedToken = await getCachedSsoToken();
 		if (cachedToken) {
