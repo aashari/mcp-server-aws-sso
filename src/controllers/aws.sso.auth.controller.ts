@@ -2,7 +2,6 @@ import { Logger } from '../utils/logger.util.js';
 import {
 	handleControllerError,
 	buildErrorContext,
-	ErrorCode,
 	detectErrorType,
 } from '../utils/error-handler.util.js';
 import { ControllerResponse } from '../types/common.types.js';
@@ -25,7 +24,6 @@ import {
 } from './aws.sso.auth.formatter.js';
 import { LoginToolArgsType } from '../tools/aws.sso.types.js';
 import { formatDate } from '../utils/formatter.util.js';
-import * as ssoCache from '../utils/aws.sso.cache.util.js';
 
 /**
  * AWS SSO Authentication Controller Module
@@ -43,23 +41,18 @@ const controllerLogger = Logger.forContext(
 // Log module initialization
 controllerLogger.debug('AWS SSO authentication controller initialized');
 
-// Maximum number of retry attempts for self-healing authentication
-const MAX_AUTH_RETRIES = 3;
-
 /**
- * Start the AWS SSO login process with automatic error recovery
+ * Start the AWS SSO login process
  *
  * Initiates the device authorization flow, displays verification instructions,
- * and optionally waits for authentication completion. Implements automatic error
- * recovery by clearing cache and restarting the flow when errors occur.
+ * and optionally waits for authentication completion.
  *
  * @async
  * @param {Object} [params] - Optional parameters for login
  * @param {boolean} [params.autoPoll=true] - Whether to automatically poll for token completion
  * @param {boolean} [params.launchBrowser=true] - Whether to automatically launch a browser with the verification URI
- * @param {number} [params._retryCount=0] - Internal parameter tracking retry attempts (do not set manually)
  * @returns {Promise<ControllerResponse>} Response with login result, including accounts if successful
- * @throws {Error} If login initialization fails or polling times out after all retries
+ * @throws {Error} If login initialization fails or polling times out
  * @example
  * // Start login with automatic polling and browser launch
  * const result = await startLogin();
@@ -68,22 +61,12 @@ const MAX_AUTH_RETRIES = 3;
  * const result = await startLogin({ autoPoll: false, launchBrowser: false });
  */
 async function startLogin(
-	params?: LoginToolArgsType & { _retryCount?: number },
+	params?: LoginToolArgsType,
 ): Promise<ControllerResponse> {
 	const loginLogger = Logger.forContext(
 		'controllers/aws.sso.auth.controller.ts',
 		'startLogin',
 	);
-
-	// Track retry attempts
-	const retryCount = params?._retryCount ?? 0;
-
-	// Log retry attempt if not the first try
-	if (retryCount > 0) {
-		loginLogger.info(
-			`Authentication retry attempt ${retryCount}/${MAX_AUTH_RETRIES}...`,
-		);
-	}
 
 	loginLogger.debug('Starting AWS SSO login process');
 
@@ -244,52 +227,8 @@ Complete the authentication in your browser. You can then use 'list-accounts' to
 				content: formatLoginSuccess(expiresDate),
 			};
 		} catch (error) {
-			// Implement self-healing authentication
-			// Check if this is a recoverable authentication error
+			// Just throw the error without any retry attempts
 			const { code } = detectErrorType(error);
-			const recoverable = [
-				ErrorCode.AWS_SSO_AUTH_PENDING,
-				ErrorCode.AWS_SSO_AUTH_DENIED,
-				ErrorCode.AWS_SSO_TOKEN_EXPIRED,
-				ErrorCode.RATE_LIMIT_ERROR,
-				ErrorCode.VALIDATION_ERROR,
-				ErrorCode.AWS_SDK_INVALID_REQUEST,
-			].includes(code);
-
-			// Check if we can retry
-			if (recoverable && retryCount < MAX_AUTH_RETRIES) {
-				loginLogger.warn(
-					`Authentication error detected: ${code}. Attempting recovery...`,
-					error,
-				);
-
-				// Clear cache data before retrying
-				loginLogger.info('Clearing authentication cache data...');
-				await ssoCache.clearDeviceAuthorizationInfo();
-				await ssoCache.clearSsoToken();
-
-				// Exponential backoff before retry
-				const backoffMs = Math.pow(2, retryCount) * 1000;
-				loginLogger.info(
-					`Waiting ${backoffMs / 1000} seconds before retry...`,
-				);
-				await new Promise((resolve) => setTimeout(resolve, backoffMs));
-
-				// Recursive call with incremented retry count
-				return startLogin({
-					autoPoll: params?.autoPoll ?? true,
-					launchBrowser: params?.launchBrowser ?? true,
-					_retryCount: retryCount + 1,
-				});
-			}
-
-			// Either not recoverable or max retries exceeded
-			if (retryCount > 0) {
-				loginLogger.error(
-					`Authentication failed after ${retryCount} recovery attempts`,
-					error,
-				);
-			}
 
 			// Re-throw with improved context
 			const errorContext = buildErrorContext(
@@ -298,7 +237,6 @@ Complete the authentication in your browser. You can then use 'list-accounts' to
 				'controllers/aws.sso.auth.controller.ts@startLogin',
 				undefined,
 				{
-					retryCount,
 					autoPoll,
 					launchBrowser,
 					errorCode: code,
@@ -307,41 +245,13 @@ Complete the authentication in your browser. You can then use 'list-accounts' to
 			throw handleControllerError(error, errorContext);
 		}
 	} catch (error) {
-		// Handle startup errors - check if recoverable and retry if possible
-		if (retryCount < MAX_AUTH_RETRIES) {
-			loginLogger.warn(
-				`Login initialization error. Attempting recovery...`,
-				error,
-			);
-
-			// Clear all cache data before retrying
-			loginLogger.info('Clearing authentication cache data...');
-			await ssoCache.clearDeviceAuthorizationInfo();
-			await ssoCache.clearSsoToken();
-
-			// Exponential backoff before retry
-			const backoffMs = Math.pow(2, retryCount) * 1000;
-			loginLogger.info(
-				`Waiting ${backoffMs / 1000} seconds before retry...`,
-			);
-			await new Promise((resolve) => setTimeout(resolve, backoffMs));
-
-			// Recursive call with incremented retry count
-			return startLogin({
-				autoPoll: params?.autoPoll ?? true,
-				launchBrowser: params?.launchBrowser ?? true,
-				_retryCount: retryCount + 1,
-			});
-		}
-
-		// After all retries, throw the error
+		// Handle startup errors - throw directly without retry
 		const errorContext = buildErrorContext(
 			'AWS SSO Authentication',
 			'login',
 			'controllers/aws.sso.auth.controller.ts@startLogin',
 			undefined,
 			{
-				retryCount,
 				autoPoll,
 				launchBrowser,
 			},
