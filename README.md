@@ -136,6 +136,24 @@ _or:_
 
 ---
 
+## `aws_sso_status`
+
+Checks the current AWS SSO authentication status by verifying if a valid cached token exists and its expiration time.
+
+**Parameters:**
+
+- No parameters required. The tool checks the authentication status of the current session.
+
+**Example:**
+
+```json
+{}
+```
+
+> "Check if I'm currently authenticated to AWS SSO."
+
+---
+
 ## `aws_sso_ls_accounts`
 
 Lists ALL AWS accounts and associated roles accessible via AWS SSO. Requires prior authentication via `aws_sso_login`.
