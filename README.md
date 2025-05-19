@@ -242,16 +242,14 @@ All responses are Markdown-formatted, including:
 **Region:** us-east-1 (Default: ap-southeast-1)
 
 ## Command
-```bash
-aws s3 ls
-```
+
+	aws s3 ls
 
 ## Output
-```
-2023-01-15 08:42:53 my-bucket-1
-2023-05-22 14:18:19 my-bucket-2
-2024-02-10 11:05:37 my-logs-bucket
-```
+
+	2023-01-15 08:42:53 my-bucket-1
+	2023-05-22 14:18:19 my-bucket-2
+	2024-02-10 11:05:37 my-logs-bucket
 
 *Executed: 2025-05-19 06:21:49 UTC*
 ```
@@ -265,19 +263,18 @@ aws s3 ls
 **Region:** us-east-1 (Default: ap-southeast-1)
 
 ## Command
-```bash
-aws s3api get-object --bucket restricted-bucket --key secret.txt output.txt
-```
+	
+	aws s3api get-object --bucket restricted-bucket --key secret.txt output.txt
 
 ## Error: Permission Denied
 The role `ReadOnly` does not have permission to execute this command.
 
 ## Error Details
-```
-An error occurred (AccessDenied) when calling the GetObject operation: Access Denied
-```
+
+	An error occurred (AccessDenied) when calling the GetObject operation: Access Denied
 
 ### Troubleshooting
+
 #### Available Roles
 - AdminAccess
 - PowerUserAccess
@@ -323,6 +320,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 [ISC License](LICENSE)
 
-## About
-
-Built with Node.js/TypeScript, this MCP server streamlines AI-driven AWS resource management using SSO. For issues or feedback, open a GitHub issue or contact the maintainer at [your-email@example.com].
