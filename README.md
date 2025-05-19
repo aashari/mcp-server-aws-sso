@@ -90,7 +90,7 @@ Configure your MCP-compatible client (e.g., Claude, Cursor AI):
 
 ## MCP Tools
 
-MCP tools use `snake_case` names, `camelCase` parameters, and return Markdown-formatted responses. See [docs/examples.md](docs/examples.md) for usage examples.
+MCP tools use `snake_case` names, `camelCase` parameters, and return Markdown-formatted responses.
 
 - **aws_sso_login**: Initiates AWS SSO device authorization (`launchBrowser`: bool opt, `autoPoll`: bool opt). Use: Log in to AWS SSO.
 - **aws_sso_status**: Checks SSO authentication status (no params). Use: Verify authentication.
@@ -98,15 +98,129 @@ MCP tools use `snake_case` names, `camelCase` parameters, and return Markdown-fo
 - **aws_sso_exec_command**: Executes AWS CLI command with temporary credentials (`accountId`: str req, `roleName`: str req, `command`: str req, `region`: str opt). Use: Run `aws s3 ls`.
 - **aws_sso_ec2_exec_command**: Runs shell commands on EC2 via SSM (`instanceId`: str req, `accountId`: str req, `roleName`: str req, `command`: str req, `region`: str opt). Use: Check EC2 disk space.
 
+<details>
+<summary><b>MCP Tool Examples (Click to expand)</b></summary>
+
+### `aws_sso_login`
+
+**Basic Login:**
+```json
+{}
+```
+
+**Custom Login Options:**
+```json
+{
+  "launchBrowser": false,
+  "autoPoll": true
+}
+```
+
+### `aws_sso_status`
+
+**Check Authentication Status:**
+```json
+{}
+```
+
+### `aws_sso_ls_accounts`
+
+**List All Accounts and Roles:**
+```json
+{}
+```
+
+### `aws_sso_exec_command`
+
+**List S3 Buckets:**
+```json
+{
+  "accountId": "123456789012", 
+  "roleName": "ReadOnly",
+  "command": "aws s3 ls"
+}
+```
+
+**Describe EC2 Instances in a Specific Region:**
+```json
+{
+  "accountId": "123456789012",
+  "roleName": "AdminRole",
+  "command": "aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType]' --output table",
+  "region": "us-west-2"
+}
+```
+
+### `aws_sso_ec2_exec_command`
+
+**Check System Resources:**
+```json
+{
+  "instanceId": "i-0a69e80761897dcce",
+  "accountId": "123456789012",
+  "roleName": "InfraOps",
+  "command": "uptime && df -h && free -m"
+}
+```
+
+</details>
+
 ## CLI Commands
 
-CLI commands use `kebab-case`. Run `--help` for details (e.g., `mcp-aws-sso login --help`). See [docs/examples.md](docs/examples.md) for examples.
+CLI commands use `kebab-case`. Run `--help` for details (e.g., `mcp-aws-sso login --help`).
 
 - **login**: Authenticates via AWS SSO (`--no-launch-browser`, `--no-auto-poll`). Ex: `mcp-aws-sso login`.
 - **status**: Checks authentication status (no options). Ex: `mcp-aws-sso status`.
 - **ls-accounts**: Lists accounts/roles (no options). Ex: `mcp-aws-sso ls-accounts`.
 - **exec-command**: Runs AWS CLI command (`--account-id`, `--role-name`, `--command`, `--region`). Ex: `mcp-aws-sso exec-command --account-id 123456789012 --role-name ReadOnly --command "aws s3 ls"`.
 - **ec2-exec-command**: Runs shell command on EC2 (`--instance-id`, `--account-id`, `--role-name`, `--command`, `--region`). Ex: `mcp-aws-sso ec2-exec-command --instance-id i-0a69e80761897dcce --account-id 123456789012 --role-name InfraOps --command "uptime"`.
+
+<details>
+<summary><b>CLI Command Examples (Click to expand)</b></summary>
+
+### Login
+
+**Standard Login (launches browser and polls automatically):**
+```bash
+mcp-aws-sso login
+```
+
+**Login without Browser Launch:**
+```bash
+mcp-aws-sso login --no-launch-browser
+```
+
+### Execute AWS Commands
+
+**List S3 Buckets:**
+```bash
+mcp-aws-sso exec-command \
+  --account-id 123456789012 \
+  --role-name ReadOnly \
+  --command "aws s3 ls"
+```
+
+**List EC2 Instances with Specific Region:**
+```bash
+mcp-aws-sso exec-command \
+  --account-id 123456789012 \
+  --role-name AdminRole \
+  --region us-west-2 \
+  --command "aws ec2 describe-instances --output table"
+```
+
+### Execute EC2 Commands
+
+**Check System Resources:**
+```bash
+mcp-aws-sso ec2-exec-command \
+  --instance-id i-0a69e80761897dcce \
+  --account-id 123456789012 \
+  --role-name InfraOps \
+  --command "uptime && df -h && free -m"
+```
+
+</details>
 
 ## Response Format
 
@@ -116,13 +230,16 @@ All responses are Markdown-formatted, including:
 - **Context**: Account, role, region, and execution time.
 - **Output**: Command results or troubleshooting steps.
 
-**Example Success (`aws_sso_exec_command`)**:
+<details>
+<summary><b>Response Format Examples (Click to expand)</b></summary>
+
+### MCP Tool Response Example (`aws_sso_exec_command`)
 
 ```markdown
 # AWS SSO: Command Result
 
 **Account/Role:** 123456789012/ReadOnly
-**Region:** us-west-2
+**Region:** us-east-1 (Default: ap-southeast-1)
 
 ## Command
 ```bash
@@ -132,11 +249,46 @@ aws s3 ls
 ## Output
 ```
 2023-01-15 08:42:53 my-bucket-1
+2023-05-22 14:18:19 my-bucket-2
 2024-02-10 11:05:37 my-logs-bucket
 ```
 
-Executed: 2025-05-19 16:38:00 UTC
+*Executed: 2025-05-19 06:21:49 UTC*
 ```
+
+### Error Response Example
+
+```markdown
+# ❌ AWS SSO: Command Error
+
+**Account/Role:** 123456789012/ReadOnly
+**Region:** us-east-1 (Default: ap-southeast-1)
+
+## Command
+```bash
+aws s3api get-object --bucket restricted-bucket --key secret.txt output.txt
+```
+
+## Error: Permission Denied
+The role `ReadOnly` does not have permission to execute this command.
+
+## Error Details
+```
+An error occurred (AccessDenied) when calling the GetObject operation: Access Denied
+```
+
+### Troubleshooting
+#### Available Roles
+- AdminAccess
+- PowerUserAccess
+- S3FullAccess
+
+Try executing the command again using one of the roles listed above that has appropriate permissions.
+
+*Executed: 2025-05-19 06:17:49 UTC*
+```
+
+</details>
 
 ## Development
 
