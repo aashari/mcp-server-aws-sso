@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.0...v1.19.1) (2025-05-19)
+
+
+### Bug Fixes
+
+* remove unused exports and skip rate-limited test ([18b3256](https://github.com/aashari/mcp-server-aws-sso/commit/18b3256884950d913eaa64cc444d5f05c583daf4))
+
 # [1.19.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.18.0...v1.19.0) (2025-05-19)
 
 
