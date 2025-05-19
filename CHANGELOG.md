@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.18.0...v1.19.0) (2025-05-19)
+
+
+### Features
+
+* Clear cache on authorization_pending errors ([aab488c](https://github.com/aashari/mcp-server-aws-sso/commit/aab488c188724d61f7b768cfe4b79c9c229c5da7))
+
 # [1.18.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.17.0...v1.18.0) (2025-05-19)
 
 
