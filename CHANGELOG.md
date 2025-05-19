@@ -1,3 +1,19 @@
+# [1.17.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.16.0...v1.17.0) (2025-05-19)
+
+
+### Bug Fixes
+
+* fix unused variable in catch block ([8e88b57](https://github.com/aashari/mcp-server-aws-sso/commit/8e88b57f3d8c71d4ee8383cf3bb30890ef58796a))
+* use AWS CLI configuration for default region detection ([359ff8c](https://github.com/aashari/mcp-server-aws-sso/commit/359ff8c9a40e391dd81af22b9b1bd10798f8e213))
+
+
+### Features
+
+* add EC2 command execution functionality via SSM ([ddc47c9](https://github.com/aashari/mcp-server-aws-sso/commit/ddc47c9d85d0524bad88c6acb47f82e25dda263c))
+* enhance command output with region and identity info ([2eef46a](https://github.com/aashari/mcp-server-aws-sso/commit/2eef46a1cc9ea702bf7e3363bad17b1efbd656ba))
+* Improve output format for AWS SSO commands with more concise and scannable layout ([1c13230](https://github.com/aashari/mcp-server-aws-sso/commit/1c1323087200bb3b98fd645b1cfa2c0e5ca35d98))
+* standardize CLI error output format to match success format ([675e8e8](https://github.com/aashari/mcp-server-aws-sso/commit/675e8e81e6f3016b35bd3cb6c45ffd29fcc765b6))
+
 # [1.16.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.15.1...v1.16.0) (2025-05-19)
 
 
