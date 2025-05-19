@@ -2,11 +2,7 @@ import {
 	Ec2CommandExecutionResult,
 	Ec2CommandContext,
 } from './aws.sso.ec2.types.js';
-import {
-	formatHeading,
-	formatCodeBlock,
-	baseCommandFormatter,
-} from '../utils/formatter.util.js';
+import { baseCommandFormatter, formatDate } from '../utils/formatter.util.js';
 import { getDefaultAwsRegion } from '../utils/aws.sso.util.js';
 
 /**
@@ -22,13 +18,42 @@ export function formatEc2CommandResult(
 	result: Ec2CommandExecutionResult,
 	context: Ec2CommandContext,
 ): string {
-	// Build context properties
-	const contextProps: Record<string, unknown> = {
-		'Instance ID': context.instanceId,
-		Account: context.accountId,
-		Role: context.roleName,
-		Region: context.region || 'default',
-	};
+	const defaultRegion = getDefaultAwsRegion();
+	const isSuccess =
+		result.status === 'Success' &&
+		(!result.responseCode || result.responseCode === 0);
+	const isPermissionError =
+		context.suggestedRoles && context.suggestedRoles.length > 0;
+
+	// Title with error indicator if needed
+	const title = isSuccess
+		? 'AWS SSO: EC2 Command Result'
+		: '❌ AWS SSO: EC2 Command Error';
+
+	// Build context properties as a single string per line
+	const contextProps: Record<string, unknown> = {};
+
+	// Instance line with name if available
+	contextProps['Instance'] = context.instanceName
+		? `${context.instanceId} (${context.instanceName})`
+		: context.instanceId;
+
+	// Account/Role line
+	contextProps['Account/Role'] = `${context.accountId}/${context.roleName}`;
+
+	// Region line with default if different
+	if (context.region || defaultRegion) {
+		contextProps['Region'] = context.region || defaultRegion;
+		// Add default region info if different
+		if (
+			context.region &&
+			defaultRegion &&
+			context.region !== defaultRegion
+		) {
+			contextProps['Region'] =
+				`${context.region} (Default: ${defaultRegion})`;
+		}
+	}
 
 	// Generate output sections based on command result
 	const outputSections = [];
@@ -41,11 +66,7 @@ export function formatEc2CommandResult(
 		language: 'bash',
 	});
 
-	// Success or Error output
-	if (
-		result.status === 'Success' &&
-		(!result.responseCode || result.responseCode === 0)
-	) {
+	if (isSuccess) {
 		// Success case
 		outputSections.push({
 			heading: 'Output',
@@ -56,104 +77,91 @@ export function formatEc2CommandResult(
 			isCodeBlock: !!(result.output && result.output.trim()),
 		});
 	} else {
-		// Error case
-		const isPermissionError =
-			context.suggestedRoles && context.suggestedRoles.length > 0;
+		// Error case - Customize error title based on the specific error
+		let errorTitle = 'Error';
+		let errorDescription = 'The command failed to execute.';
 
 		if (isPermissionError) {
-			outputSections.push({
-				heading: 'Error: Permission Denied',
-				content: `The command failed due to insufficient permissions for the role \`${context.roleName}\` in account \`${context.accountId}\`.`,
-			});
-		} else {
-			outputSections.push({
-				heading: 'Error',
-				content: `The command failed to execute. Status: ${result.status}`,
-			});
-		}
-
-		// Add response code if available
-		const errorDetails = [];
-		if (result.responseCode !== undefined && result.responseCode !== null) {
-			errorDetails.push(`**Response Code**: ${result.responseCode}`);
-			errorDetails.push('');
-		}
-
-		// Add command output if any
-		errorDetails.push(formatHeading('Output', 3));
-		if (result.output && result.output.trim()) {
-			errorDetails.push(formatCodeBlock(result.output));
-		} else {
-			errorDetails.push('*Command failed with no specific output.*');
+			errorTitle = 'Error: Permission Denied';
+			errorDescription = `The role \`${context.roleName}\` does not have permission to execute this command on the instance.`;
+		} else if (result.status === 'DeliveryTimedOut') {
+			errorTitle = 'Error: Connection Timeout';
+			errorDescription =
+				'Could not connect to the instance via SSM. Ensure the SSM Agent is running.';
+		} else if (result.status === 'Failed') {
+			if (result.output && result.output.includes('not found')) {
+				errorTitle = 'Error: Instance not found';
+				errorDescription = `Instance ${context.instanceId} not found or not connected to SSM. Ensure the instance is running and has the SSM Agent installed.`;
+			} else {
+				errorTitle = 'Error: Command Failed';
+				if (result.responseCode) {
+					errorTitle += ` (Code ${result.responseCode})`;
+				}
+			}
 		}
 
 		outputSections.push({
-			heading: 'Error Details',
-			level: 3,
-			content: errorDetails,
+			heading: errorTitle,
+			content: errorDescription,
 		});
 
-		// Add troubleshooting section for specific failures
+		// Add output as error details if available
+		if (result.output && result.output.trim()) {
+			outputSections.push({
+				heading: 'Error Details',
+				content: result.output,
+				isCodeBlock: true,
+			});
+		}
+
+		// Add troubleshooting section
 		if (
 			result.status === 'Failed' ||
 			result.status === 'DeliveryTimedOut'
 		) {
 			outputSections.push({
 				heading: 'Troubleshooting',
-				level: 3,
 				content: [
-					'Possible issues:',
-					'- SSM Agent is not installed or running on the instance',
-					'- Instance does not have an IAM role with SSM permissions',
-					'- Instance is not in a running state',
-					'',
-					'To check the SSM Agent status on the instance:',
-					formatCodeBlock(
-						'sudo systemctl status amazon-ssm-agent',
-						'bash',
-					),
+					'- Check if the instance exists in the specified region',
+					'- Verify the instance is in a running state',
+					'- Confirm SSM Agent is installed and running',
+					'- Ensure your role has permission to use SSM',
 				],
 			});
 		}
 
-		// Add suggested roles section only on permission error
+		// Add suggested roles section if permission error
 		if (
 			isPermissionError &&
 			context.suggestedRoles &&
 			context.suggestedRoles.length > 0
 		) {
-			const roleContent = [
-				...context.suggestedRoles.map((role) => `- ${role.roleName}`),
-				'',
-				'Try executing the command again using one of the roles listed above.',
-			];
-
 			outputSections.push({
-				heading: `Available Roles for Account ${context.accountId}`,
-				level: 3,
-				content: roleContent,
+				heading: 'Available Roles',
+				content: [
+					...context.suggestedRoles.map(
+						(role) => `- ${role.roleName}`,
+					),
+					'',
+					'Try executing the command with one of these roles instead.',
+				],
 			});
 		}
 	}
 
-	// Add footer with command ID
-	const footerInfo = [`*Command ID: ${result.commandId}*`];
-
-	// Add identity and region information
-	const identityInfo = {
-		defaultRegion: getDefaultAwsRegion(),
-		selectedRegion: context.region,
-		identity: {
-			accountId: context.accountId,
-			roleName: context.roleName,
-		},
-	};
+	// Footer with command ID and timestamp
+	const footerInfo = [
+		`*Command ID: ${result.commandId}*`,
+		`*Executed: ${formatDate(new Date())}*`,
+	];
 
 	return baseCommandFormatter(
-		'AWS SSO: EC2 Command Output',
+		title,
 		contextProps,
 		outputSections,
 		footerInfo,
-		identityInfo,
+		// We no longer need the identity info section as we've incorporated
+		// this information directly in the contextProps
+		undefined,
 	);
 }

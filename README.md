@@ -239,12 +239,111 @@ The response includes:
 
 ## `aws_sso_exec_command` Responses
 
-The response includes:
-- Execution context (account, role, region)
-- Command output (stdout)
-- Error messages if any (stderr)
-- Exit code (0 for success, non-zero for failure)
-- Suggested alternative roles if permission errors occur
+**Success Example:**
+```markdown
+# AWS SSO: Command Result
+
+**Account/Role:** 123456789012/ReadOnly
+**Region:** us-east-1 (Default: ap-southeast-1)
+
+## Command
+```bash
+aws s3 ls
+```
+
+## Output
+```
+2023-01-15 08:42:53 my-bucket-1
+2023-05-22 14:18:19 my-bucket-2
+2024-02-10 11:05:37 my-logs-bucket
+```
+
+*Executed: 2025-05-19 06:21:49 UTC*
+```
+
+**Error Example:**
+```markdown
+# ❌ AWS SSO: Command Error
+
+**Account/Role:** 123456789012/ReadOnly
+**Region:** us-east-1 (Default: ap-southeast-1)
+
+## Command
+```bash
+aws s3api get-object --bucket restricted-bucket --key secret.txt output.txt
+```
+
+## Error: Permission Denied
+The role `ReadOnly` does not have permission to execute this command.
+
+## Error Details
+```
+An error occurred (AccessDenied) when calling the GetObject operation: Access Denied
+```
+
+### Troubleshooting
+#### Available Roles
+- AdminAccess
+- PowerUserAccess
+- S3FullAccess
+
+Try executing the command again using one of the roles listed above that has appropriate permissions.
+
+*Executed: 2025-05-19 06:17:49 UTC*
+```
+
+## `aws_sso_ec2_exec_command` Responses
+
+**Success Example:**
+```markdown
+# AWS SSO: EC2 Command Result
+
+**Instance:** i-0a69e80761897dcce (elasticsearch-warm-03)
+**Account/Role:** 719802944938/InfraOps@ALL 
+**Region:** ap-southeast-1 (Default: ap-southeast-3)
+
+## Command
+```bash
+uptime && df -h
+```
+
+## Output
+```
+06:21:47 up 37 days, 18:07,  0 users,  load average: 0.86, 0.78, 0.79
+Filesystem       Size  Used Avail Use% Mounted on
+/dev/root         97G   11G   87G  11% /
+/dev/nvme1n1      16T   12T  3.6T  77% /data
+```
+
+*Command ID: 6db5b4d5-afa7-46e4-a4d6-d950246b7e1a*
+*Executed: 2025-05-19 06:21:49 UTC*
+```
+
+**Error Example:**
+```markdown
+# ❌ AWS SSO: EC2 Command Error
+
+**Instance:** i-0a69e80761897dcce
+**Account/Role:** 719802944938/InfraOps@ALL 
+**Region:** ap-southeast-3 (Default: ap-southeast-3)
+
+## Command
+```bash
+hostname
+```
+
+## Error: Instance not found
+Instance i-0a69e80761897dcce not found or not connected to SSM. Ensure the instance is running and has the SSM Agent installed.
+
+### Troubleshooting
+- Check if the instance exists in the specified region
+- Verify the instance is in a running state
+- Confirm SSM Agent is installed and running
+- Ensure your role has permission to use SSM
+
+*Command ID: b15f9c64-8a13-4d03-9a15-78c26d481bfc*
+*Executed: 2025-05-19 06:17:49 UTC*
+```
 
 The AI assistant can parse this formatted text to extract the specific information needed for subsequent interactions.
 

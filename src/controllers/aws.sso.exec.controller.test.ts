@@ -84,9 +84,8 @@ describe('AWS SSO Exec Controller', () => {
 		expect(typeof result.content).toBe('string');
 
 		// Content should be Markdown formatted output with the new structure
-		expect(result.content).toContain('# AWS SSO: Command Output');
-		expect(result.content).toContain(`**Account**: ${accountId}`);
-		expect(result.content).toContain(`**Role**: ${roleName}`);
+		expect(result.content).toContain('# AWS SSO: Command Result');
+		expect(result.content).toContain(`**Account/Role**: ${accountId}`);
 
 		// The output should still contain aws-cli somewhere
 		expect(result.content).toContain('aws-cli');
@@ -143,9 +142,8 @@ describe('AWS SSO Exec Controller', () => {
 		expect(typeof result.content).toBe('string');
 
 		// Check error formatting
-		expect(result.content).toContain('# AWS SSO: Command Output');
-		expect(result.content).toContain('## Error');
-		expect(result.content).toContain('**Exit Code**:');
+		expect(result.content).toContain('# ❌ AWS SSO: Command Error');
+		expect(result.content).toContain('Error:');
 
 		// Should contain error message about bucket not existing or access denied
 		// Also accept token validation errors which are common in CI/test environments

@@ -8,6 +8,7 @@ import {
 	SendCommandCommand,
 	GetCommandInvocationCommand,
 } from '@aws-sdk/client-ssm';
+import { EC2Client, DescribeInstancesCommand } from '@aws-sdk/client-ec2';
 
 const logger = Logger.forContext('services/vendor.aws.sso.ec2.service.ts');
 
@@ -57,6 +58,16 @@ export interface ExecuteEc2CommandParams {
 }
 
 /**
+ * Interface for EC2 command execution results
+ */
+export interface ExtendedEc2CommandResult extends Ec2CommandExecutionResult {
+	/**
+	 * Instance name if available
+	 */
+	instanceName?: string;
+}
+
+/**
  * Execute a shell command on an EC2 instance via SSM
  *
  * @param params Parameters for command execution
@@ -65,7 +76,7 @@ export interface ExecuteEc2CommandParams {
  */
 export async function executeEc2Command(
 	params: ExecuteEc2CommandParams,
-): Promise<Ec2CommandExecutionResult> {
+): Promise<ExtendedEc2CommandResult> {
 	const methodLogger = logger.forMethod('executeEc2Command');
 	methodLogger.debug('Executing EC2 command via SSM', params);
 
@@ -105,6 +116,70 @@ export async function executeEc2Command(
 			},
 			region: params.region, // Use the explicitly provided region
 		});
+
+		// Create EC2 client with the same credentials to fetch instance details
+		const ec2Client = new EC2Client({
+			credentials: {
+				accessKeyId: credentials.accessKeyId,
+				secretAccessKey: credentials.secretAccessKey,
+				sessionToken: credentials.sessionToken,
+			},
+			region: params.region,
+		});
+
+		// Try to fetch instance name using the instance ID
+		let instanceName: string | undefined;
+		try {
+			methodLogger.debug('Fetching instance details', {
+				instanceId: params.instanceId,
+			});
+
+			const describeCommand = new DescribeInstancesCommand({
+				InstanceIds: [params.instanceId],
+			});
+
+			const instanceResponse = await withRetry(
+				() => ec2Client.send(describeCommand),
+				{
+					maxRetries: 2,
+					initialDelayMs: 500,
+					backoffFactor: 2.0,
+					retryCondition: (error: unknown) => {
+						// Retry on throttling or temporary errors
+						const errorName =
+							error &&
+							typeof error === 'object' &&
+							'name' in error
+								? String(error.name)
+								: '';
+						return (
+							errorName === 'ThrottlingException' ||
+							errorName === 'InternalServerError' ||
+							errorName === 'ServiceUnavailableException'
+						);
+					},
+				},
+			);
+
+			// Extract name tag from instance if available
+			const instance = instanceResponse.Reservations?.[0]?.Instances?.[0];
+			if (instance?.Tags) {
+				const nameTag = instance.Tags.find(
+					(tag: { Key?: string; Value?: string }) =>
+						tag.Key === 'Name',
+				);
+				if (nameTag?.Value) {
+					instanceName = nameTag.Value;
+					methodLogger.debug('Found instance name', { instanceName });
+				}
+			}
+		} catch (error) {
+			// Log but continue - instance name is optional
+			methodLogger.warn(
+				'Could not fetch instance name, continuing without it',
+				error,
+			);
+		}
 
 		// Send the command to the instance
 		methodLogger.debug('Sending command to EC2 instance', {
@@ -147,13 +222,19 @@ export async function executeEc2Command(
 		const commandId = sendResult.Command.CommandId;
 		methodLogger.debug('Command sent successfully', { commandId });
 
-		// Poll for command completion
-		return await pollCommandCompletion(
+		// Poll for command completion and include instance name in result
+		const commandResult = await pollCommandCompletion(
 			ssmClient,
 			commandId,
 			params.instanceId,
 			params.timeout || DEFAULT_COMMAND_TIMEOUT_MS,
 		);
+
+		// Return result with instance name
+		return {
+			...commandResult,
+			instanceName,
+		};
 	} catch (error: unknown) {
 		methodLogger.error('Failed to execute EC2 command', error);
 

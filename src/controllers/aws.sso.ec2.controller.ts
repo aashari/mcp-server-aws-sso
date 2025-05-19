@@ -104,11 +104,15 @@ export async function executeEc2Command(options: {
 		// Create context for formatter
 		const context: Ec2CommandContext = {
 			instanceId: options.instanceId,
+			instanceName: commandResult.instanceName,
 			accountId: options.accountId,
 			roleName: options.roleName,
 			region: region,
 			suggestedRoles,
 		};
+
+		// Log the full context for debugging
+		methodLogger.debug('Created formatter context', context);
 
 		// Format the result
 		const formattedOutput = formatEc2CommandResult(

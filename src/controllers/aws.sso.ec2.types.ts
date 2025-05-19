@@ -42,6 +42,11 @@ export interface Ec2CommandContext {
 	instanceId: string;
 
 	/**
+	 * EC2 instance name (if available)
+	 */
+	instanceName?: string;
+
+	/**
 	 * AWS account ID
 	 */
 	accountId: string;

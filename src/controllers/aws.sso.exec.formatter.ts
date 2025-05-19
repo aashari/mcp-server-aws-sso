@@ -1,9 +1,5 @@
 import { CommandExecutionResult } from './aws.sso.exec.types.js';
-import {
-	formatHeading,
-	formatCodeBlock,
-	baseCommandFormatter,
-} from '../utils/formatter.util.js';
+import { baseCommandFormatter, formatDate } from '../utils/formatter.util.js';
 import { RoleInfo } from '../services/vendor.aws.sso.types.js';
 import { getDefaultAwsRegion } from '../utils/aws.sso.util.js';
 
@@ -25,21 +21,52 @@ export function formatCommandResult(
 		suggestedRoles?: RoleInfo[];
 	},
 ): string {
-	// Build context properties
+	const defaultRegion = getDefaultAwsRegion();
+	const isSuccess = result.exitCode === 0;
+	const isPermissionError =
+		options?.suggestedRoles && options.suggestedRoles.length > 0;
+
+	// Title with error indicator if needed
+	const title = isSuccess
+		? 'AWS SSO: Command Result'
+		: '❌ AWS SSO: Command Error';
+
+	// Build context properties as a single string per line
 	const contextProps: Record<string, unknown> = {};
-	if (options?.accountId) contextProps['Account'] = options.accountId;
-	if (options?.roleName) contextProps['Role'] = options.roleName;
-	if (options?.region) contextProps['Region'] = options.region;
-	else if (options?.accountId) contextProps['Region'] = 'default';
+
+	if (options?.accountId && options?.roleName) {
+		contextProps['Account/Role'] =
+			`${options.accountId}/${options.roleName}`;
+	}
+
+	if (options?.region || defaultRegion) {
+		contextProps['Region'] = options?.region || defaultRegion;
+		// Add default region info if different
+		if (
+			options?.region &&
+			defaultRegion &&
+			options.region !== defaultRegion
+		) {
+			contextProps['Region'] =
+				`${options.region} (Default: ${defaultRegion})`;
+		}
+	}
 
 	// Generate output sections based on command result
 	const outputSections = [];
 
-	// Success or Error output
-	if (result.exitCode === 0) {
+	// Always add the command that was executed
+	outputSections.push({
+		heading: 'Command',
+		content: _command,
+		isCodeBlock: true,
+		language: 'bash',
+	});
+
+	if (isSuccess) {
 		// Success case
 		outputSections.push({
-			heading: 'Standard Output',
+			heading: 'Output',
 			content:
 				result.stdout && result.stdout.trim()
 					? result.stdout
@@ -56,82 +83,66 @@ export function formatCommandResult(
 			});
 		}
 	} else {
-		// Error case
-		const isPermissionError =
-			options?.suggestedRoles && options.suggestedRoles.length > 0;
+		// Error case - Customize error title based on the specific error
+		let errorTitle = 'Error';
+		let errorDescription = 'The command failed to execute.';
 
 		if (isPermissionError) {
-			outputSections.push({
-				heading: 'Error: Permission Denied',
-				content: `The command failed due to insufficient permissions for the role \`${options.roleName}\` in account \`${options.accountId}\`.`,
-			});
-		} else {
-			outputSections.push({
-				heading: 'Error',
-				content: 'The command failed to execute.',
-			});
-		}
-
-		// Add exit code
-		const errorDetails = [];
-		errorDetails.push(`**Exit Code**: ${result.exitCode ?? 'Unknown'}`);
-		errorDetails.push('');
-
-		// Add stderr or stdout if available
-		errorDetails.push(formatHeading('Standard Error (stderr)', 3));
-		if (result.stderr && result.stderr.trim()) {
-			errorDetails.push(formatCodeBlock(result.stderr));
-		} else if (result.stdout && result.stdout.trim()) {
-			// Sometimes errors go to stdout
-			errorDetails.push('*(Error details potentially in stdout)*');
-			errorDetails.push(formatCodeBlock(result.stdout));
-		} else {
-			errorDetails.push(
-				'*Command failed with no specific error output.*',
-			);
+			errorTitle = 'Error: Permission Denied';
+			errorDescription = `The role \`${options?.roleName}\` does not have permission to execute this command.`;
+		} else if (result.stderr && result.stderr.includes('not found')) {
+			errorTitle = 'Error: Command Not Found';
+		} else if (result.exitCode) {
+			errorTitle = `Error: Command Failed (Exit Code ${result.exitCode})`;
 		}
 
 		outputSections.push({
-			heading: 'Error Details',
-			level: 3,
-			content: errorDetails,
+			heading: errorTitle,
+			content: errorDescription,
 		});
 
-		// Add suggested roles section only on permission error
-		if (
-			isPermissionError &&
-			options.suggestedRoles &&
-			options.suggestedRoles.length > 0
-		) {
-			const roleContent = [
+		// Add stderr if available
+		if (result.stderr && result.stderr.trim()) {
+			outputSections.push({
+				heading: 'Error Details',
+				content: result.stderr,
+				isCodeBlock: true,
+			});
+		} else if (result.stdout && result.stdout.trim()) {
+			// Sometimes errors go to stdout
+			outputSections.push({
+				heading: 'Command Output',
+				content: result.stdout,
+				isCodeBlock: true,
+			});
+		}
+
+		// Add troubleshooting section
+		if (isPermissionError && options?.suggestedRoles?.length) {
+			const troubleshootingContent = [
+				'### Available Roles',
 				...options.suggestedRoles.map((role) => `- ${role.roleName}`),
 				'',
-				'Try executing the command again using one of the roles listed above.',
+				'Try executing the command again using one of the roles listed above that has appropriate permissions.',
 			];
 
 			outputSections.push({
-				heading: `Available Roles for Account ${options.accountId || 'Unknown'}`,
-				level: 3,
-				content: roleContent,
+				heading: 'Troubleshooting',
+				content: troubleshootingContent,
 			});
 		}
 	}
 
-	// Add identity and region information
-	const identityInfo = {
-		defaultRegion: getDefaultAwsRegion(),
-		selectedRegion: options?.region,
-		identity: {
-			accountId: options?.accountId,
-			roleName: options?.roleName,
-		},
-	};
+	// Add simple footer with timestamp
+	const footerInfo = [`*Executed: ${formatDate(new Date())}*`];
 
 	return baseCommandFormatter(
-		'AWS SSO: Command Output',
+		title,
 		contextProps,
 		outputSections,
-		undefined, // No additional footer info
-		identityInfo,
+		footerInfo,
+		// We no longer need the identity info section as we've incorporated
+		// this information directly in the contextProps
+		undefined,
 	);
 }
