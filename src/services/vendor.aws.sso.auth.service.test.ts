@@ -3,7 +3,7 @@ import { config } from '../utils/config.util';
 import {
 	getCachedSsoToken,
 	getAwsSsoConfig,
-} from './vendor.aws.sso.auth.service';
+} from './vendor.aws.sso.auth.core.service.js';
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available

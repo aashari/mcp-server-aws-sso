@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
-import { getCachedSsoToken } from './vendor.aws.sso.auth.service';
+import { getCachedSsoToken } from './vendor.aws.sso.auth.core.service.js';
 import { getAllAccountsWithRoles } from './vendor.aws.sso.accounts.service';
 import { executeCommand } from './vendor.aws.sso.exec.service';
 

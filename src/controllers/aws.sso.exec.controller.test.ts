@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
 import { config } from '../utils/config.util';
-import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service';
+import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.core.service.js';
 import { getAllAccountsWithRoles } from '../services/vendor.aws.sso.accounts.service';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller';
 import { formatAuthRequired } from '../controllers/aws.sso.auth.formatter';

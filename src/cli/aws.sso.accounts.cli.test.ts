@@ -1,5 +1,5 @@
 import { CliTestUtil } from '../utils/cli.test.util';
-import { getAwsSsoConfig } from '../services/vendor.aws.sso.auth.service';
+import { getAwsSsoConfig } from '../services/vendor.aws.sso.auth.core.service.js';
 
 describe('AWS SSO Accounts CLI Commands', () => {
 	beforeAll(async () => {

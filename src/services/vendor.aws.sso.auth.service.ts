@@ -37,10 +37,6 @@ export interface AuthCheckResult {
 
 const logger = Logger.forContext('services/vendor.aws.sso.auth.service.ts');
 
-// Re-export core functions for backward compatibility
-export { getAwsSsoConfig } from './vendor.aws.sso.auth.core.service.js';
-export { getCachedSsoToken } from './vendor.aws.sso.auth.core.service.js';
-
 /**
  * Start the AWS SSO login process
  *

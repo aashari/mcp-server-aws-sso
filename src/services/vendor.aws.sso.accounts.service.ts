@@ -24,7 +24,7 @@ import {
 	RoleInfoSchema,
 } from './vendor.aws.sso.types.js';
 import { AwsSsoAccountRole } from './aws.sso.types.js';
-import { getCachedSsoToken } from './vendor.aws.sso.auth.service.js';
+import { getCachedSsoToken } from './vendor.aws.sso.auth.core.service.js';
 import {
 	SSOClient,
 	GetRoleCredentialsCommand,

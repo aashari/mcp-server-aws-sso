@@ -2,7 +2,7 @@ import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { buildErrorContext } from '../utils/error-types.util.js';
 import { ControllerResponse } from '../types/common.types.js';
-import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.service.js';
+import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.core.service.js';
 import {
 	listAccountRoles,
 	getAllAccountsWithRoles,
