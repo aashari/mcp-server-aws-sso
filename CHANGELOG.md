@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.17.0...v1.18.0) (2025-05-19)
+
+
+### Features
+
+* Remove retry mechanism from login flow ([bfe3d98](https://github.com/aashari/mcp-server-aws-sso/commit/bfe3d9806d00048e34d92b01b9c674f1e550b1e7))
+
 # [1.17.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.16.0...v1.17.0) (2025-05-19)
 
 
