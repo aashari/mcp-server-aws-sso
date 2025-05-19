@@ -79,9 +79,19 @@ export const AwsSsoAuthResultSchema = z.object({
 	accessToken: z.string(),
 
 	/**
-	 * The time the token expires
+	 * The time the token expires (seconds since epoch)
 	 */
 	expiresAt: z.number(),
+
+	/**
+	 * The refresh token (if available)
+	 */
+	refreshToken: z.string().nullable().optional(),
+
+	/**
+	 * The token expiration time in seconds
+	 */
+	expiresIn: z.number().optional(),
 
 	/**
 	 * The AWS region for the token
