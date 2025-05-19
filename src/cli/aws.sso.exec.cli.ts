@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
-import { handleCliError } from '../utils/error.util.js';
+import { formatCliError } from '../utils/error-handler.util.js';
 import awsSsoExecController from '../controllers/aws.sso.exec.controller.js';
 
 /**
@@ -84,7 +84,19 @@ function registerExecCommand(program: Command): void {
 				console.log(result.content);
 			} catch (error) {
 				execLogger.error('Exec command failed', error);
-				handleCliError(error);
+
+				// Format the error in the same style as success output
+				console.log(
+					formatCliError(error, {
+						title: 'AWS SSO: Command Error',
+						accountId: options.accountId,
+						roleName: options.roleName,
+						region: options.region,
+						command: options.command,
+					}),
+				);
+
+				process.exit(1);
 			}
 		});
 }

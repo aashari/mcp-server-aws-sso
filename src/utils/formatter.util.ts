@@ -198,34 +198,52 @@ export function baseCommandFormatter(
 	if (identityInfo) {
 		const infoLines = [];
 
+		// Add identity section header
+		infoLines.push(formatHeading('Session Information', 3));
+
+		// Add user identity details
 		if (
 			identityInfo.identity?.accountId ||
 			identityInfo.identity?.roleName
 		) {
+			infoLines.push('**AWS Identity:**');
 			infoLines.push(
-				'*Identity:* ' +
-					`${identityInfo.identity.accountId || '[No Account]'}` +
-					`/${identityInfo.identity.roleName || '[No Role]'}`,
+				`- **Account ID**: ${identityInfo.identity.accountId || '[Not specified]'}`,
 			);
+			infoLines.push(
+				`- **Role**: ${identityInfo.identity.roleName || '[Not specified]'}`,
+			);
+			infoLines.push('');
 		}
 
+		// Add region details
 		if (identityInfo.defaultRegion || identityInfo.selectedRegion) {
+			infoLines.push('**AWS Region:**');
+			if (identityInfo.selectedRegion) {
+				infoLines.push(
+					`- **Selected Region**: ${identityInfo.selectedRegion}`,
+				);
+			}
+
 			infoLines.push(
-				'*Region:* ' +
-					(identityInfo.selectedRegion
-						? `${identityInfo.selectedRegion}` +
-							(identityInfo.defaultRegion &&
-							identityInfo.defaultRegion !==
-								identityInfo.selectedRegion
-								? ` (Default: ${identityInfo.defaultRegion})`
-								: '')
-						: `${identityInfo.defaultRegion || 'Unknown'} (Default)`),
+				`- **Default Region**: ${identityInfo.defaultRegion || 'Not set'}`,
 			);
+
+			if (
+				identityInfo.selectedRegion &&
+				identityInfo.defaultRegion &&
+				identityInfo.selectedRegion !== identityInfo.defaultRegion
+			) {
+				infoLines.push(
+					`- *Note: Using selected region (${identityInfo.selectedRegion}) instead of default region*`,
+				);
+			}
+
+			infoLines.push('');
 		}
 
 		if (infoLines.length > 0) {
 			lines.push(...infoLines);
-			lines.push('');
 		}
 	}
 

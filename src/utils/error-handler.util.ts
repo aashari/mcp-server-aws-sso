@@ -1,5 +1,8 @@
 import { createApiError } from './error.util.js';
 import { Logger } from './logger.util.js';
+import { ensureMcpError } from './error.util.js';
+import { baseCommandFormatter } from './formatter.util.js';
+import { getDefaultAwsRegion } from './aws.sso.util.js';
 
 /**
  * Standard error codes for consistent handling
@@ -547,4 +550,162 @@ export function handleControllerError(
 
 	// Throw an appropriate API error with the user-friendly message
 	throw createApiError(message, finalStatusCode, error);
+}
+
+/**
+ * Format an error for CLI output in the same Markdown style as successful responses
+ * @param error The error to format
+ * @param context Additional context for formatting
+ * @returns Markdown formatted error message
+ */
+export function formatCliError(
+	error: unknown,
+	context?: {
+		title?: string;
+		accountId?: string;
+		roleName?: string;
+		region?: string;
+		command?: string;
+		instanceId?: string;
+	},
+): string {
+	const methodLogger = Logger.forContext(
+		'utils/error-handler.util.ts',
+		'formatCliError',
+	);
+
+	// Ensure we have an McpError to work with
+	const mcpError = ensureMcpError(error);
+	methodLogger.debug(`Formatting CLI error: ${mcpError.message}`, {
+		error,
+		context,
+	});
+
+	// Extract useful information for display
+	const { code } = detectErrorType(mcpError);
+	const errorMessage = createUserFriendlyErrorMessage(
+		code,
+		{},
+		mcpError.message,
+	);
+
+	// Build context properties for the formatter
+	const contextProps: Record<string, unknown> = {};
+	if (context?.accountId) contextProps['Account'] = context.accountId;
+	if (context?.roleName) contextProps['Role'] = context.roleName;
+	if (context?.region) contextProps['Region'] = context.region;
+	if (context?.instanceId) contextProps['Instance ID'] = context.instanceId;
+
+	// Create output sections
+	const outputSections = [];
+
+	// Main error section
+	outputSections.push({
+		heading: 'Error',
+		content: errorMessage,
+	});
+
+	// Add command if available
+	if (context?.command) {
+		outputSections.push({
+			heading: 'Failed Command',
+			content: context.command,
+			isCodeBlock: true,
+			language: 'bash',
+		});
+	}
+
+	// Add error details if available
+	const errorDetails = [];
+
+	if (mcpError.errorType) {
+		errorDetails.push(`**Error Type**: ${mcpError.errorType}`);
+		errorDetails.push('');
+	}
+
+	if (mcpError.statusCode) {
+		errorDetails.push(`**Status Code**: ${mcpError.statusCode}`);
+		errorDetails.push('');
+	}
+
+	// Add technical details for debugging
+	if (errorDetails.length > 0) {
+		outputSections.push({
+			heading: 'Error Details',
+			level: 3,
+			content: errorDetails,
+		});
+	}
+
+	// Add troubleshooting section for common errors
+	if (code === ErrorCode.AWS_SSO_TOKEN_EXPIRED) {
+		outputSections.push({
+			heading: 'Troubleshooting',
+			level: 3,
+			content: [
+				'Your AWS SSO token has expired. Run the following command to re-authenticate:',
+				'```bash',
+				'mcp-aws-sso login',
+				'```',
+			],
+		});
+	} else if (code === ErrorCode.AWS_SDK_PERMISSION_DENIED) {
+		outputSections.push({
+			heading: 'Troubleshooting',
+			level: 3,
+			content: [
+				'The role you are using does not have the required permissions. Try:',
+				'- Using a different role with appropriate permissions',
+				'- Verifying the account ID and role name are correct',
+				'',
+				'You can list available roles with:',
+				'```bash',
+				'mcp-aws-sso ls-accounts',
+				'```',
+			],
+		});
+	} else if (code === ErrorCode.AWS_SDK_INVALID_REQUEST) {
+		outputSections.push({
+			heading: 'Troubleshooting',
+			level: 3,
+			content: [
+				'The request to AWS is invalid. Check:',
+				'- Instance ID exists and is in a running state',
+				'- The AWS region is correct',
+				'- The EC2 instance has SSM Agent installed and running',
+				'- The role has permission to use SSM',
+			],
+		});
+	}
+
+	// Get default region from utility if available
+	let defaultRegion;
+	try {
+		defaultRegion = getDefaultAwsRegion();
+	} catch (e) {
+		// Fallback to environment variables
+		defaultRegion =
+			process.env.AWS_REGION ||
+			process.env.AWS_DEFAULT_REGION ||
+			'ap-southeast-1';
+	}
+
+	// Add identity and region info
+	const identityInfo = {
+		defaultRegion,
+		selectedRegion: context?.region,
+		identity: {
+			accountId: context?.accountId,
+			roleName: context?.roleName,
+		},
+	};
+
+	// Use baseCommandFormatter to maintain consistent structure
+	return baseCommandFormatter(
+		context?.title || 'AWS SSO: Error',
+		contextProps,
+		outputSections,
+		undefined,
+		identityInfo,
+	);
 }
