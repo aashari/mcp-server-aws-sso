@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/aashari/mcp-server-aws-sso/compare/v1.15.0...v1.15.1) (2025-05-19)
+
+
+### Bug Fixes
+
+* remove mock implementations from tests to comply with Live Data Policy ([6d549a5](https://github.com/aashari/mcp-server-aws-sso/commit/6d549a500f57da141237489ce91fed6571bcbe95))
+
 # [1.15.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.14.0...v1.15.0) (2025-05-18)
 
 
