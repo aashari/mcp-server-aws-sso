@@ -5,32 +5,6 @@
  */
 
 /**
- * Common pagination information for API responses.
- * This is used for providing consistent pagination details to clients.
- */
-export interface ResponsePagination {
-	/**
-	 * Number of items returned in the current response
-	 */
-	count?: number;
-
-	/**
-	 * Indicates if there are more items available
-	 */
-	hasMore?: boolean;
-
-	/**
-	 * Optional cursor for fetching the next page of results
-	 */
-	nextCursor?: string;
-
-	/**
-	 * Optional total number of items available
-	 */
-	total?: number;
-}
-
-/**
  * Standard controller response format
  */
 export interface ControllerResponse {

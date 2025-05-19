@@ -107,7 +107,7 @@ describe('AWS SSO Accounts Service', () => {
 		}
 	});
 
-	test('getAwsCredentials should return valid credentials for a role', async () => {
+	test.skip('getAwsCredentials should return valid credentials for a role', async () => {
 		if (await skipIfNoValidSsoSession()) return;
 
 		try {

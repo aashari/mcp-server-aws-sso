@@ -165,22 +165,6 @@ export function createUnexpectedError(
 }
 
 /**
- * Create a not found error
- * @param message Error message
- * @param cause Optional cause of the error
- * @returns McpError with not found details
- */
-export function createNotFoundError(
-	message: string = 'Resource not found',
-	cause?: Error | unknown,
-): McpError {
-	const error = new McpError(message, { cause });
-	error.errorType = 'RESOURCE_NOT_FOUND';
-	error.statusCode = 404;
-	return error;
-}
-
-/**
  * Ensure an error is an McpError
  * @param error The error to convert to an McpError
  * @returns An McpError instance
@@ -333,22 +317,6 @@ export function handleCliError(error: unknown): never {
 	}
 
 	process.exit(1);
-}
-
-/**
- * Create an authentication error related to AWS SSO authorization pending
- * @param message Error message
- * @param cause Optional cause of the error
- * @returns McpError with authorization pending details
- */
-export function createAuthPendingError(
-	message: string = 'Authentication is pending, please complete the browser flow',
-	cause?: Error | unknown,
-): McpError {
-	const error = new McpError(message, { cause });
-	error.errorType = 'AWS_SSO_AUTH_PENDING';
-	error.statusCode = 202;
-	return error;
 }
 
 /**
