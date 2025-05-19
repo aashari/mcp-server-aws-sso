@@ -1,8 +1,6 @@
 import { Logger } from '../utils/logger.util.js';
-import {
-	handleControllerError,
-	buildErrorContext,
-} from '../utils/error-handler.util.js';
+import { handleControllerError } from '../utils/error-handler.util.js';
+import { buildErrorContext } from '../utils/error-types.util.js';
 import { ControllerResponse } from '../types/common.types.js';
 import { checkSsoAuthStatus } from '../services/vendor.aws.sso.auth.service.js';
 import { formatAuthRequired } from './aws.sso.auth.formatter.js';

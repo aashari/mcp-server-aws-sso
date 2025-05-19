@@ -97,22 +97,6 @@ export function createAuthMissingError(
 }
 
 /**
- * Create an authentication invalid error
- * @param message Error message
- * @param cause Optional cause of the error
- * @returns McpError with authentication invalid details
- */
-export function createAuthInvalidError(
-	message: string = 'Authentication credentials are invalid',
-	cause?: Error | unknown,
-): McpError {
-	const error = new McpError(message, { cause });
-	error.errorType = 'AUTHENTICATION_INVALID';
-	error.statusCode = 401;
-	return error;
-}
-
-/**
  * Create an authentication timeout error
  * @param message Error message
  * @param cause Optional cause of the error
@@ -318,41 +302,3 @@ export function handleCliError(error: unknown): never {
 
 	process.exit(1);
 }
-
-/**
- * Create an authentication error related to AWS SSO authorization denied
- * @param message Error message
- * @param cause Optional cause of the error
- * @returns McpError with authorization denied details
- */
-export function createAuthDeniedError(
-	message: string = 'Authentication was denied or rejected',
-	cause?: Error | unknown,
-): McpError {
-	const error = new McpError(message, { cause });
-	error.errorType = 'AWS_SSO_AUTH_DENIED';
-	error.statusCode = 403;
-	return error;
-}
-
-/**
- * Create an authentication error for slow down requests
- * @param message Error message
- * @param cause Optional cause of the error
- * @returns McpError with rate limit details
- */
-export function createAuthSlowDownError(
-	message: string = 'Authentication is being rate limited, please slow down requests',
-	cause?: Error | unknown,
-): McpError {
-	const error = new McpError(message, { cause });
-	error.errorType = 'AWS_SSO_SLOW_DOWN';
-	error.statusCode = 429;
-	return error;
-}
-
-/**
- * Format a user-friendly error message for MCP tool output based on an error
- * @param error The error to format
- * @returns Formatted tool response with error information
- */

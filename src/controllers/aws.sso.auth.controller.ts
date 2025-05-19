@@ -1,9 +1,7 @@
 import { Logger } from '../utils/logger.util.js';
-import {
-	handleControllerError,
-	buildErrorContext,
-	detectErrorType,
-} from '../utils/error-handler.util.js';
+import { handleControllerError } from '../utils/error-handler.util.js';
+import { buildErrorContext } from '../utils/error-types.util.js';
+import { detectErrorType } from '../utils/error-detection.util.js';
 import { ControllerResponse } from '../types/common.types.js';
 import {
 	getCachedSsoToken,

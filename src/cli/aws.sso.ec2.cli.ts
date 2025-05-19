@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { Logger } from '../utils/logger.util.js';
-import { formatCliError } from '../utils/error-handler.util.js';
+import { formatCliError } from '../utils/error-formatting.util.js';
 import awsSsoEc2Controller from '../controllers/aws.sso.ec2.controller.js';
 
 /**
