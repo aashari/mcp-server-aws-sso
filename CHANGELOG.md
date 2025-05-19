@@ -1,3 +1,10 @@
+## [1.19.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.2...v1.19.3) (2025-05-19)
+
+
+### Performance Improvements
+
+* remove re-export mechanism and split error handling into modular components ([05bd4d4](https://github.com/aashari/mcp-server-aws-sso/commit/05bd4d43e2dd1b92488e6c0087452c43f5ac8089))
+
 ## [1.19.2](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.1...v1.19.2) (2025-05-19)
 
 
