@@ -4,6 +4,7 @@ import { VERSION, CLI_NAME } from '../utils/constants.util.js';
 import awsSsoAuthCli from './aws.sso.auth.cli.js';
 import awsSsoAccountsCli from './aws.sso.accounts.cli.js';
 import awsSsoExecCli from './aws.sso.exec.cli.js';
+import awsSsoEc2Cli from './aws.sso.ec2.cli.js';
 import { config } from '../utils/config.util.js';
 
 /**
@@ -50,6 +51,10 @@ export async function runCli(args: string[]): Promise<void> {
 	// Register AWS SSO exec CLI commands
 	awsSsoExecCli.register(program);
 	cliLogger.debug('Registered AWS SSO exec CLI commands');
+
+	// Register AWS SSO EC2 CLI commands
+	awsSsoEc2Cli.register(program);
+	cliLogger.debug('Registered AWS SSO EC2 CLI commands');
 
 	cliLogger.debug('CLI commands registered successfully');
 

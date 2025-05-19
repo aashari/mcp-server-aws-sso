@@ -11,6 +11,7 @@ import { runCli } from './cli/index.js';
 import awsSsoAuthTools from './tools/aws.sso.auth.tool.js';
 import awsSsoAccountsTools from './tools/aws.sso.accounts.tool.js';
 import awsSsoExecTools from './tools/aws.sso.exec.tool.js';
+import awsSsoEc2Tools from './tools/aws.sso.ec2.tool.js';
 
 /**
  * MCP Server for AWS SSO
@@ -81,6 +82,10 @@ export async function startServer(mode: 'stdio' | 'sse' = 'stdio') {
 	// register exec tools
 	awsSsoExecTools.registerTools(serverInstance);
 	serverLogger.debug('Registered AWS SSO exec tools');
+
+	// register EC2 exec tools
+	awsSsoEc2Tools.registerTools(serverInstance);
+	serverLogger.debug('Registered AWS SSO EC2 exec tools');
 
 	serverLogger.info('All tools registered successfully');
 

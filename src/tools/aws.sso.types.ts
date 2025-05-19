@@ -101,3 +101,64 @@ export const ExecCommandToolArgs = z.object({
  * Type definition from the ExecCommandToolArgs Zod schema
  */
 export type ExecCommandToolArgsType = z.infer<typeof ExecCommandToolArgs>;
+
+/**
+ * Schema for the EC2 Execute Command tool arguments
+ */
+export const Ec2ExecCommandToolArgs = z.object({
+	/**
+	 * EC2 instance ID
+	 */
+	instanceId: z
+		.string()
+		.min(10) // i-xxxxxxxxxx format
+		.describe(
+			'EC2 instance ID (e.g., "i-1234567890abcdef0"). This identifies the specific EC2 instance where the shell command will be executed via SSM. The instance must have the SSM Agent installed and be in a running state.',
+		),
+
+	/**
+	 * AWS account ID (12-digit number)
+	 */
+	accountId: z
+		.string()
+		.min(12)
+		.describe(
+			'AWS account ID (12-digit number, e.g., "123456789012"). This identifies the specific AWS account where the EC2 instance resides.',
+		),
+
+	/**
+	 * AWS role name to assume
+	 */
+	roleName: z
+		.string()
+		.min(1)
+		.describe(
+			'AWS role name to assume via SSO (e.g., "AdminAccess"). This role must have permissions to execute SSM commands on the instance.',
+		),
+
+	/**
+	 * AWS region
+	 */
+	region: z
+		.string()
+		.min(2)
+		.optional()
+		.describe(
+			'AWS region where the EC2 instance is located (e.g., "us-east-1", "eu-west-1"). If not provided, will use the AWS_REGION environment variable or default to ap-southeast-1.',
+		),
+
+	/**
+	 * Shell command to execute on the instance
+	 */
+	command: z
+		.string()
+		.min(1)
+		.describe(
+			'Shell command to execute on the EC2 instance (e.g., "ls -l"). This command will be executed in the default shell on the instance.',
+		),
+});
+
+/**
+ * Type definition from the Ec2ExecCommandToolArgs Zod schema
+ */
+export type Ec2ExecCommandToolArgsType = z.infer<typeof Ec2ExecCommandToolArgs>;
