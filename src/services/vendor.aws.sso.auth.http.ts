@@ -79,10 +79,22 @@ export async function post<T>(
 				// Store the original response for more context
 				error.originalResponse = errorBody;
 
-				methodLogger.error(
-					`API request failed: ${error.message}`,
-					error,
-				);
+				// Special handling for authorization_pending - this is expected during polling
+				// and should not be logged as an error
+				if (
+					typeof errorBody === 'object' &&
+					errorBody.error === 'authorization_pending'
+				) {
+					methodLogger.debug(
+						'Received authorization_pending response',
+					);
+				} else {
+					methodLogger.error(
+						`API request failed: ${error.message}`,
+						error,
+					);
+				}
+
 				throw error;
 			}
 

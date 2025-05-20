@@ -112,6 +112,13 @@ export async function withRetry<T>(
 			lastError = error;
 			attempt++;
 
+			// Check if this is an authorization_pending error, which is expected during OAuth device flow
+			const isAuthorizationPending =
+				error &&
+				typeof error === 'object' &&
+				'error' in error &&
+				error.error === 'authorization_pending';
+
 			// Check if we should retry based on error and max retries
 			if (
 				attempt > mergedOptions.maxRetries ||
@@ -123,9 +130,16 @@ export async function withRetry<T>(
 						`Max retry attempts (${mergedOptions.maxRetries}) reached. Giving up.`,
 					);
 				} else {
-					methodLogger.debug(
-						'Error does not match retry conditions. Not retrying.',
-					);
+					// Only log as debug for expected errors like authorization_pending
+					if (isAuthorizationPending) {
+						methodLogger.debug(
+							'Authorization pending, not a retry condition.',
+						);
+					} else {
+						methodLogger.debug(
+							'Error does not match retry conditions. Not retrying.',
+						);
+					}
 				}
 				throw error;
 			}
@@ -133,10 +147,17 @@ export async function withRetry<T>(
 			// Calculate delay for next retry
 			const delayMs = calculateBackoff(attempt - 1, mergedOptions);
 
-			methodLogger.info(
-				`Request failed with retriable error. Retrying in ${(delayMs / 1000).toFixed(2)}s (attempt ${attempt}/${mergedOptions.maxRetries})`,
-				{ error },
-			);
+			// Don't log authorization_pending as errors since they're expected
+			if (isAuthorizationPending) {
+				methodLogger.debug(
+					`Authorization pending. Retrying in ${(delayMs / 1000).toFixed(2)}s (attempt ${attempt}/${mergedOptions.maxRetries})`,
+				);
+			} else {
+				methodLogger.info(
+					`Request failed with retriable error. Retrying in ${(delayMs / 1000).toFixed(2)}s (attempt ${attempt}/${mergedOptions.maxRetries})`,
+					{ error },
+				);
+			}
 
 			// Wait before next retry
 			await sleep(delayMs);
