@@ -34,11 +34,28 @@ async function handleLogin(args: LoginToolArgsType) {
 	loginLogger.debug('Handling login request', args);
 
 	try {
-		// Call controller to start login with explicit options matching CLI behavior
-		const response = await awsSsoAuthController.startLogin({
+		// Ensure explicit defaults are set before passing to the controller
+		// This exactly matches how the CLI handles defaults
+		const params = {
+			// If args.autoPoll is undefined, explicitly set to true
+			// This ensures we remain in the polling loop when autoPoll is not specified
 			autoPoll: args.autoPoll !== undefined ? args.autoPoll : true,
+			// If args.launchBrowser is undefined, explicitly set to true
 			launchBrowser:
 				args.launchBrowser !== undefined ? args.launchBrowser : true,
+		};
+
+		loginLogger.debug('Starting login with parameters', params);
+
+		// Call controller to start login with explicit options
+		// The controller will wait for authentication to complete when autoPoll is true
+		const response = await awsSsoAuthController.startLogin(params);
+
+		// By this point, if autoPoll was true (default), authentication has completed successfully
+		// or an error has been thrown (which will be caught below)
+		loginLogger.debug('Login process completed', {
+			autoPoll: params.autoPoll,
+			responseLength: response.content.length,
 		});
 
 		// Return the response in the MCP format
@@ -52,10 +69,7 @@ async function handleLogin(args: LoginToolArgsType) {
 		};
 	} catch (error) {
 		// Log the error with full details for diagnostics
-		loginLogger.error('AWS SSO login failed', {
-			error,
-			args,
-		});
+		loginLogger.error('AWS SSO login failed', error);
 
 		// Format the error for MCP tool response
 		return formatErrorForMcpTool(error);
