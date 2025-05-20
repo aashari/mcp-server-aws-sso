@@ -1,3 +1,10 @@
+## [1.19.8](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.7...v1.19.8) (2025-05-20)
+
+
+### Bug Fixes
+
+* update dependencies ([62a3a6c](https://github.com/aashari/mcp-server-aws-sso/commit/62a3a6c54a912067cdc40b0de266315de9721742))
+
 ## [1.19.7](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.6...v1.19.7) (2025-05-20)
 
 
