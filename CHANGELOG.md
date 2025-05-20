@@ -1,3 +1,10 @@
+## [1.19.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.4...v1.19.5) (2025-05-20)
+
+
+### Bug Fixes
+
+* Improve AWS SSO login flow error handling ([6919e13](https://github.com/aashari/mcp-server-aws-sso/commit/6919e13cd6cb675053d04ee74921c1e336af0196))
+
 ## [1.19.4](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.3...v1.19.4) (2025-05-19)
 
 
