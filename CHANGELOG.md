@@ -1,3 +1,10 @@
+## [1.19.7](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.6...v1.19.7) (2025-05-20)
+
+
+### Bug Fixes
+
+* Ensure AWS SSO TOOL implementation properly waits for authentication ([a413f3b](https://github.com/aashari/mcp-server-aws-sso/commit/a413f3b4ab4524d9667c2fecd7d1c6cc30dfc4c4))
+
 ## [1.19.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.5...v1.19.6) (2025-05-20)
 
 
