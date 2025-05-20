@@ -222,11 +222,34 @@ export function formatErrorForMcpTool(error: unknown): {
 			? { message: originalError.message }
 			: originalError;
 
+	// Generate user-friendly error message based on error type
+	let errorMessage = mcpError.message;
+
+	// Check for specific error types to provide more helpful messages
+	if (mcpError.errorType === 'AUTHENTICATION_MISSING') {
+		errorMessage = `# AWS SSO: Authentication Required\n\nYou need to authenticate with AWS SSO before using this command.\n\nUse the \`aws_sso_login\` tool to authenticate with AWS SSO.`;
+	} else if (mcpError.errorType === 'AUTHENTICATION_TIMEOUT') {
+		errorMessage = `# AWS SSO: Authentication Timeout\n\nYour authentication attempt timed out. Please try again.\n\nUse the \`aws_sso_login\` tool to attempt authentication again.`;
+	} else if (
+		originalError &&
+		typeof originalError === 'object' &&
+		'error' in originalError
+	) {
+		// Handle specific OAuth errors
+		if (originalError.error === 'authorization_pending') {
+			errorMessage = `# AWS SSO: Authentication Pending\n\nYour authentication is still pending. Complete the authentication in your browser using the verification code.`;
+		} else if (originalError.error === 'access_denied') {
+			errorMessage = `# AWS SSO: Authentication Denied\n\nYour authentication request was denied. Please try again.`;
+		} else if (originalError.error === 'expired_token') {
+			errorMessage = `# AWS SSO: Token Expired\n\nYour AWS SSO token has expired. Please authenticate again using the \`aws_sso_login\` tool.`;
+		}
+	}
+
 	return {
 		content: [
 			{
 				type: 'text' as const,
-				text: `Error: ${mcpError.message}`,
+				text: errorMessage,
 			},
 		],
 		metadata: {

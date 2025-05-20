@@ -34,13 +34,14 @@ async function handleLogin(args: LoginToolArgsType) {
 	loginLogger.debug('Handling login request', args);
 
 	try {
-		// Call controller to start login, passing launchBrowser argument
+		// Call controller to start login with explicit options matching CLI behavior
 		const response = await awsSsoAuthController.startLogin({
-			autoPoll: args.autoPoll, // Use the argument from the tool call
-			launchBrowser: args.launchBrowser, // Pass the arg from the tool call
+			autoPoll: args.autoPoll !== undefined ? args.autoPoll : true,
+			launchBrowser:
+				args.launchBrowser !== undefined ? args.launchBrowser : true,
 		});
 
-		// Return the response in the MCP format without metadata
+		// Return the response in the MCP format
 		return {
 			content: [
 				{
@@ -50,7 +51,13 @@ async function handleLogin(args: LoginToolArgsType) {
 			],
 		};
 	} catch (error) {
-		loginLogger.error('Login failed', error);
+		// Log the error with full details for diagnostics
+		loginLogger.error('AWS SSO login failed', {
+			error,
+			args,
+		});
+
+		// Format the error for MCP tool response
 		return formatErrorForMcpTool(error);
 	}
 }
