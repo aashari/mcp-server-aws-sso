@@ -1,3 +1,10 @@
+## [1.19.6](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.5...v1.19.6) (2025-05-20)
+
+
+### Bug Fixes
+
+* Ensure AWS SSO login TOOL implementation matches CLI behavior ([0376242](https://github.com/aashari/mcp-server-aws-sso/commit/0376242919b57fabc15f32064c80a106b20d63ef))
+
 ## [1.19.5](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.4...v1.19.5) (2025-05-20)
 
 
