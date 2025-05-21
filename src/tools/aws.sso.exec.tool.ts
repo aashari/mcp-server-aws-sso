@@ -36,13 +36,8 @@ async function handleExecCommand(args: ExecCommandToolArgsType) {
 	execCommandLogger.debug('Handling exec command request', args);
 
 	try {
-		// Call the controller with proper args
-		const result = await awsSsoExecController.executeCommand({
-			accountId: args.accountId,
-			roleName: args.roleName,
-			region: args.region,
-			command: args.command, // Pass raw string
-		});
+		// Pass args directly to the controller
+		const result = await awsSsoExecController.executeCommand(args);
 
 		// Return the response in MCP format without metadata
 		return {

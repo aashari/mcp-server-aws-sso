@@ -34,27 +34,11 @@ async function handleLogin(args: LoginToolArgsType) {
 	loginLogger.debug('Handling login request', args);
 
 	try {
-		// Ensure explicit defaults are set before passing to the controller
-		// This exactly matches how the CLI handles defaults
-		const params = {
-			// If args.autoPoll is undefined, explicitly set to true
-			// This ensures we remain in the polling loop when autoPoll is not specified
-			autoPoll: args.autoPoll !== undefined ? args.autoPoll : true,
-			// If args.launchBrowser is undefined, explicitly set to true
-			launchBrowser:
-				args.launchBrowser !== undefined ? args.launchBrowser : true,
-		};
+		// Pass args directly to the controller without setting defaults here
+		// The controller should handle all defaults
+		const response = await awsSsoAuthController.startLogin(args);
 
-		loginLogger.debug('Starting login with parameters', params);
-
-		// Call controller to start login with explicit options
-		// The controller will wait for authentication to complete when autoPoll is true
-		const response = await awsSsoAuthController.startLogin(params);
-
-		// By this point, if autoPoll was true (default), authentication has completed successfully
-		// or an error has been thrown (which will be caught below)
 		loginLogger.debug('Login process completed', {
-			autoPoll: params.autoPoll,
 			responseLength: response.content.length,
 		});
 
