@@ -1,3 +1,11 @@
+## [1.19.10](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.9...v1.19.10) (2025-05-21)
+
+
+### Bug Fixes
+
+* Move business logic to controllers and pass args directly in AWS SSO project ([dfd411f](https://github.com/aashari/mcp-server-aws-sso/commit/dfd411fe2ccf5c10a133c9ded569db601bac1540))
+* update dependencies ([0782e50](https://github.com/aashari/mcp-server-aws-sso/commit/0782e50fc2d33d45fa5bfee53a21f5f2529b67b6))
+
 ## [1.19.9](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.8...v1.19.9) (2025-05-21)
 
 
