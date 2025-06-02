@@ -48,9 +48,13 @@ export function createUserFriendlyErrorMessage(
 			break;
 
 		case ErrorCode.ACCESS_DENIED:
-		case ErrorCode.AWS_SDK_PERMISSION_DENIED:
-			message = `Access denied for ${entity.toLowerCase()}${entityIdStr ? ` ${entityIdStr}` : ''}. Verify your credentials and permissions.`;
+		case ErrorCode.AWS_SDK_PERMISSION_DENIED: {
+			const entityForDisplay = entityType
+				? `${entityType.toLowerCase()}${entityIdStr ? ` ${entityIdStr}` : ''}`
+				: 'resource';
+			message = `Access denied for ${entityForDisplay}. Verify your credentials and permissions.`;
 			break;
+		}
 
 		case ErrorCode.INVALID_CURSOR:
 			message = `Invalid pagination cursor. Use the exact cursor string returned from previous results.`;
