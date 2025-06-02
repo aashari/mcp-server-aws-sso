@@ -1,3 +1,10 @@
+## [1.19.11](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.10...v1.19.11) (2025-06-02)
+
+
+### Bug Fixes
+
+* preserve case sensitivity in role names within error messages ([c61a12b](https://github.com/aashari/mcp-server-aws-sso/commit/c61a12b2b1f9155c48ad276c5db567ba7a466afe))
+
 ## [1.19.10](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.9...v1.19.10) (2025-05-21)
 
 
