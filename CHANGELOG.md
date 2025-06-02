@@ -1,3 +1,10 @@
+## [1.19.13](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.12...v1.19.13) (2025-06-02)
+
+
+### Bug Fixes
+
+* replace Unix-specific chmod with cross-platform ensure-executable script ([b3b246c](https://github.com/aashari/mcp-server-aws-sso/commit/b3b246c028f8007d41bcda130450374e3fc5b810))
+
 ## [1.19.12](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.11...v1.19.12) (2025-06-02)
 
 
