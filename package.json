@@ -88,7 +88,7 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-ec2": "^3.821.0",
-		"@aws-sdk/client-ssm": "^3.821.0",
+		"@aws-sdk/client-ssm": "^3.828.0",
 		"@aws-sdk/client-sso": "^3.821.0",
 		"@aws-sdk/client-sso-oidc": "^3.821.0",
 		"@modelcontextprotocol/sdk": "^1.12.1",
