@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.13...v1.20.0) (2025-06-22)
+
+
+### Features
+
+* migrate from deprecated SSE to dual transport support (STDIO + HTTP) ([7843c08](https://github.com/aashari/mcp-server-aws-sso/commit/7843c08c0843f47b8c7eb51b2046f5c08eaa5f6b))
+
 ## [1.19.13](https://github.com/aashari/mcp-server-aws-sso/compare/v1.19.12...v1.19.13) (2025-06-02)
 
 
