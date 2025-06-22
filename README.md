@@ -165,6 +165,55 @@ MCP tools use `snake_case` names, `camelCase` parameters, and return Markdown-fo
 
 </details>
 
+## Transport Modes
+
+This server supports two transport modes for different integration scenarios:
+
+### STDIO Transport (Default for MCP Clients)
+- Traditional subprocess communication via stdin/stdout
+- Ideal for local AI assistant integrations (Claude Desktop, Cursor AI)
+- Uses pipe-based communication for direct MCP protocol exchange
+
+```bash
+# Run with STDIO transport (default for AI assistants)
+TRANSPORT_MODE=stdio npx @aashari/mcp-server-aws-sso
+
+# Using npm scripts (after installation)
+npm run mcp:stdio
+```
+
+### HTTP Transport (Default for Server Mode)
+- Modern HTTP-based transport with Server-Sent Events (SSE)
+- Supports multiple concurrent connections
+- Better for web-based integrations and development
+- Runs on port 3000 by default (configurable via PORT env var)
+- Endpoint: http://localhost:3000/mcp
+- Health check: http://localhost:3000/
+
+```bash
+# Run with HTTP transport (default when no CLI args)
+TRANSPORT_MODE=http npx @aashari/mcp-server-aws-sso
+
+# Using npm scripts (after installation)
+npm run mcp:http
+
+# Test with MCP Inspector
+npm run mcp:inspect
+```
+
+### Environment Variables
+
+**Transport Configuration:**
+- `TRANSPORT_MODE`: Set to `stdio` or `http` (default: `http` for server mode, `stdio` for MCP clients)
+- `PORT`: HTTP server port (default: 3000)
+- `DEBUG`: Enable debug logging (default: false)
+
+**Authentication:**
+- `AWS_SSO_START_URL`: Your AWS SSO start URL
+- `AWS_SSO_REGION`: Your AWS SSO region
+- `AWS_PROFILE`: Your AWS profile name (optional)
+- `AWS_REGION`: Your AWS region (optional)
+
 ## CLI Commands
 
 CLI commands use `kebab-case`. Run `--help` for details (e.g., `mcp-aws-sso login --help`).
