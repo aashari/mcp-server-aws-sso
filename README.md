@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/aashari-mcp-server-aws-sso-badge.png)](https://mseep.ai/app/aashari-mcp-server-aws-sso)
+
 # AWS SSO MCP Server
 
 This project provides a Model Context Protocol (MCP) server that connects AI assistants (like Anthropic's Claude, Cursor AI, or other MCP-compatible clients) to AWS services using Single Sign-On (SSO) authentication. It enables AI models to interact with and manage your AWS resources through structured tools with simplified authentication.
