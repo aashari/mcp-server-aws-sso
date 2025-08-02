@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/aashari-mcp-server-aws-sso-badge.png)](https://mseep.ai/app/aashari-mcp-server-aws-sso)
+
 # AWS SSO MCP Server
 
 A Node.js/TypeScript Model Context Protocol (MCP) server for AWS Single Sign-On (SSO). Enables AI systems (e.g., LLMs like Claude or Cursor AI) to securely interact with AWS resources by initiating SSO login, listing accounts/roles, and executing AWS CLI commands using temporary credentials.
