@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.20.3...v1.21.0) (2025-08-02)
+
+
+### Features
+
+* add informational logging for AWS SSO device auth flow ([144b795](https://github.com/aashari/mcp-server-aws-sso/commit/144b7958601995f0294c2bc7e3a835bda445a2c2))
+
 ## [1.20.3](https://github.com/aashari/mcp-server-aws-sso/compare/v1.20.2...v1.20.3) (2025-08-02)
 
 
