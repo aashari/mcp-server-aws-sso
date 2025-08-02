@@ -67,6 +67,7 @@ async function startLogin(
 	);
 
 	loginLogger.debug('Starting AWS SSO login process');
+	loginLogger.info('Initiating device authorization flow for AWS SSO');
 
 	// Directly use the provided boolean values, defaulting to true if undefined
 	const autoPoll = params?.autoPoll ?? true;
