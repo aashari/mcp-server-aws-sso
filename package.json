@@ -1,156 +1,159 @@
 {
-	"name": "@aashari/mcp-server-aws-sso",
-	"version": "1.21.0",
-	"description": "Node.js/TypeScript MCP server for AWS Single Sign-On (SSO). Enables AI systems (LLMs) with tools to initiate SSO login (device auth flow), list accounts/roles, and securely execute AWS CLI commands using temporary credentials. Streamlines AI interaction with AWS resources.",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"_moduleNotes": "Although source code uses ESM syntax, the build output target is CommonJS to align with Node.js compatibility and patterns seen in related MCP servers. tsconfig.json's 'module': 'NodeNext' handles the input syntax, while tsc outputs CJS.",
-	"type": "commonjs",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/aashari/mcp-server-aws-sso.git"
-	},
-	"bin": {
-		"mcp-aws-sso": "./dist/index.js"
-	},
-	"scripts": {
-		"build": "tsc",
-		"prepare": "npm run build && node scripts/ensure-executable.js",
-		"postinstall": "node scripts/ensure-executable.js",
-		"test": "jest --passWithNoTests",
-		"test:coverage": "jest --coverage",
-		"test:cli": "jest src/cli/.*\\.cli\\.test\\.ts --runInBand --testTimeout=60000",
-		"lint": "eslint src --ext .ts --config eslint.config.mjs",
-		"format": "prettier --write 'src/**/*.ts' 'scripts/**/*.js'",
-		"publish:npm": "npm publish",
-		"update:check": "npx npm-check-updates",
-		"update:deps": "npx npm-check-updates -u && npm install --legacy-peer-deps",
-		"update:version": "node scripts/update-version.js",
-		"mcp:stdio": "TRANSPORT_MODE=stdio npm run build && node dist/index.js",
-		"mcp:http": "TRANSPORT_MODE=http npm run build && node dist/index.js",
-		"mcp:inspect": "TRANSPORT_MODE=http npm run build && (node dist/index.js &) && sleep 2 && npx @modelcontextprotocol/inspector http://localhost:3000/mcp",
-		"dev:stdio": "npm run build && npx @modelcontextprotocol/inspector -e TRANSPORT_MODE=stdio -e DEBUG=true node dist/index.js",
-		"dev:http": "DEBUG=true TRANSPORT_MODE=http npm run build && node dist/index.js",
-		"dev:server": "DEBUG=true npm run build && npx @modelcontextprotocol/inspector -e DEBUG=true node dist/index.js",
-		"dev:cli": "DEBUG=true npm run build && DEBUG=true node dist/index.js",
-		"start:server": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
-		"start:cli": "npm run build && node dist/index.js"
-	},
-	"keywords": [
-		"mcp",
-		"typescript",
-		"claude",
-		"anthropic",
-		"ai",
-		"aws",
-		"amazon-web-services",
-		"sso",
-		"single-sign-on",
-		"aws-sso",
-		"server",
-		"model-context-protocol",
-		"tools",
-		"resources",
-		"tooling",
-		"ai-integration",
-		"mcp-server",
-		"llm",
-		"ai-connector",
-		"external-tools",
-		"cli",
-		"mcp-inspector"
-	],
-	"author": "",
-	"license": "ISC",
-	"devDependencies": {
-		"@eslint/js": "^9.32.0",
-		"@semantic-release/changelog": "^6.0.3",
-		"@semantic-release/exec": "^7.1.0",
-		"@semantic-release/git": "^10.0.1",
-		"@semantic-release/github": "^11.0.3",
-		"@semantic-release/npm": "^12.0.2",
-		"@types/cors": "^2.8.19",
-		"@types/express": "^5.0.3",
-		"@types/jest": "^30.0.0",
-		"@types/node": "^24.2.0",
-		"@types/open": "^6.2.1",
-		"@typescript-eslint/eslint-plugin": "^8.39.0",
-		"@typescript-eslint/parser": "^8.39.0",
-		"eslint": "^9.32.0",
-		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-prettier": "^5.5.4",
-		"jest": "^30.0.5",
-		"nodemon": "^3.1.10",
-		"npm-check-updates": "^18.0.2",
-		"prettier": "^3.6.2",
-		"semantic-release": "^24.2.7",
-		"ts-jest": "^29.4.1",
-		"ts-node": "^10.9.2",
-		"typescript": "^5.9.2",
-		"typescript-eslint": "^8.39.0"
-	},
-	"publishConfig": {
-		"registry": "https://registry.npmjs.org/",
-		"access": "public"
-	},
-	"dependencies": {
-		"@aws-sdk/client-ec2": "^3.862.0",
-		"@aws-sdk/client-ssm": "^3.862.0",
-		"@aws-sdk/client-sso": "^3.862.0",
-		"@aws-sdk/client-sso-oidc": "^3.862.0",
-		"@modelcontextprotocol/sdk": "^1.17.1",
-		"commander": "^14.0.0",
-		"cors": "^2.8.5",
-		"dotenv": "^17.2.1",
-		"express": "^5.1.0",
-		"open": "^10.2.0",
-		"zod": "^3.25.76"
-	},
-	"directories": {
-		"example": "examples"
-	},
-	"jest": {
-		"preset": "ts-jest",
-		"testEnvironment": "node",
-		"testMatch": [
-			"**/src/**/*.test.ts"
-		],
-		"collectCoverageFrom": [
-			"src/**/*.ts",
-			"!src/**/*.test.ts",
-			"!src/**/*.spec.ts"
-		],
-		"coveragePathIgnorePatterns": [
-			"/node_modules/",
-			"/dist/",
-			"/coverage/"
-		],
-		"coverageReporters": [
-			"text",
-			"lcov",
-			"json-summary"
-		],
-		"transform": {
-			"^.+\\.tsx?$": [
-				"ts-jest",
-				{
-					"useESM": true
-				}
-			]
-		},
-		"moduleNameMapper": {
-			"(.*)\\.(js|jsx)$": "$1"
-		},
-		"extensionsToTreatAsEsm": [
-			".ts"
-		],
-		"moduleFileExtensions": [
-			"ts",
-			"tsx",
-			"js",
-			"jsx",
-			"json",
-			"node"
-		]
-	}
+  "name": "@aashari/mcp-server-aws-sso",
+  "version": "1.21.0",
+  "description": "Node.js/TypeScript MCP server for AWS Single Sign-On (SSO). Enables AI systems (LLMs) with tools to initiate SSO login (device auth flow), list accounts/roles, and securely execute AWS CLI commands using temporary credentials. Streamlines AI interaction with AWS resources.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "_moduleNotes": "Although source code uses ESM syntax, the build output target is CommonJS to align with Node.js compatibility and patterns seen in related MCP servers. tsconfig.json's 'module': 'NodeNext' handles the input syntax, while tsc outputs CJS.",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aashari/mcp-server-aws-sso.git"
+  },
+  "bin": {
+    "mcp-aws-sso": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build && node scripts/ensure-executable.js",
+    "postinstall": "node scripts/ensure-executable.js",
+    "test": "jest --passWithNoTests",
+    "test:coverage": "jest --coverage",
+    "test:cli": "jest src/cli/.*\\.cli\\.test\\.ts --runInBand --testTimeout=60000",
+    "lint": "eslint src --ext .ts --config eslint.config.mjs",
+    "format": "prettier --write 'src/**/*.ts' 'scripts/**/*.js'",
+    "publish:npm": "npm publish",
+    "update:check": "npx npm-check-updates",
+    "update:deps": "npx npm-check-updates -u && npm install --legacy-peer-deps",
+    "update:version": "node scripts/update-version.js",
+    "mcp:stdio": "TRANSPORT_MODE=stdio npm run build && node dist/index.js",
+    "mcp:http": "TRANSPORT_MODE=http npm run build && node dist/index.js",
+    "mcp:inspect": "TRANSPORT_MODE=http npm run build && (node dist/index.js &) && sleep 2 && npx @modelcontextprotocol/inspector http://localhost:3000/mcp",
+    "dev:stdio": "npm run build && npx @modelcontextprotocol/inspector -e TRANSPORT_MODE=stdio -e DEBUG=true node dist/index.js",
+    "dev:http": "DEBUG=true TRANSPORT_MODE=http npm run build && node dist/index.js",
+    "dev:server": "DEBUG=true npm run build && npx @modelcontextprotocol/inspector -e DEBUG=true node dist/index.js",
+    "dev:cli": "DEBUG=true npm run build && DEBUG=true node dist/index.js",
+    "start:server": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
+    "start:cli": "npm run build && node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "typescript",
+    "claude",
+    "anthropic",
+    "ai",
+    "aws",
+    "amazon-web-services",
+    "sso",
+    "single-sign-on",
+    "aws-sso",
+    "server",
+    "model-context-protocol",
+    "tools",
+    "resources",
+    "tooling",
+    "ai-integration",
+    "mcp-server",
+    "llm",
+    "ai-connector",
+    "external-tools",
+    "cli",
+    "mcp-inspector"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/npm": "^12.0.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.2.0",
+    "@types/open": "^6.2.1",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "npm-check-updates": "^18.0.2",
+    "prettier": "^3.6.2",
+    "semantic-release": "^24.2.7",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ec2": "^3.862.0",
+    "@aws-sdk/client-ssm": "^3.862.0",
+    "@aws-sdk/client-sso": "^3.862.0",
+    "@aws-sdk/client-sso-oidc": "^3.862.0",
+    "@modelcontextprotocol/sdk": "^1.17.1",
+    "commander": "^14.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "open": "^10.2.0",
+    "zod": "^3.25.76"
+  },
+  "directories": {
+    "example": "examples"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/src/**/*.test.ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.test.ts",
+      "!src/**/*.spec.ts"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/",
+      "/coverage/"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "json-summary"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
+    },
+    "moduleNameMapper": {
+      "(.*)\\.(js|jsx)$": "$1"
+    },
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
