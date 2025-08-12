@@ -94,7 +94,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.862.0",
+    "@aws-sdk/client-ec2": "^3.864.0",
     "@aws-sdk/client-ssm": "^3.862.0",
     "@aws-sdk/client-sso": "^3.862.0",
     "@aws-sdk/client-sso-oidc": "^3.862.0",
