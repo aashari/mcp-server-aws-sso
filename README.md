@@ -4,6 +4,8 @@ Transform how you manage and access your AWS infrastructure by connecting Claude
 
 [![NPM Version](https://img.shields.io/npm/v/@aashari/mcp-server-aws-sso)](https://www.npmjs.com/package/@aashari/mcp-server-aws-sso)
 
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/aashari/mcp-server-aws-sso)](https://archestra.ai/mcp-catalog/aashari__mcp-server-aws-sso)
+
 ## What You Can Do
 
 ✅ **Ask AI about your AWS accounts**: *"Show me all my AWS accounts and available roles"*  
