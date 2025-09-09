@@ -18,6 +18,7 @@
     "prepare": "npm run build && node scripts/ensure-executable.js",
     "postinstall": "node scripts/ensure-executable.js",
     "test": "jest --passWithNoTests",
+    "test:silent": "jest --passWithNoTests --silent",
     "test:coverage": "jest --coverage",
     "test:cli": "jest src/cli/.*\\.cli\\.test\\.ts --runInBand --testTimeout=60000",
     "lint": "eslint src --ext .ts --config eslint.config.mjs",
@@ -112,6 +113,9 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
     "testMatch": [
       "**/src/**/*.test.ts"
     ],
