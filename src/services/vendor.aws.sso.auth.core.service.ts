@@ -49,7 +49,7 @@ export async function getAwsSsoConfig(): Promise<AwsSsoConfig> {
 		if (error instanceof z.ZodError) {
 			methodLogger.error('Invalid AWS SSO configuration', error);
 			throw createApiError(
-				`Invalid AWS SSO configuration: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+				`Invalid AWS SSO configuration: ${error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
 				undefined,
 				error,
 			);

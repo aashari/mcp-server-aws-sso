@@ -28,7 +28,7 @@ toolLogger.debug('AWS SSO execution tool module initialized');
  * @param args Tool arguments with account info and command
  * @returns MCP response with command execution results
  */
-async function handleExecCommand(args: ExecCommandToolArgsType) {
+async function handleExecCommand(args: Record<string, unknown>) {
 	const execCommandLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
 		'handleExecCommand',
@@ -37,7 +37,9 @@ async function handleExecCommand(args: ExecCommandToolArgsType) {
 
 	try {
 		// Pass args directly to the controller
-		const result = await awsSsoExecController.executeCommand(args);
+		const result = await awsSsoExecController.executeCommand(
+			args as ExecCommandToolArgsType,
+		);
 
 		// Return the response in MCP format without metadata
 		return {

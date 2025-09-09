@@ -27,7 +27,7 @@ toolLogger.debug('AWS SSO EC2 execution tool module initialized');
  * @param args Tool arguments with instance info and command
  * @returns MCP response with command execution results
  */
-async function handleEc2ExecCommand(args: Ec2ExecCommandToolArgsType) {
+async function handleEc2ExecCommand(args: Record<string, unknown>) {
 	const ec2ExecCommandLogger = Logger.forContext(
 		'tools/aws.sso.ec2.tool.ts',
 		'handleEc2ExecCommand',
@@ -36,7 +36,9 @@ async function handleEc2ExecCommand(args: Ec2ExecCommandToolArgsType) {
 
 	try {
 		// Pass args directly to the controller
-		const result = await awsSsoEc2Controller.executeEc2Command(args);
+		const result = await awsSsoEc2Controller.executeEc2Command(
+			args as Ec2ExecCommandToolArgsType,
+		);
 
 		// Return the response in MCP format without metadata
 		return {

@@ -130,7 +130,7 @@ async function listSsoAccounts(
 			if (error instanceof z.ZodError) {
 				methodLogger.error('Invalid accounts response format', error);
 				throw createApiError(
-					`Invalid response format from AWS SSO: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					`Invalid response format from AWS SSO: ${error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
 					undefined,
 					error,
 				);
@@ -234,7 +234,7 @@ async function listAccountRoles(
 			if (error instanceof z.ZodError) {
 				methodLogger.error('Invalid roles response format', error);
 				throw createApiError(
-					`Invalid response format from AWS SSO: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					`Invalid response format from AWS SSO: ${error.issues.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
 					undefined,
 					error,
 				);

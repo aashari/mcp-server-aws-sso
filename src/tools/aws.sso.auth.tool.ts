@@ -26,7 +26,7 @@ toolLogger.debug('AWS SSO authentication tool module initialized');
  * @param args Tool arguments
  * @returns MCP response with login information
  */
-async function handleLogin(args: LoginToolArgsType) {
+async function handleLogin(args: Record<string, unknown>) {
 	const loginLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'handleLogin',
@@ -36,7 +36,9 @@ async function handleLogin(args: LoginToolArgsType) {
 	try {
 		// Pass args directly to the controller without setting defaults here
 		// The controller should handle all defaults
-		const response = await awsSsoAuthController.startLogin(args);
+		const response = await awsSsoAuthController.startLogin(
+			args as LoginToolArgsType,
+		);
 
 		loginLogger.debug('Login process completed', {
 			responseLength: response.content.length,

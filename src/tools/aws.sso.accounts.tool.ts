@@ -1,10 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
-import {
-	ListAccountsArgsSchema,
-	ListAccountsArgsType,
-} from './aws.sso.types.js';
+import { ListAccountsArgsSchema } from './aws.sso.types.js';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
 
 /**
@@ -27,7 +24,7 @@ toolLogger.debug('AWS SSO accounts tool module initialized');
  * @param args Tool arguments (empty for this tool)
  * @returns MCP response with accounts and roles
  */
-async function handleListAccounts(args: ListAccountsArgsType) {
+async function handleListAccounts(args: Record<string, unknown>) {
 	const listAccountsLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'handleListAccounts',
