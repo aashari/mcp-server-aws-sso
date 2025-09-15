@@ -97,7 +97,7 @@
     "@aws-sdk/client-ec2": "^3.868.0",
     "@aws-sdk/client-ssm": "^3.864.0",
     "@aws-sdk/client-sso": "^3.864.0",
-    "@aws-sdk/client-sso-oidc": "^3.864.0",
+    "@aws-sdk/client-sso-oidc": "^3.888.0",
     "@modelcontextprotocol/sdk": "^1.17.3",
     "commander": "^14.0.0",
     "cors": "^2.8.5",
