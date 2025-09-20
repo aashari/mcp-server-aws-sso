@@ -1,3 +1,15 @@
+# [3.0.0](https://github.com/aashari/mcp-server-aws-sso/compare/v2.0.1...v3.0.0) (2025-09-20)
+
+
+### Features
+
+* enhance AI guidance for AWS SSO login instructions ([775033d](https://github.com/aashari/mcp-server-aws-sso/commit/775033d27c8f7d5566432c247ac44e9a4c9ef337))
+
+
+### BREAKING CHANGES
+
+* None - backward compatible enhancement
+
 ## [2.0.1](https://github.com/aashari/mcp-server-aws-sso/compare/v2.0.0...v2.0.1) (2025-09-20)
 
 
