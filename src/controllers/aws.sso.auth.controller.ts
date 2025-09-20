@@ -1,7 +1,6 @@
 import { Logger } from '../utils/logger.util.js';
 import { handleControllerError } from '../utils/error-handler.util.js';
 import { buildErrorContext } from '../utils/error-types.util.js';
-import { detectErrorType } from '../utils/error-detection.util.js';
 import { ControllerResponse } from '../types/common.types.js';
 import { getCachedSsoToken } from '../services/vendor.aws.sso.auth.core.service.js';
 import {
@@ -14,7 +13,6 @@ import {
 } from '../services/vendor.aws.sso.accounts.service.js';
 import {
 	formatAlreadyLoggedIn,
-	formatLoginSuccess,
 	formatLoginWithBrowserLaunch,
 	formatLoginManual,
 	formatCredentials,
@@ -43,20 +41,19 @@ controllerLogger.debug('AWS SSO authentication controller initialized');
  * Start the AWS SSO login process
  *
  * Initiates the device authorization flow, displays verification instructions,
- * and optionally waits for authentication completion.
+ * and starts background polling for authentication completion.
  *
  * @async
  * @param {Object} [params] - Optional parameters for login
- * @param {boolean} [params.autoPoll=true] - Whether to automatically poll for token completion
  * @param {boolean} [params.launchBrowser=true] - Whether to automatically launch a browser with the verification URI
- * @returns {Promise<ControllerResponse>} Response with login result, including accounts if successful
- * @throws {Error} If login initialization fails or polling times out
+ * @returns {Promise<ControllerResponse>} Response with login instructions and background polling started
+ * @throws {Error} If login initialization fails
  * @example
- * // Start login with automatic polling and browser launch
+ * // Start login with automatic browser launch and background polling
  * const result = await startLogin();
  *
- * // Start login without automatic polling or browser launch
- * const result = await startLogin({ autoPoll: false, launchBrowser: false });
+ * // Start login without browser launch but with background polling
+ * const result = await startLogin({ launchBrowser: false });
  */
 async function startLogin(
 	params?: LoginToolArgsType,
@@ -69,8 +66,7 @@ async function startLogin(
 	loginLogger.debug('Starting AWS SSO login process');
 	loginLogger.info('Initiating device authorization flow for AWS SSO');
 
-	// Directly use the provided boolean values, defaulting to true if undefined
-	const autoPoll = params?.autoPoll ?? true;
+	// Get browser launch preference
 	const launchBrowser = params?.launchBrowser ?? true;
 
 	try {
@@ -186,80 +182,41 @@ async function startLogin(
 		// Display the login instructions
 		loginLogger.info(initialContent);
 
-		// If autoPoll is disabled, just return instructions
-		if (!autoPoll) {
-			loginLogger.info('Complete the authentication in your browser.');
-			loginLogger.info(
-				"You can then use 'list-accounts' to verify authentication and view available accounts.",
-			);
+		// Start background polling (non-blocking)
+		loginLogger.debug('Starting background polling for authentication');
+		loginLogger.info('Background polling started - authentication will be processed automatically');
 
-			// Add device info to the content for clarity
-			const deviceInfoContent = `
+		// Start polling in the background without blocking the response
+		// Use setImmediate to ensure this runs after the response is sent
+		setImmediate(async () => {
+			try {
+				loginLogger.debug('Background polling: Starting token polling');
+				const authResult = await pollForSsoToken();
+				loginLogger.info('Background polling: Authentication successful, token received', {
+					expiresAt: authResult.expiresAt,
+				});
+			} catch (error) {
+				loginLogger.error('Background polling: Authentication failed', error);
+				// In background mode, we just log the error and don't throw
+				// The user can check status using aws_sso_status tool
+			}
+		});
+
+		// Add device info to the content for clarity
+		const deviceInfoContent = `
 ## Authentication Details
 - Verification Code: **${deviceAuth.userCode}**
 - Browser ${browserLaunched ? 'Launched' : 'Not Launched'}: ${browserLaunched ? 'Yes' : 'No'}
 - Verification URL: ${deviceAuth.verificationUri}
 - Code Expires In: ${Math.floor(deviceAuth.expiresIn / 60)} minutes
+- Background Polling: **Active** (credentials will be collected automatically)
 
-Complete the authentication in your browser. You can then use 'list-accounts' to verify authentication and view available accounts.`;
+Complete the authentication in your browser. Use 'aws_sso_status' to check completion status, or proceed with other AWS commands once authenticated.`;
 
-			// Return instructions without automatic polling
-			return {
-				content: initialContent + deviceInfoContent,
-			};
-		}
-
-		// With automatic polling enabled, wait for authentication to complete
-		loginLogger.debug(
-			'Automatic polling enabled, waiting for authentication',
-		);
-
-		loginLogger.info(
-			'Waiting for you to complete authentication in your browser...',
-		);
-
-		// Now poll for the token - this will continuously poll until success or timeout
-		try {
-			const authResult = await pollForSsoToken();
-			loginLogger.debug('Authentication successful, token received', {
-				expiresAt: authResult.expiresAt,
-			});
-
-			// Format expiration date
-			let expiresDate = 'Unknown';
-			try {
-				if (authResult.expiresAt) {
-					const expirationDate = new Date(
-						authResult.expiresAt * 1000,
-					);
-					expiresDate = expirationDate.toLocaleString();
-				}
-			} catch (error) {
-				loginLogger.error('Error formatting expiration date', error);
-			}
-
-			// Return success response
-			return {
-				content: formatLoginSuccess(expiresDate),
-			};
-		} catch (error) {
-			// Just throw the error without any retry attempts
-			const { code } = detectErrorType(error);
-
-			// Re-throw with improved context
-			const errorContext = buildErrorContext(
-				'AWS SSO Authentication',
-				'login',
-				'controllers/aws.sso.auth.controller.ts@startLogin',
-				undefined,
-				{
-					autoPoll,
-					launchBrowser,
-					errorCode: code,
-				},
-			);
-			throw handleControllerError(error, errorContext);
-		}
+		// Return instructions immediately with background polling active
+		return {
+			content: initialContent + deviceInfoContent,
+		};
 	} catch (error) {
 		// Handle startup errors - throw directly without retry
 		const errorContext = buildErrorContext(
@@ -268,7 +225,6 @@ Complete the authentication in your browser. You can then use 'list-accounts' to
 			'controllers/aws.sso.auth.controller.ts@startLogin',
 			undefined,
 			{
-				autoPoll,
 				launchBrowser,
 			},
 		);

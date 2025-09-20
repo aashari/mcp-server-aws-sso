@@ -73,10 +73,6 @@ function registerLoginCommand(program: Command): void {
 			'--no-launch-browser',
 			'Disable automatic browser launch. When disabled, you must manually open the verification URL and enter the provided code. Useful for remote servers or environments without display access.',
 		)
-		.option(
-			'--no-auto-poll',
-			'Disable automatic polling for authentication completion. When disabled, the command starts the login process but does not wait for completion, requiring you to check status separately with the "status" command.',
-		)
 		.action(async (options) => {
 			const loginLogger = Logger.forContext(
 				'cli/aws.sso.auth.cli.ts',
@@ -84,13 +80,11 @@ function registerLoginCommand(program: Command): void {
 			);
 			loginLogger.debug('Starting AWS SSO login', {
 				launchBrowser: options.launchBrowser !== false,
-				autoPoll: options.autoPoll !== false,
 			});
 
 			try {
 				const result = await awsSsoAuthController.startLogin({
 					launchBrowser: options.launchBrowser !== false,
-					autoPoll: options.autoPoll !== false,
 				});
 				// Print the formatted content (already includes header/footer)
 				console.log(result.content);

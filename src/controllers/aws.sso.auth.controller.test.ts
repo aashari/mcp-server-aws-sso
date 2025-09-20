@@ -45,7 +45,6 @@ describe('AWS SSO Auth Controller', () => {
 
 		// If we have a valid session, startLogin should detect it and return already logged in message
 		const result = await awsSsoAuthController.startLogin({
-			autoPoll: false, // Prevent actual login flow which would require browser interaction
 			launchBrowser: false,
 		});
 

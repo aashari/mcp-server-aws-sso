@@ -1,4 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type {
+	RequestHandlerExtra,
+}
+	from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type {
+	ServerNotification,
+	ServerRequest,
+} from '@modelcontextprotocol/sdk/types.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
 import {
@@ -27,7 +35,10 @@ toolLogger.debug('AWS SSO accounts tool module initialized');
  * @param args Tool arguments (empty for this tool)
  * @returns MCP response with accounts and roles
  */
-async function handleListAccounts(args: ListAccountsArgsType) {
+async function handleListAccounts(
+	args: ListAccountsArgsType,
+	_extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+) {
 	const listAccountsLogger = Logger.forContext(
 		'tools/aws.sso.accounts.tool.ts',
 		'handleListAccounts',
@@ -64,7 +75,7 @@ function registerTools(server: McpServer): void {
 	registerLogger.debug('Registering AWS SSO accounts tools');
 
 	// Register the AWS SSO list accounts tool
-	server.tool(
+	server.tool<typeof ListAccountsArgsSchema.shape>(
 		'aws_sso_ls_accounts',
 		`Lists all AWS accounts and roles accessible to you through AWS SSO. This tool provides essential information needed for the \`aws_sso_exec_command\` tool.
 

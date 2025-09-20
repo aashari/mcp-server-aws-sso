@@ -1,4 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type {
+	RequestHandlerExtra,
+}
+	from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type {
+	ServerNotification,
+	ServerRequest,
+} from '@modelcontextprotocol/sdk/types.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
 import {
@@ -28,7 +36,10 @@ toolLogger.debug('AWS SSO execution tool module initialized');
  * @param args Tool arguments with account info and command
  * @returns MCP response with command execution results
  */
-async function handleExecCommand(args: ExecCommandToolArgsType) {
+async function handleExecCommand(
+	args: ExecCommandToolArgsType,
+	_extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+) {
 	const execCommandLogger = Logger.forContext(
 		'tools/aws.sso.exec.tool.ts',
 		'handleExecCommand',
@@ -66,7 +77,7 @@ function registerTools(server: McpServer): void {
 	registerLogger.debug('Registering AWS SSO exec tools');
 
 	// Register the AWS SSO exec command tool
-	server.tool(
+	server.tool<typeof ExecCommandToolArgs.shape>(
 		'aws_sso_exec_command',
 		`Executes an AWS CLI command using temporary credentials obtained through AWS SSO. This tool enables you to run AWS CLI commands without manually configuring credentials.
 

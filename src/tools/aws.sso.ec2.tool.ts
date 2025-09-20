@@ -1,4 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type {
+	RequestHandlerExtra,
+}
+	from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type {
+	ServerNotification,
+	ServerRequest,
+} from '@modelcontextprotocol/sdk/types.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
 import {
@@ -27,7 +35,10 @@ toolLogger.debug('AWS SSO EC2 execution tool module initialized');
  * @param args Tool arguments with instance info and command
  * @returns MCP response with command execution results
  */
-async function handleEc2ExecCommand(args: Ec2ExecCommandToolArgsType) {
+async function handleEc2ExecCommand(
+	args: Ec2ExecCommandToolArgsType,
+	_extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+) {
 	const ec2ExecCommandLogger = Logger.forContext(
 		'tools/aws.sso.ec2.tool.ts',
 		'handleEc2ExecCommand',
@@ -65,7 +76,7 @@ function registerTools(server: McpServer): void {
 	registerLogger.debug('Registering AWS SSO EC2 exec tools');
 
 	// Register the AWS SSO EC2 exec command tool
-	server.tool(
+	server.tool<typeof Ec2ExecCommandToolArgs.shape>(
 		'aws_sso_ec2_exec_command',
 		`Executes a shell command on an EC2 instance via AWS Systems Manager (SSM) using temporary credentials obtained through AWS SSO. This tool enables running commands on EC2 instances without requiring SSH access or opening inbound ports.
 

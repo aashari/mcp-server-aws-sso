@@ -14,17 +14,6 @@ export const LoginToolArgsSchema = z.object({
 		.describe(
 			'Whether to launch the browser automatically for the AWS SSO authentication flow. Defaults to true. If set to false, you will need to manually open the authentication URL and enter the provided verification code. This may be necessary in environments where automatic browser launch is not possible or when running on a remote server without display access.',
 		),
-
-	/**
-	 * Whether to automatically poll for authentication completion
-	 */
-	autoPoll: z
-		.boolean()
-		.optional()
-		.default(true)
-		.describe(
-			'Whether to automatically poll the AWS SSO service to wait for authentication completion. Defaults to true. If set to false, the tool will only initiate the login process but not wait for it to complete, and you will need to check status separately using the aws_sso_status tool. This is useful when you want to start authentication but handle completion checking through separate calls.',
-		),
 });
 
 /**
@@ -36,6 +25,11 @@ export type LoginToolArgsType = z.infer<typeof LoginToolArgsSchema>;
  * Schema for the status tool arguments (empty object as it takes no arguments)
  */
 export const StatusToolArgsSchema = z.object({});
+
+/**
+ * Type definition from the StatusToolArgsSchema Zod schema
+ */
+export type StatusToolArgsType = z.infer<typeof StatusToolArgsSchema>;
 
 /**
  * Schema for the List Accounts tool arguments (empty object as it takes no arguments)

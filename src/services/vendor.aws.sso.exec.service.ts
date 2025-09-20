@@ -79,6 +79,16 @@ async function executeCommand(
 		processEnv.AWS_SECRET_ACCESS_KEY = credentials.secretAccessKey;
 		processEnv.AWS_SESSION_TOKEN = credentials.sessionToken;
 
+		// Fix PATH to prioritize working AWS CLI binary
+		// Prepend /usr/local/aws-cli to PATH so the working binary is found first
+		const currentPath = processEnv.PATH || '';
+		processEnv.PATH = `/usr/local/aws-cli:${currentPath}`;
+		
+		methodLogger.debug('Updated PATH for AWS CLI execution', {
+			awsCliPath: '/usr/local/aws-cli',
+			pathPrefix: processEnv.PATH.split(':').slice(0, 3),
+		});
+
 		// Set region if provided
 		if (region) {
 			processEnv.AWS_REGION = region;

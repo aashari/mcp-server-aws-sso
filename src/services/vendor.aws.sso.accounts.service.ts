@@ -129,8 +129,14 @@ async function listSsoAccounts(
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				methodLogger.error('Invalid accounts response format', error);
+				const issueSummary = error.issues
+					.map((issue) => {
+						const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+						return `${path}: ${issue.message}`;
+					})
+					.join(', ');
 				throw createApiError(
-					`Invalid response format from AWS SSO: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					`Invalid response format from AWS SSO: ${issueSummary}`,
 					undefined,
 					error,
 				);
@@ -233,8 +239,14 @@ async function listAccountRoles(
 		} catch (error) {
 			if (error instanceof z.ZodError) {
 				methodLogger.error('Invalid roles response format', error);
+				const issueSummary = error.issues
+					.map((issue) => {
+						const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+						return `${path}: ${issue.message}`;
+					})
+					.join(', ');
 				throw createApiError(
-					`Invalid response format from AWS SSO: ${error.errors.map((err) => `${err.path.join('.')}: ${err.message}`).join(', ')}`,
+					`Invalid response format from AWS SSO: ${issueSummary}`,
 					undefined,
 					error,
 				);
@@ -331,13 +343,33 @@ async function getAwsCredentials(
 		throw createAuthMissingError('No SSO token found. Please login first.');
 	}
 
+	// Log token details for debugging
+	methodLogger.debug('Retrieved SSO token details', {
+		hasAccessToken: !!token.accessToken,
+		accessTokenLength: token.accessToken?.length || 0,
+		accessTokenPrefix: token.accessToken?.substring(0, 10) + '...',
+		expiresAt: token.expiresAt,
+		expiresAtDate: new Date(token.expiresAt * 1000).toISOString(),
+		region: token.region,
+		tokenType: (token as any).tokenType || 'unknown',
+	});
+
 	try {
 		// Use AWS SDK to get credentials instead of direct API call
-		const region = params.region || token.region || 'us-east-1';
+		// IMPORTANT: For SSO API calls, we must use the token's region first
+		// The user-provided region is for the actual AWS CLI command, not the SSO API
+		const ssoRegion = token.region || 'us-east-1';
+
+		methodLogger.debug('Setting up AWS SSO client', {
+			ssoRegion: ssoRegion,
+			userRegion: params.region,
+			accountId: params.accountId,
+			roleName: params.roleName,
+		});
 
 		// Create SSO client with proper region
 		const ssoClient = new SSOClient({
-			region: region,
+			region: ssoRegion,
 			// Disable the built-in retry to use our custom implementation
 			maxAttempts: 1,
 		});
@@ -347,6 +379,12 @@ async function getAwsCredentials(
 			accessToken: token.accessToken,
 			accountId: params.accountId,
 			roleName: params.roleName,
+		});
+
+		methodLogger.debug('Configured GetRoleCredentialsCommand', {
+			accountId: params.accountId,
+			roleName: params.roleName,
+			hasAccessToken: !!token.accessToken,
 		});
 
 		// Execute command with retry logic to handle 429 errors
@@ -361,9 +399,24 @@ async function getAwsCredentials(
 			backoffFactor: 2.0,
 		});
 
+		methodLogger.debug('Received response from AWS SSO', {
+			hasRoleCredentials: !!response.roleCredentials,
+			responseKeys: Object.keys(response || {}),
+		});
+
 		if (!response.roleCredentials) {
+			methodLogger.error('No role credentials in response', {
+				response: response,
+			});
 			throw new Error('No credentials returned from AWS SSO');
 		}
+
+		methodLogger.debug('Role credentials received', {
+			hasAccessKeyId: !!response.roleCredentials.accessKeyId,
+			hasSecretAccessKey: !!response.roleCredentials.secretAccessKey,
+			hasSessionToken: !!response.roleCredentials.sessionToken,
+			expiration: response.roleCredentials.expiration,
+		});
 
 		// Create credentials object from response
 		const credentials: AwsCredentials = {
@@ -371,6 +424,8 @@ async function getAwsCredentials(
 			secretAccessKey: response.roleCredentials.secretAccessKey!,
 			sessionToken: response.roleCredentials.sessionToken!,
 			expiration: new Date(response.roleCredentials.expiration!),
+			// Include the user's preferred region, or fall back to SSO region
+			region: params.region || ssoRegion,
 		};
 
 		// Cache the credentials
@@ -382,7 +437,16 @@ async function getAwsCredentials(
 
 		return credentials;
 	} catch (error) {
-		methodLogger.error('Failed to get AWS credentials', error);
+		methodLogger.error('Failed to get AWS credentials - detailed error', {
+			errorName: error instanceof Error ? error.name : 'Unknown',
+			errorMessage: error instanceof Error ? error.message : String(error),
+			errorStack: error instanceof Error ? error.stack : undefined,
+			isAwsError: error && typeof error === 'object' && '$metadata' in error,
+			awsErrorCode: error && typeof error === 'object' && '$metadata' in error ? (error as any).__type : undefined,
+			awsHttpStatus: error && typeof error === 'object' && '$metadata' in error ? (error as any).$metadata?.httpStatusCode : undefined,
+			accountId: params.accountId,
+			roleName: params.roleName,
+		});
 		throw createApiError(
 			`Failed to get AWS credentials: ${error instanceof Error ? error.message : String(error)}`,
 			undefined,
