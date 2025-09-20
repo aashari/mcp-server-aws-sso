@@ -123,6 +123,13 @@ function registerTools(server: McpServer): void {
 4. Background polling automatically collects and caches the token when authentication completes
 5. The cached token is then used by other AWS SSO tools without requiring repeated login
 
+**IMPORTANT FOR AI ASSISTANTS**: The tool output includes specific guidance for AI models. When the tool returns authentication instructions:
+- ALWAYS check if a browser window opened automatically by asking the user
+- If browser opened: Guide the user to complete authentication in that window
+- If no browser opened: Instruct the user to manually open the provided URL and enter the verification code
+- Always provide both the verification code and URL as backup information
+- The tool response includes an "Important for AI Assistants" section with specific guidance
+
 Browser launch behavior can be controlled with \`launchBrowser\` (default: true). When set to false, you must manually open the URL and enter the code.
 
 The tool now always uses background polling to collect credentials automatically once you complete authentication in the browser. This prevents HTTP request timeouts while ensuring credentials are captured.
@@ -137,6 +144,7 @@ Returns Markdown containing:
 - Session details (expiration time and duration if authenticated)
 - Verification code and URL (if authentication is started)
 - Browser launch status (if authentication is started)
+- AI-specific guidance for handling browser scenarios
 - Background polling status and next steps`,
 		LoginToolArgsSchema.shape,
 		handleLogin,
