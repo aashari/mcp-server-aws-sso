@@ -12,23 +12,24 @@ describe('AWS SSO Auth CLI Commands', () => {
 		try {
 			await getAwsSsoConfig();
 			return false;
-		} catch (error) {
+		} catch {
+			// Expected in CI/test environments where AWS_SSO_START_URL is not set
 			return true;
 		}
 	};
 
 	describe('login command', () => {
-		// Skip this test due to issues simulating --no-auto-poll in test environment
-		it.skip('should display login instructions without errors when not polling', async () => {
+		// Skip this test due to issues simulating --no-launch-browser in test environment
+		it.skip('should display login instructions without errors when not launching browser', async () => {
 			if (await skipIfNoCredentials()) {
 				console.warn('Skipping login test - no credentials');
 				return;
 			}
 
-			// Use the new negative flag
+			// Use the no-launch-browser flag
 			const { stdout, stderr } = await CliTestUtil.runCommand([
 				'login',
-				'--no-auto-poll',
+				'--no-launch-browser',
 			]);
 
 			// Check for specific known errors instead of exact exit code/stderr
@@ -50,10 +51,9 @@ describe('AWS SSO Auth CLI Commands', () => {
 				return;
 			}
 
-			// Use the no-auto-poll option to prevent waiting for browser authentication
+			// Use the no-launch-browser option to prevent waiting for browser authentication
 			const { stdout, stderr } = await CliTestUtil.runCommand([
 				'login',
-				'--no-auto-poll',
 				'--no-launch-browser',
 			]);
 
@@ -95,9 +95,8 @@ describe('AWS SSO Auth CLI Commands', () => {
 			expect(stdout).toMatch(/Usage|Options|Description/i);
 			expect(stdout).toContain('login');
 
-			// Check for the newly renamed flags
+			// Check for the available flags
 			expect(stdout).toMatch(/--no-launch-browser/i);
-			expect(stdout).toMatch(/--no-auto-poll/i);
 		}, 15000);
 
 		it('should handle unknown flags gracefully', async () => {
