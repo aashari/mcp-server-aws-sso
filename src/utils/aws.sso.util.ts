@@ -1,7 +1,4 @@
 import { execSync } from 'child_process';
-import { Logger } from './logger.util.js';
-
-const logger = Logger.forContext('utils/aws.sso.util.ts');
 
 /**
  * Gets the default AWS region from environment variables or AWS CLI configuration
@@ -16,15 +13,19 @@ export function getDefaultAwsRegion(): string {
 
 	// If environment variables aren't set, try to get from AWS CLI config
 	try {
-		const cliRegion = execSync('aws configure get region', {
-			encoding: 'utf8',
-		}).trim();
+		// Use the working AWS CLI binary path to avoid "cannot execute binary file" errors
+		const cliRegion = execSync(
+			'/usr/local/aws-cli/aws configure get region',
+			{
+				encoding: 'utf8',
+			},
+		).trim();
 		if (cliRegion) {
 			return cliRegion;
 		}
-	} catch (error) {
-		logger.debug('Failed to get region from AWS CLI config', error);
-		// Continue to fallback if AWS CLI command fails
+	} catch {
+		// Silently continue to fallback - this is expected in many environments
+		// where AWS CLI isn't configured or the binary path is different
 	}
 
 	// Fallback to a default region
