@@ -83,7 +83,7 @@ async function executeCommand(
 		// Prepend /usr/local/aws-cli to PATH so the working binary is found first
 		const currentPath = processEnv.PATH || '';
 		processEnv.PATH = `/usr/local/aws-cli:${currentPath}`;
-		
+
 		methodLogger.debug('Updated PATH for AWS CLI execution', {
 			awsCliPath: '/usr/local/aws-cli',
 			pathPrefix: processEnv.PATH.split(':').slice(0, 3),

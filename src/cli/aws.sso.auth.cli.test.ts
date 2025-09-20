@@ -2,16 +2,8 @@ import { CliTestUtil } from '../utils/cli.test.util';
 import { getAwsSsoConfig } from '../services/vendor.aws.sso.auth.core.service.js';
 
 describe('AWS SSO Auth CLI Commands', () => {
-	beforeAll(async () => {
-		// Check if credentials are available
-		try {
-			await getAwsSsoConfig();
-		} catch (error) {
-			console.warn(
-				'WARNING: No AWS SSO credentials available. Live API tests will be skipped.',
-			);
-		}
-	});
+	// Test environment setup - no need for beforeAll hook
+	// All individual tests handle credentials checking internally
 
 	/**
 	 * Helper function to skip tests if AWS SSO credentials are not available

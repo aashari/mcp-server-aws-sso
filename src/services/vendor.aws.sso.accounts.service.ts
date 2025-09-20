@@ -131,7 +131,10 @@ async function listSsoAccounts(
 				methodLogger.error('Invalid accounts response format', error);
 				const issueSummary = error.issues
 					.map((issue) => {
-						const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+						const path =
+							issue.path.length > 0
+								? issue.path.join('.')
+								: '(root)';
 						return `${path}: ${issue.message}`;
 					})
 					.join(', ');
@@ -241,7 +244,10 @@ async function listAccountRoles(
 				methodLogger.error('Invalid roles response format', error);
 				const issueSummary = error.issues
 					.map((issue) => {
-						const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+						const path =
+							issue.path.length > 0
+								? issue.path.join('.')
+								: '(root)';
 						return `${path}: ${issue.message}`;
 					})
 					.join(', ');
@@ -351,7 +357,7 @@ async function getAwsCredentials(
 		expiresAt: token.expiresAt,
 		expiresAtDate: new Date(token.expiresAt * 1000).toISOString(),
 		region: token.region,
-		tokenType: (token as any).tokenType || 'unknown',
+		tokenType: 'unknown',
 	});
 
 	try {
@@ -439,11 +445,19 @@ async function getAwsCredentials(
 	} catch (error) {
 		methodLogger.error('Failed to get AWS credentials - detailed error', {
 			errorName: error instanceof Error ? error.name : 'Unknown',
-			errorMessage: error instanceof Error ? error.message : String(error),
+			errorMessage:
+				error instanceof Error ? error.message : String(error),
 			errorStack: error instanceof Error ? error.stack : undefined,
-			isAwsError: error && typeof error === 'object' && '$metadata' in error,
-			awsErrorCode: error && typeof error === 'object' && '$metadata' in error ? (error as any).__type : undefined,
-			awsHttpStatus: error && typeof error === 'object' && '$metadata' in error ? (error as any).$metadata?.httpStatusCode : undefined,
+			isAwsError:
+				error && typeof error === 'object' && '$metadata' in error,
+			awsErrorCode:
+				error && typeof error === 'object' && '$metadata' in error
+					? ((error as Record<string, unknown>).__type as string)
+					: undefined,
+			awsHttpStatus:
+				error && typeof error === 'object' && '$metadata' in error
+					? ((error as Record<string, unknown>).$metadata as number)
+					: undefined,
 			accountId: params.accountId,
 			roleName: params.roleName,
 		});

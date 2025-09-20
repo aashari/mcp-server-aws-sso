@@ -1,8 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type {
-	RequestHandlerExtra,
-}
-	from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import type {
 	ServerNotification,
 	ServerRequest,
@@ -12,8 +9,8 @@ import { formatErrorForMcpTool } from '../utils/error.util.js';
 import {
 	LoginToolArgsSchema,
 	LoginToolArgsType,
-		StatusToolArgsSchema,
-		StatusToolArgsType,
+	StatusToolArgsSchema,
+	StatusToolArgsType,
 } from './aws.sso.types.js';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
 

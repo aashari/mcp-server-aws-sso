@@ -184,7 +184,9 @@ async function startLogin(
 
 		// Start background polling (non-blocking)
 		loginLogger.debug('Starting background polling for authentication');
-		loginLogger.info('Background polling started - authentication will be processed automatically');
+		loginLogger.info(
+			'Background polling started - authentication will be processed automatically',
+		);
 
 		// Start polling in the background without blocking the response
 		// Use setImmediate to ensure this runs after the response is sent
@@ -192,11 +194,17 @@ async function startLogin(
 			try {
 				loginLogger.debug('Background polling: Starting token polling');
 				const authResult = await pollForSsoToken();
-				loginLogger.info('Background polling: Authentication successful, token received', {
-					expiresAt: authResult.expiresAt,
-				});
+				loginLogger.info(
+					'Background polling: Authentication successful, token received',
+					{
+						expiresAt: authResult.expiresAt,
+					},
+				);
 			} catch (error) {
-				loginLogger.error('Background polling: Authentication failed', error);
+				loginLogger.error(
+					'Background polling: Authentication failed',
+					error,
+				);
 				// In background mode, we just log the error and don't throw
 				// The user can check status using aws_sso_status tool
 			}

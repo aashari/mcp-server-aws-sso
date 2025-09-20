@@ -50,7 +50,8 @@ export async function getAwsSsoConfig(): Promise<AwsSsoConfig> {
 			methodLogger.error('Invalid AWS SSO configuration', error);
 			const issueSummary = error.issues
 				.map((issue) => {
-					const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+					const path =
+						issue.path.length > 0 ? issue.path.join('.') : '(root)';
 					return `${path}: ${issue.message}`;
 				})
 				.join(', ');
