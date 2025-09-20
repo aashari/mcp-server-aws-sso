@@ -1,3 +1,18 @@
+# [2.0.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.21.0...v2.0.0) (2025-09-20)
+
+
+### Bug Fixes
+
+* eliminate AWS CLI path warnings and unused imports ([6a222c4](https://github.com/aashari/mcp-server-aws-sso/commit/6a222c48ff9614a1595299604507dcde4af1ea5e))
+* resolve AWS CLI execution and credential region mismatch issues ([aa3789c](https://github.com/aashari/mcp-server-aws-sso/commit/aa3789c83c872e2c2fa6d4c6f14f0b622011e007))
+* resolve CLI test failures and finalize warning elimination ([62bfe62](https://github.com/aashari/mcp-server-aws-sso/commit/62bfe62ae1e69e017b26e65db1b348d98cd1009d))
+* resolve test environment issues and improve type safety ([183aba3](https://github.com/aashari/mcp-server-aws-sso/commit/183aba327c892cec2ec91add13fc90162a61643e))
+
+
+### BREAKING CHANGES
+
+* AWS CLI commands now properly handle cross-region authentication by using SSO token region for API calls while preserving user's region preference for command execution
+
 # [1.21.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.20.3...v1.21.0) (2025-08-02)
 
 
