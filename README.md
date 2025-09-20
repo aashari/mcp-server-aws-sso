@@ -160,8 +160,7 @@ Ask your AI assistant:
 **Custom Login Options:**
 ```json
 {
-  "launchBrowser": false,
-  "autoPoll": true
+  "launchBrowser": false
 }
 ```
 
@@ -267,7 +266,7 @@ npm run mcp:inspect
 
 CLI commands use `kebab-case`. Run `--help` for details (e.g., `mcp-aws-sso login --help`).
 
-- **login**: Authenticates via AWS SSO (`--no-launch-browser`, `--no-auto-poll`). Ex: `mcp-aws-sso login`.
+- **login**: Authenticates via AWS SSO (`--no-launch-browser`). Ex: `mcp-aws-sso login`.
 - **status**: Checks authentication status (no options). Ex: `mcp-aws-sso status`.
 - **ls-accounts**: Lists accounts/roles (no options). Ex: `mcp-aws-sso ls-accounts`.
 - **exec-command**: Runs AWS CLI command (`--account-id`, `--role-name`, `--command`, `--region`). Ex: `mcp-aws-sso exec-command --account-id 123456789012 --role-name ReadOnly --command "aws s3 ls"`.
