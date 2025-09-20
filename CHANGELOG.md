@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/aashari/mcp-server-aws-sso/compare/v2.0.0...v2.0.1) (2025-09-20)
+
+
+### Bug Fixes
+
+* prevent dotenv from outputting to STDIO in MCP mode ([#151](https://github.com/aashari/mcp-server-aws-sso/issues/151)) ([9ec8c30](https://github.com/aashari/mcp-server-aws-sso/commit/9ec8c30e196798ec1294d742acb6186bef077927))
+
 # [2.0.0](https://github.com/aashari/mcp-server-aws-sso/compare/v1.21.0...v2.0.0) (2025-09-20)
 
 
