@@ -1,21 +1,11 @@
 import { Logger } from '../utils/logger.util.js';
-// Import promisify and exec statically
-import { promisify } from 'node:util';
-import { exec as nodeExec } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { getAwsCredentials } from './vendor.aws.sso.accounts.service.js';
 import { CommandExecutionResult } from '../controllers/aws.sso.exec.types.js';
 
 const logger = Logger.forContext('services/vendor.aws.sso.exec.service.ts');
 
-// Create promisified version once
-const exec = promisify(nodeExec);
 
-// Define interface for expected exec error properties
-interface ExecError extends Error {
-	code?: number;
-	stdout?: string;
-	stderr?: string;
-}
 
 /**
  * Execute AWS CLI command with temporary credentials
@@ -157,51 +147,55 @@ async function executeChildProcess(
 	env: NodeJS.ProcessEnv,
 ): Promise<CommandExecutionResult> {
 	const methodLogger = logger.forMethod('executeChildProcess');
-	methodLogger.debug('Executing child process via shell', {
-		command: commandString,
-	});
 
-	try {
-		// Execute using exec, which uses a shell
-		const { stdout, stderr } = await exec(commandString, { env });
+    // Safely split the command and arguments
+    const [command, ...args] = commandString.split(' ');
 
-		methodLogger.debug('Shell command completed successfully', {
-			stdoutLength: stdout.length,
-			stderrLength: stderr.length,
-		});
+    // Whitelist the command to ensure only 'aws' can be executed
+    if (command !== 'aws') {
+        const errorMessage = 'Command not allowed. Only "aws" commands are permitted.';
+        methodLogger.error(errorMessage, { command });
+        return {
+            stdout: '',
+            stderr: errorMessage,
+            exitCode: 1,
+        };
+    }
 
-		return {
-			stdout,
-			stderr,
-			exitCode: 0, // exec throws on non-zero exit code
-		};
-	} catch (error) {
-		// Handle errors from exec (includes non-zero exit codes)
-		methodLogger.error('Shell command execution failed', { error });
+    methodLogger.debug('Executing child process via spawn', { command, args });
 
-		let exitCode = 1;
-		let stdout = '';
-		let stderr = '';
+    return new Promise((resolve) => {
+        const child = spawn(command, args, { env, shell: false }); // shell: false is crucial
 
-		if (typeof error === 'object' && error !== null) {
-			// Cast to check for common exec error properties
-			const execError = error as ExecError;
-			exitCode = typeof execError.code === 'number' ? execError.code : 1;
-			stdout =
-				typeof execError.stdout === 'string' ? execError.stdout : '';
-			stderr =
-				typeof execError.stderr === 'string' ? execError.stderr : '';
-		} else if (error instanceof Error) {
-			// Fallback for generic Errors
-			stderr = error.message;
-		}
+        let stdout = '';
+        let stderr = '';
 
-		return {
-			stdout: String(stdout),
-			stderr: String(stderr),
-			exitCode: Number(exitCode) || 1,
-		};
-	}
+        child.stdout.on('data', (data) => {
+            stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        child.on('close', (exitCode) => {
+            methodLogger.debug('Child process completed', { exitCode });
+            resolve({
+                stdout,
+                stderr,
+                exitCode: exitCode ?? 1, // Ensure exitCode is a number
+            });
+        });
+
+        child.on('error', (error) => {
+            methodLogger.error('Child process execution failed', { error });
+            resolve({
+                stdout: '',
+                stderr: error.message,
+                exitCode: 1,
+            });
+        });
+    });
 }
 
 export { executeCommand };
