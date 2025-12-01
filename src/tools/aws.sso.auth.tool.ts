@@ -1,16 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
-import type {
-	ServerNotification,
-	ServerRequest,
-} from '@modelcontextprotocol/sdk/types.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
 import {
 	LoginToolArgsSchema,
 	LoginToolArgsType,
 	StatusToolArgsSchema,
-	StatusToolArgsType,
 } from './aws.sso.types.js';
 import awsSsoAuthController from '../controllers/aws.sso.auth.controller.js';
 
@@ -32,10 +26,7 @@ toolLogger.debug('AWS SSO authentication tool module initialized');
  * @param args Tool arguments
  * @returns MCP response with login information
  */
-async function handleLogin(
-	args: LoginToolArgsType,
-	_extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
-) {
+async function handleLogin(args: Record<string, unknown>) {
 	const loginLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'handleLogin',
@@ -45,7 +36,9 @@ async function handleLogin(
 	try {
 		// Pass args directly to the controller without setting defaults here
 		// The controller should handle all defaults
-		const response = await awsSsoAuthController.startLogin(args);
+		const response = await awsSsoAuthController.startLogin(
+			args as LoginToolArgsType,
+		);
 
 		loginLogger.debug('Login process completed', {
 			responseLength: response.content.length,
@@ -73,10 +66,7 @@ async function handleLogin(
  * Handles the AWS SSO status tool
  * @returns MCP response with authentication status
  */
-async function handleStatus(
-	_args: StatusToolArgsType,
-	_extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
-) {
+async function handleStatus() {
 	const statusLogger = Logger.forContext(
 		'tools/aws.sso.auth.tool.ts',
 		'handleStatus',
@@ -113,65 +103,56 @@ function registerTools(server: McpServer): void {
 	);
 	registerLogger.debug('Registering AWS SSO auth tools');
 
-	// Register the AWS SSO login tool
-	server.tool<typeof LoginToolArgsSchema.shape>(
-		'aws_sso_login',
-		`Initiates the AWS SSO device authorization flow to obtain temporary credentials. This flow works as follows:
-1. The tool generates a unique user verification code and authentication URL
-2. A browser is opened to the AWS SSO login page (if \`launchBrowser: true\`)
-3. You enter the verification code in the browser and complete the AWS SSO login
-4. Background polling automatically collects and caches the token when authentication completes
-5. The cached token is then used by other AWS SSO tools without requiring repeated login
+	// Tool descriptions
+	const LOGIN_DESCRIPTION = `Initiate AWS SSO device authorization flow to obtain temporary credentials.
 
-**IMPORTANT FOR AI ASSISTANTS**: The tool output includes specific guidance for AI models. When the tool returns authentication instructions:
-- ALWAYS check if a browser window opened automatically by asking the user
-- If browser opened: Guide the user to complete authentication in that window
-- If no browser opened: Instruct the user to manually open the provided URL and enter the verification code
-- Always provide both the verification code and URL as backup information
-- The tool response includes an "Important for AI Assistants" section with specific guidance
+This flow works as follows:
+1. Generates a unique user verification code and authentication URL
+2. Opens a browser to AWS SSO login page (if \`launchBrowser: true\`)
+3. You enter the verification code and complete AWS SSO login
+4. Background polling automatically collects and caches the token
+5. The cached token is used by other AWS SSO tools
 
-Browser launch behavior can be controlled with \`launchBrowser\` (default: true). When set to false, you must manually open the URL and enter the code.
-
-The tool now always uses background polling to collect credentials automatically once you complete authentication in the browser. This prevents HTTP request timeouts while ensuring credentials are captured.
+**IMPORTANT FOR AI ASSISTANTS**: When the tool returns authentication instructions:
+- ALWAYS check if a browser window opened automatically
+- If browser opened: Guide the user to complete authentication
+- If no browser opened: Instruct user to manually open the URL and enter code
+- Always provide both the verification code and URL as backup
 
 Prerequisites:
-- AWS SSO must be configured with a start URL and region (via AWS config file or environment variables)
-- Browser access is required to complete the authentication flow
+- AWS SSO must be configured with a start URL and region
+- Browser access is required for authentication
 - You must have an AWS SSO account with appropriate permissions
 
-Returns Markdown containing:
-- Authentication status (already logged in or authentication started)
-- Session details (expiration time and duration if authenticated)
-- Verification code and URL (if authentication is started)
-- Browser launch status (if authentication is started)
-- AI-specific guidance for handling browser scenarios
-- Background polling status and next steps`,
-		LoginToolArgsSchema.shape,
+Returns: Authentication status, session details, verification code and URL`;
+
+	// Register the AWS SSO login tool using modern registerTool API
+	server.registerTool(
+		'aws_sso_login',
+		{
+			title: 'AWS SSO Login',
+			description: LOGIN_DESCRIPTION,
+			inputSchema: LoginToolArgsSchema,
+		},
 		handleLogin,
 	);
 
-	// Register the AWS SSO status tool
-	server.tool<typeof StatusToolArgsSchema.shape>(
+	const STATUS_DESCRIPTION = `Check current AWS SSO authentication status.
+
+Verifies if a valid cached token exists and its expiration time. Does NOT perform authentication - only checks status. If no valid token exists, instructs you to run \`aws_sso_login\`.
+
+Use before calling \`aws_sso_ls_accounts\` or \`aws_sso_exec_command\`.
+
+Returns: Authentication status, session details, expiration time, next steps`;
+
+	// Register the AWS SSO status tool using modern registerTool API
+	server.registerTool(
 		'aws_sso_status',
-		`Checks the current AWS SSO authentication status by verifying if a valid cached token exists and its expiration time.
-
-This tool does NOT perform authentication itself - it only checks if you're already authenticated. If no valid token exists, it will instruct you to run \`aws_sso_login\`.
-
-A valid cached token is required for all other AWS SSO commands to work. Use this tool to verify authentication status before using commands like \`aws_sso_ls_accounts\` or \`aws_sso_exec_command\`.
-
-The tool checks:
-- If a token exists in the cache
-- If the token is still valid (not expired)
-- When the token will expire (if valid)
-
-Prerequisites:
-- AWS SSO must be configured with a start URL and region (via AWS config file or environment variables)
-
-Returns Markdown containing:
-- Authentication status (authenticated or not)
-- Session details (expiration time and duration if authenticated)
-- Instructions for next steps based on the status`,
-		StatusToolArgsSchema.shape,
+		{
+			title: 'AWS SSO Status',
+			description: STATUS_DESCRIPTION,
+			inputSchema: StatusToolArgsSchema,
+		},
 		handleStatus,
 	);
 
