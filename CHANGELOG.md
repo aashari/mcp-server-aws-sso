@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/aashari/mcp-server-aws-sso/compare/v3.0.0...v3.0.1) (2025-12-01)
+
+
+### Bug Fixes
+
+* **deps:** resolve picomatch version conflict for npm ci ([7af0efd](https://github.com/aashari/mcp-server-aws-sso/commit/7af0efde13295b274c173d98bc11d0c8513434a4))
+
 # [3.0.0](https://github.com/aashari/mcp-server-aws-sso/compare/v2.0.1...v3.0.0) (2025-09-20)
 
 
