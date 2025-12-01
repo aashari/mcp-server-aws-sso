@@ -110,6 +110,9 @@
     "open": "^10.2.0",
     "zod": "^4.1.13"
   },
+  "overrides": {
+    "picomatch": "^4.0.3"
+  },
   "directories": {
     "example": "examples"
   },
