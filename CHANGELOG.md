@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/aashari/mcp-server-aws-sso/compare/v3.0.1...v3.1.0) (2025-12-03)
+
+
+### Features
+
+* add raw response logging with truncation for large API responses ([6ec5c29](https://github.com/aashari/mcp-server-aws-sso/commit/6ec5c2985a391ca4ab6afdb2bd886d0bf0e52e69))
+
 ## [3.0.1](https://github.com/aashari/mcp-server-aws-sso/compare/v3.0.0...v3.0.1) (2025-12-01)
 
 
