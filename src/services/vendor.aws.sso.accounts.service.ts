@@ -32,6 +32,7 @@ import {
 	ListAccountsCommand,
 } from '@aws-sdk/client-sso';
 import { withRetry } from '../utils/retry.util.js';
+import { saveRawResponse } from '../utils/response.util.js';
 import { z } from 'zod';
 
 const logger = Logger.forContext('services/vendor.aws.sso.accounts.service.ts');
@@ -96,6 +97,7 @@ async function listSsoAccounts(
 		methodLogger.debug(
 			'Requesting accounts list using AWS SDK with retry mechanism',
 		);
+		const startTime = performance.now();
 		const response = await withRetry(() => ssoClient.send(command), {
 			// Use default retry options, can be adjusted if needed
 			maxRetries: 5,
@@ -103,6 +105,19 @@ async function listSsoAccounts(
 			maxDelayMs: 30000,
 			backoffFactor: 2.0,
 		});
+		const endTime = performance.now();
+		const durationMs = endTime - startTime;
+
+		// Save raw response to file
+		const ssoEndpoint = `https://portal.sso.${region}.amazonaws.com/federation/accounts`;
+		saveRawResponse(
+			ssoEndpoint,
+			'POST',
+			{ maxResults: params.maxResults, nextToken: params.nextToken },
+			response,
+			response.$metadata?.httpStatusCode || 200,
+			durationMs,
+		);
 
 		// Validate accounts with Zod schema
 		try {
@@ -209,6 +224,7 @@ async function listAccountRoles(
 		methodLogger.debug(
 			'Requesting roles list using AWS SDK with retry mechanism',
 		);
+		const startTime = performance.now();
 		const response = await withRetry(() => ssoClient.send(command), {
 			// Use default retry options, can be adjusted if needed
 			maxRetries: 5,
@@ -216,6 +232,23 @@ async function listAccountRoles(
 			maxDelayMs: 30000,
 			backoffFactor: 2.0,
 		});
+		const endTime = performance.now();
+		const durationMs = endTime - startTime;
+
+		// Save raw response to file
+		const ssoEndpoint = `https://portal.sso.${region}.amazonaws.com/federation/roles`;
+		saveRawResponse(
+			ssoEndpoint,
+			'POST',
+			{
+				accountId: params.accountId,
+				maxResults: params.maxResults,
+				nextToken: params.nextToken,
+			},
+			response,
+			response.$metadata?.httpStatusCode || 200,
+			durationMs,
+		);
 
 		// Validate roles with Zod schema
 		try {
@@ -397,6 +430,7 @@ async function getAwsCredentials(
 		methodLogger.debug(
 			'Requesting temporary credentials using AWS SDK with retry mechanism',
 		);
+		const startTime = performance.now();
 		const response = await withRetry(() => ssoClient.send(command), {
 			// Use default retry options, can be adjusted if needed
 			maxRetries: 5,
@@ -404,6 +438,39 @@ async function getAwsCredentials(
 			maxDelayMs: 30000,
 			backoffFactor: 2.0,
 		});
+		const endTime = performance.now();
+		const durationMs = endTime - startTime;
+
+		// Save raw response to file (exclude sensitive credential values)
+		const ssoEndpoint = `https://portal.sso.${ssoRegion}.amazonaws.com/federation/credentials`;
+		saveRawResponse(
+			ssoEndpoint,
+			'POST',
+			{
+				accountId: params.accountId,
+				roleName: params.roleName,
+			},
+			{
+				$metadata: response.$metadata,
+				roleCredentials: response.roleCredentials
+					? {
+							accessKeyId: response.roleCredentials.accessKeyId
+								? '***REDACTED***'
+								: undefined,
+							secretAccessKey: response.roleCredentials
+								.secretAccessKey
+								? '***REDACTED***'
+								: undefined,
+							sessionToken: response.roleCredentials.sessionToken
+								? '***REDACTED***'
+								: undefined,
+							expiration: response.roleCredentials.expiration,
+						}
+					: undefined,
+			},
+			response.$metadata?.httpStatusCode || 200,
+			durationMs,
+		);
 
 		methodLogger.debug('Received response from AWS SSO', {
 			hasRoleCredentials: !!response.roleCredentials,

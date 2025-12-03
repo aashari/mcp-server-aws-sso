@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
+import { truncateForAI } from '../utils/formatter.util.js';
 import {
 	LoginToolArgsSchema,
 	LoginToolArgsType,
@@ -49,7 +50,10 @@ async function handleLogin(args: Record<string, unknown>) {
 			content: [
 				{
 					type: 'text' as const,
-					text: response.content,
+					text: truncateForAI(
+						response.content,
+						response.rawResponsePath,
+					),
 				},
 			],
 		};
@@ -82,7 +86,10 @@ async function handleStatus() {
 			content: [
 				{
 					type: 'text' as const,
-					text: response.content,
+					text: truncateForAI(
+						response.content,
+						response.rawResponsePath,
+					),
 				},
 			],
 		};

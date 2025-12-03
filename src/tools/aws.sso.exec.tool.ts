@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
+import { truncateForAI } from '../utils/formatter.util.js';
 import {
 	ExecCommandToolArgs,
 	ExecCommandToolArgsType,
@@ -45,7 +46,7 @@ async function handleExecCommand(args: Record<string, unknown>) {
 			content: [
 				{
 					type: 'text' as const,
-					text: result.content,
+					text: truncateForAI(result.content, result.rawResponsePath),
 				},
 			],
 		};

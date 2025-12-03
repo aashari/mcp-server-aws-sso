@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../utils/logger.util.js';
 import { formatErrorForMcpTool } from '../utils/error.util.js';
+import { truncateForAI } from '../utils/formatter.util.js';
 import { ListAccountsArgsSchema } from './aws.sso.types.js';
 import awsSsoAccountsController from '../controllers/aws.sso.accounts.controller.js';
 
@@ -38,7 +39,10 @@ async function handleListAccounts() {
 			content: [
 				{
 					type: 'text' as const,
-					text: response.content,
+					text: truncateForAI(
+						response.content,
+						response.rawResponsePath,
+					),
 				},
 			],
 		};
