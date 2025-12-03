@@ -1,8 +1,9 @@
 # Connect AI to Your AWS Resources
 
-Transform how you manage and access your AWS infrastructure by connecting Claude, Cursor AI, and other AI assistants directly to your AWS accounts through Single Sign-On. Get instant access to your cloud resources, execute commands, and manage EC2 instances using natural language.
+Transform how you manage and access your AWS infrastructure by connecting Claude, Cursor AI, and other AI assistants directly to your AWS accounts through AWS IAM Identity Center (formerly AWS SSO). Get instant access to your cloud resources, execute commands, and manage EC2 instances using natural language.
 
 [![NPM Version](https://img.shields.io/npm/v/@aashari/mcp-server-aws-sso)](https://www.npmjs.com/package/@aashari/mcp-server-aws-sso)
+[![Node Version](https://img.shields.io/node/v/@aashari/mcp-server-aws-sso)](https://www.npmjs.com/package/@aashari/mcp-server-aws-sso)
 
 ## What You Can Do
 
@@ -256,15 +257,52 @@ npm run mcp:inspect
 - `PORT`: HTTP server port (default: 3000)
 - `DEBUG`: Enable debug logging (default: false)
 
-**Authentication:**
-- `AWS_SSO_START_URL`: Your AWS SSO start URL
-- `AWS_SSO_REGION`: Your AWS SSO region
-- `AWS_PROFILE`: Your AWS profile name (optional)
-- `AWS_REGION`: Your AWS region (optional)
+**AWS Configuration:**
+- `AWS_SSO_START_URL`: Your AWS IAM Identity Center start URL (e.g., `https://your-org.awsapps.com/start`)
+- `AWS_SSO_REGION` or `AWS_REGION`: AWS region for SSO authentication (e.g., `us-east-1`)
+- `AWS_PROFILE`: AWS profile name (optional, for CLI compatibility)
+
+## Available Tools
+
+When integrated with AI assistants via MCP, the following tools are available:
+
+### Authentication Tools
+
+- **`aws_sso_login`**: Initiates AWS SSO device authorization flow
+  - Parameters: `launchBrowser` (optional, boolean, default: true)
+  - Opens browser automatically for authentication
+  - Handles device authorization code flow
+  - Caches tokens for subsequent operations
+
+- **`aws_sso_status`**: Checks current authentication status
+  - No parameters required
+  - Returns session details and expiration time
+  - Verifies cached token validity
+
+### Account Management Tools
+
+- **`aws_sso_ls_accounts`**: Lists all accessible AWS accounts and roles
+  - No parameters required
+  - Shows account IDs, names, emails, and available roles
+  - Essential for discovering which accounts/roles you can use
+
+### Command Execution Tools
+
+- **`aws_sso_exec_command`**: Executes AWS CLI commands with SSO credentials
+  - Required: `accountId`, `roleName`, `command`
+  - Optional: `region`
+  - Automatically obtains and caches temporary credentials
+  - Supports any AWS CLI command
+
+- **`aws_sso_ec2_exec_command`**: Executes shell commands on EC2 instances via SSM
+  - Required: `instanceId`, `accountId`, `roleName`, `command`
+  - Optional: `region`
+  - No SSH access required (uses AWS Systems Manager)
+  - Instance must have SSM Agent installed
 
 ## CLI Commands
 
-CLI commands use `kebab-case`. Run `--help` for details (e.g., `mcp-aws-sso login --help`).
+All tools are also available as CLI commands using `kebab-case`. Run `--help` for details (e.g., `mcp-aws-sso login --help`).
 
 - **login**: Authenticates via AWS SSO (`--no-launch-browser`). Ex: `mcp-aws-sso login`.
 - **status**: Checks authentication status (no options). Ex: `mcp-aws-sso status`.
@@ -403,9 +441,9 @@ If you're still having issues:
 
 ### What permissions do I need?
 
-**For AWS SSO Setup:**
-- You need an AWS SSO account with access to IAM Identity Center
-- Permission sets configured by your AWS administrator
+**For AWS IAM Identity Center (SSO) Setup:**
+- Access to AWS IAM Identity Center with a configured identity source
+- Permission sets assigned to you by your AWS administrator
 - Access to the specific AWS accounts you want to manage
 
 **For EC2 Commands via SSM:**
@@ -415,39 +453,85 @@ If you're still having issues:
 
 ### Can I use this with multiple AWS organizations?
 
-Currently, each installation supports one AWS SSO start URL. For multiple organizations, you'd need separate configurations or manually switch the `AWS_SSO_START_URL` environment variable.
+Currently, each installation supports one AWS SSO start URL at a time. For multiple organizations, you can:
+- Switch the `AWS_SSO_START_URL` environment variable between sessions
+- Run separate instances with different configurations
+- Use multiple Claude Desktop configurations for different organizations
 
 ### How long do the SSO credentials last?
 
-AWS SSO tokens typically last 8-12 hours. Temporary credentials for specific accounts/roles last about 1 hour. The tool automatically handles token refresh and credential caching for you.
+- **SSO tokens**: Typically 8-12 hours (managed by AWS IAM Identity Center)
+- **Temporary credentials**: Approximately 1 hour per account/role
+- The tool automatically handles token refresh and credential caching
+- You'll be prompted to re-authenticate when tokens expire
 
 ### What AI assistants does this work with?
 
 Any AI assistant that supports the Model Context Protocol (MCP):
-- Claude Desktop (most popular)
-- Cursor AI  
-- Continue.dev
-- Many others
+- **Claude Desktop** (most popular and well-tested)
+- **Cursor AI** (code editor with AI)
+- **Continue.dev** (VS Code extension)
+- Any other MCP-compatible client
 
 ### Is my data secure?
 
-Yes! This tool:
-- Runs entirely on your local machine
-- Uses your own AWS SSO credentials
+Yes! This tool prioritizes security:
+- Runs entirely on your local machine (no external servers)
+- Uses your own AWS SSO credentials (no third-party authentication)
 - Never sends your data to third parties
-- Only accesses what you give it permission to access
-- Uses temporary credentials that automatically expire
+- Only accesses what you explicitly grant permission to
+- Uses AWS temporary credentials that automatically expire
+- Follows AWS best practices for credential management
+- Credentials are stored in standard AWS locations (`~/.aws/`)
 
 ### Do I need AWS CLI installed?
 
-Yes, AWS CLI v2 is required for the `aws_sso_exec_command` tool. However, the authentication and account listing features work without it.
+**For `aws_sso_exec_command`:** Yes, AWS CLI v2 is required to execute AWS commands.
+
+**For other tools:** No, authentication (`aws_sso_login`), status checking (`aws_sso_status`), and account listing (`aws_sso_ls_accounts`) work without AWS CLI.
+
+**For `aws_sso_ec2_exec_command`:** No, this uses the AWS SDK directly via Systems Manager.
 
 ### Can I use this with AWS CLI profiles?
 
-This tool uses AWS SSO directly and doesn't rely on AWS CLI profiles. It manages its own credential cache independently of the AWS CLI configuration.
+This tool uses AWS IAM Identity Center directly and manages its own credential cache. It doesn't require AWS CLI profiles but is compatible with them:
+- The tool stores credentials in `~/.aws/sso/cache/` (standard AWS location)
+- You can optionally set `AWS_PROFILE` for compatibility with other AWS tools
+- The tool works independently of AWS CLI profile configuration
+
+### What's the difference between AWS SSO and AWS IAM Identity Center?
+
+They're the same service! AWS SSO was rebranded to **AWS IAM Identity Center** in 2022. This tool works with both names:
+- References to "AWS SSO" in the code and documentation refer to AWS IAM Identity Center
+- Your start URL format remains the same: `https://your-org.awsapps.com/start`
+- All functionality is identical regardless of the naming
+
+### What is TOON format?
+
+TOON (Token-Oriented Object Notation) is an output format optimized for Large Language Models:
+- More compact than JSON (saves tokens when sending data to AI)
+- Still human-readable
+- Automatically used when available, falls back to JSON if needed
+- Learn more: [@toon-format/toon](https://www.npmjs.com/package/@toon-format/toon)
+
+### Where are logs stored?
+
+Debug logs are written to: `~/.mcp/data/@aashari.mcp-server-aws-sso.[session-id].log`
+
+Each session gets a unique log file. Enable debug logging with `DEBUG=true`.
 
 <details>
 <summary><b>Response Format Examples (Click to expand)</b></summary>
+
+### Output Format (TOON)
+
+Responses are formatted using **TOON (Token-Oriented Object Notation)** format, which is optimized for LLM token efficiency. TOON provides a more compact representation than JSON while maintaining readability.
+
+**Key Features:**
+- Automatically converts responses to TOON format when available
+- Falls back to JSON if TOON conversion fails
+- Truncates large responses (>10KB) with a note about the full response location
+- Logs full responses to `~/.mcp/data/@aashari.mcp-server-aws-sso.[session-id].log`
 
 ### MCP Tool Response Example (`aws_sso_exec_command`)
 
@@ -479,7 +563,7 @@ This tool uses AWS SSO directly and doesn't rely on AWS CLI profiles. It manages
 **Region:** us-east-1 (Default: ap-southeast-1)
 
 ## Command
-	
+
 	aws s3api get-object --bucket restricted-bucket --key secret.txt output.txt
 
 ## Error: Permission Denied
@@ -501,7 +585,50 @@ Try executing the command again using one of the roles listed above that has app
 *Executed: 2025-05-19 06:17:49 UTC*
 ```
 
+### Large Response Handling
+
+When API responses exceed 10KB, the output is truncated with a message:
+
+```
+[Response truncated for AI consumption. Full response logged to: /path/to/log/file.log]
+```
+
+This ensures AI assistants receive manageable response sizes while developers can access full output in log files.
+
 </details>
+
+## Technical Details
+
+### Architecture
+
+This server follows a clean 5-layer architecture:
+
+1. **CLI Layer** (`src/cli/`): Command-line interface using Commander.js
+2. **Tools Layer** (`src/tools/`): MCP tool definitions with Zod validation schemas
+3. **Controllers Layer** (`src/controllers/`): Business logic and orchestration
+4. **Services Layer** (`src/services/`): External API interactions (AWS SDK)
+5. **Utils Layer** (`src/utils/`): Shared utilities (logging, config, caching, formatting)
+
+### Key Dependencies
+
+- **@modelcontextprotocol/sdk** v1.23.0: MCP protocol implementation
+- **@aws-sdk/client-sso** v3.893.0: AWS SSO API client
+- **@aws-sdk/client-ssm** v3.893.0: AWS Systems Manager for EC2 commands
+- **@toon-format/toon** v2.0.1: Token-efficient output formatting
+- **zod** v4.1.13: Runtime type validation
+- **commander** v14.0.2: CLI framework
+
+### Logging
+
+Debug logs are written to: `~/.mcp/data/@aashari.mcp-server-aws-sso.[session-id].log`
+
+Enable debug logging by setting `DEBUG=true` in your environment.
+
+### Caching
+
+- **SSO tokens**: Cached in `~/.aws/sso/cache/` (standard AWS location)
+- **Temporary credentials**: Cached for 1 hour per account/role combination
+- **Account information**: Fetched fresh on each request (no persistent cache)
 
 ## Development
 
@@ -513,12 +640,74 @@ cd mcp-server-aws-sso
 # Install dependencies
 npm install
 
-# Run in development mode
-npm run dev:server
+# Build the project
+npm run build
+
+# Run in development mode with HTTP transport
+npm run dev:http
+
+# Run with STDIO transport (for MCP client testing)
+npm run dev:stdio
+
+# Run with MCP Inspector (visual debugging)
+npm run mcp:inspect
 
 # Run tests
 npm test
+
+# Run tests with coverage
+npm test:coverage
+
+# Lint code
+npm run lint
+
+# Format code
+npm run format
 ```
+
+### Available npm Scripts
+
+- `npm run build` - Compile TypeScript to JavaScript
+- `npm run mcp:stdio` - Run with STDIO transport
+- `npm run mcp:http` - Run with HTTP transport
+- `npm run mcp:inspect` - Run with MCP Inspector for debugging
+- `npm test` - Run Jest tests
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+
+## Requirements
+
+- **Node.js**: Version 18.0.0 or higher
+- **AWS CLI**: Version 2.x (required only for `aws_sso_exec_command`)
+- **AWS IAM Identity Center**: Configured and accessible
+- **Operating System**: macOS, Linux, or Windows
+
+## Version History
+
+### v3.0.1 (Current)
+- Fixed picomatch dependency conflict for npm ci
+- Enhanced raw response logging with truncation for large API responses
+- Improved AI guidance for AWS SSO login instructions
+
+### v3.0.0
+- **BREAKING**: Modernized to @modelcontextprotocol/sdk v1.23.0 with registerTool API
+- Added Node.js version specification (Node 22.14.0 compatibility)
+- Enhanced logging and error handling
+
+### v2.0.0
+- **BREAKING**: Fixed AWS CLI execution and credential region mismatch issues
+- Improved cross-region authentication handling
+- Prevented dotenv from outputting to STDIO in MCP mode
+
+See [CHANGELOG.md](./CHANGELOG.md) for complete version history.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+ISC License - See LICENSE file for details
 
 ## Support
 
@@ -528,8 +717,11 @@ Need help? Here's how to get assistance:
 2. **Visit our GitHub repository** for documentation and examples: [github.com/aashari/mcp-server-aws-sso](https://github.com/aashari/mcp-server-aws-sso)
 3. **Report issues** at [GitHub Issues](https://github.com/aashari/mcp-server-aws-sso/issues)
 4. **Start a discussion** for feature requests or general questions
+5. **Check debug logs** at `~/.mcp/data/@aashari.mcp-server-aws-sso.[session-id].log` for detailed error information
 
 ---
 
-*Made with ❤️ for DevOps teams who want to bring AI into their AWS workflow.*
+**Built with:** TypeScript, MCP SDK, AWS SDK for JavaScript v3, TOON Format
+
+*Made with care for DevOps teams who want to bring AI into their AWS workflow.*
 
