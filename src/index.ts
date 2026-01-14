@@ -1,4 +1,16 @@
 #!/usr/bin/env node
+
+// Check if the process is running as root
+if (process.getuid && process.getuid() === 0) {
+  console.error(
+    'DANGEROUS: Running this application as the root user is prohibited.'
+  );
+  console.error(
+    'Please use a non-privileged user.'
+  );
+  process.exit(1);
+}
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';

@@ -3,6 +3,25 @@ import { config } from '../utils/config.util';
 import { getCachedSsoToken } from './vendor.aws.sso.auth.core.service.js';
 import { getAllAccountsWithRoles } from './vendor.aws.sso.accounts.service';
 import { executeCommand } from './vendor.aws.sso.exec.service';
+import { spawn } from 'child_process';
+
+// Mock the child_process module to check calls to spawn
+jest.mock('child_process', () => ({
+  spawn: jest.fn(),
+}));
+
+// Mock the accounts service to prevent actual AWS calls
+jest.mock('./vendor.aws.sso.accounts.service.js', () => ({
+    getAwsCredentials: jest.fn(() => Promise.resolve({
+        accessKeyId: 'test-key',
+        secretAccessKey: 'test-secret',
+        sessionToken: 'test-token',
+        expiration: new Date(Date.now() + 3600 * 1000),
+    })),
+    getAllAccountsWithRoles: jest.fn(() => Promise.resolve([])),
+}));
+
+const mockedSpawn = spawn as jest.Mock;
 
 /**
  * Helper function to skip tests when no valid AWS SSO session is available
@@ -47,6 +66,44 @@ describe('AWS SSO Exec Service', () => {
 		config.load();
 	});
 
+    beforeEach(() => {
+        // Clear mock history before each test
+        mockedSpawn.mockClear();
+    });
+
+    // New Security Tests
+    describe('executeCommand Security', () => {
+        beforeEach(() => {
+            mockedSpawn.mockImplementation(() => ({
+                stdout: { on: jest.fn() },
+                stderr: { on: jest.fn() },
+                on: jest.fn((event, cb: (code: number) => void) => {
+                    if (event === 'close') {
+                        cb(0);
+                    }
+                }),
+            }));
+        });
+
+        test('should block commands that do not start with "aws"', async () => {
+            const result = await executeCommand('123', 'role', 'ls -l');
+            expect(result.stderr).toContain('Command not allowed');
+            expect(result.exitCode).toBe(1);
+            expect(mockedSpawn).not.toHaveBeenCalled();
+        });
+
+        test('should correctly parse and call spawn for a valid aws command', async () => {
+            await executeCommand('123', 'role', 'aws s3 ls');
+            expect(mockedSpawn).toHaveBeenCalledWith('aws', ['s3', 'ls'], expect.any(Object));
+        });
+
+        test('should not be vulnerable to command injection', async () => {
+            await executeCommand('123', 'role', 'aws s3 ls; whoami');
+            expect(mockedSpawn).toHaveBeenCalledWith('aws', ['s3', 'ls;', 'whoami'], expect.any(Object));
+        });
+    });
+
+	// Keep the existing integration test, but it will be skipped if no credentials
 	test('executeCommand should run AWS CLI commands with temporary credentials', async () => {
 		if (await skipIfNoValidSsoSession()) return;
 
