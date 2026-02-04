@@ -1,3 +1,15 @@
+# [4.0.0](https://github.com/aashari/mcp-server-aws-sso/compare/v3.1.0...v4.0.0) (2026-02-04)
+
+
+### Features
+
+* modernize dependencies and migrate to OIDC trusted publishing ([7c23f37](https://github.com/aashari/mcp-server-aws-sso/commit/7c23f373ffa193ec16dbbb0ee3128cc5fe010d3d))
+
+
+### BREAKING CHANGES
+
+* Requires OIDC trusted publisher configuration on npmjs.com. The package will no longer publish with NPM_TOKEN. Follow docs/OIDC-TRUSTED-PUBLISHING-SETUP.md for migration instructions.
+
 # [3.1.0](https://github.com/aashari/mcp-server-aws-sso/compare/v3.0.1...v3.1.0) (2025-12-03)
 
 
