@@ -23,6 +23,10 @@ Transform how you manage and access your AWS infrastructure by connecting Claude
 - **IT Administrators** managing EC2 instances and executing remote commands securely
 - **Anyone** who wants to interact with AWS using conversational AI
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/aashari-mcp-server-aws-sso).
+
 ## Quick Start
 
 Get up and running in 2 minutes:
